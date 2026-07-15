@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>করিম টিন হাউস — ম্যানেজমেন্ট সিস্টেম</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#161B1F;
+  --steel-900:#1E262C;
+  --steel-700:#3A464E;
+  --steel-500:#6B7A82;
+  --steel-300:#AEB9BD;
+  --steel-100:#E9ECED;
+  --paper:#F1EFE9;
+  --rust:#BE4A22;
+  --rust-dark:#9A3A19;
+  --amber:#E0A030;
+  --green:#3C7A54;
+  --red:#B23B2E;
+  --radius:10px;
+  --wave-h:14px;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Hind Siliguri', sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.display{ font-family:'Baloo Da 2', sans-serif; }
+.mono{ font-family:'JetBrains Mono', monospace; }
+button{ font-family:inherit; cursor:pointer; border:none; background:none; }
+input, select{ font-family:inherit; }
+ 
+/* corrugated wave pattern — the ঢেউ (wave) of ঢেউটিন, used as the app's signature motif */
+.wave-strip{
+  height:var(--wave-h);
+  width:100%;
+  background-image: repeating-linear-gradient(90deg,
+    transparent 0px, transparent 2px,
+    rgba(0,0,0,0.10) 2px, rgba(0,0,0,0.10) 4px);
+  background-color:var(--rust);
+  -webkit-mask-image: repeating-radial-gradient(circle at 8px 0, transparent 0 4px, black 4.5px 8px);
+  mask-image: repeating-radial-gradient(circle at 8px 0, transparent 0 4px, black 4.5px 8px);
+}
+.wave-strip.top{ -webkit-mask-position: 0 -6px; mask-position:0 -6px; }
+.wave-strip.bottom{ -webkit-mask-position: 0 6px; mask-position:0 6px; transform:scaleY(-1); }
+ 
+/* ================= LOCK SCREEN ================= */
+#lockScreen{
+  position:fixed; inset:0; z-index:100;
+  background:var(--steel-900);
+  display:flex; align-items:center; justify-content:center;
+  background-image:
+    linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%);
+  background-size: 40px 40px;
+}
+.lock-card{
+  width:340px; max-width:90vw;
+  background:var(--ink);
+  border-radius:var(--radius);
+  overflow:hidden;
+  box-shadow:0 30px 60px rgba(0,0,0,0.5);
+}
+.lock-body{ padding:32px 28px 28px; text-align:center; }
+.lock-icon{
+  width:56px; height:56px; margin:0 auto 14px;
+  border-radius:50%;
+  background:var(--rust);
+  display:flex; align-items:center; justify-content:center;
+  color:white; font-size:24px;
+}
+.lock-card h1{ color:white; font-size:22px; margin-bottom:4px; }
+.lock-card p{ color:var(--steel-300); font-size:13px; margin-bottom:22px; }
+.pin-dots{ display:flex; gap:12px; justify-content:center; margin-bottom:20px; }
+.pin-dot{ width:14px; height:14px; border-radius:50%; border:2px solid var(--steel-500); transition:.15s; }
+.pin-dot.filled{ background:var(--amber); border-color:var(--amber); }
+.pin-pad{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.pin-key{
+  padding:16px 0; border-radius:8px; background:var(--steel-900);
+  color:white; font-size:19px; font-weight:600; transition:.1s;
+}
+.pin-key:active{ background:var(--rust); }
+.pin-key.clear{ color:var(--steel-300); font-size:13px; }
+.lock-hint{ margin-top:16px; font-size:11px; color:var(--steel-500); }
+ 
+/* ================= APP SHELL ================= */
+#app{ display:none; min-height:100vh; }
+#app.active{ display:flex; }
+ 
+.sidebar{
+  width:220px; flex-shrink:0;
+  background:var(--steel-900);
+  color:white; display:flex; flex-direction:column;
+  position:sticky; top:0; height:100vh;
+}
+.brand-block{ padding:22px 20px 16px; }
+.brand-block .display{ font-size:19px; font-weight:700; line-height:1.2; }
+.brand-block .sub{ font-size:11px; color:var(--steel-300); margin-top:2px; letter-spacing:.03em; }
+.nav-list{ list-style:none; padding:10px 12px; flex:1; }
+.nav-item{
+  display:flex; align-items:center; gap:11px;
+  padding:11px 12px; border-radius:8px; margin-bottom:3px;
+  color:var(--steel-300); font-size:14.5px; font-weight:500;
+  transition:.12s;
+}
+.nav-item .ic{ font-size:17px; width:20px; text-align:center; }
+.nav-item:hover{ background:rgba(255,255,255,0.05); color:white; }
+.nav-item.active{ background:var(--rust); color:white; }
+.sidebar-foot{ padding:16px 20px; font-size:11px; color:var(--steel-500); border-top:1px solid rgba(255,255,255,0.08); }
+ 
+.main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.topbar{
+  background:var(--ink); color:white;
+  padding:16px 28px; display:flex; align-items:center; justify-content:space-between;
+}
+.topbar h2{ font-size:19px; font-weight:700; }
+.topbar .meta{ font-size:12px; color:var(--steel-300); margin-top:2px; font-weight:400; font-family:'Hind Siliguri'; }
+.content{ padding:26px 28px 90px; flex:1; }
+ 
+/* ================= DASHBOARD ================= */
+.stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+.stat-card{
+  background:white; border-radius:var(--radius); padding:18px;
+  border:1px solid var(--steel-100); position:relative; overflow:hidden;
+}
+.stat-card::before{
+  content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--accent, var(--rust));
+}
+.stat-card .lbl{ font-size:12px; color:var(--steel-500); font-weight:600; }
+.stat-card .val{ font-family:'JetBrains Mono'; font-size:24px; font-weight:700; margin-top:6px; }
+.panel{ background:white; border-radius:var(--radius); border:1px solid var(--steel-100); padding:20px; }
+.panel h3{ font-size:15px; margin-bottom:14px; }
+ 
+/* ================= SALES / POS ================= */
+.search-bar{ position:relative; margin-bottom:16px; }
+.search-bar input{
+  width:100%; padding:12px 14px 12px 40px; border-radius:9px; border:1.5px solid var(--steel-100);
+  font-size:14.5px; background:white;
+}
+.search-bar input:focus{ outline:none; border-color:var(--rust); }
+.search-bar .sic{ position:absolute; left:13px; top:50%; transform:translateY(-50%); font-size:15px; color:var(--steel-500); }
+.search-bar .sclear{ position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:13px; color:var(--steel-500); font-weight:600; display:none; }
+.search-bar.has-val .sclear{ display:block; }
+.no-match{ padding:26px; text-align:center; color:var(--steel-500); font-size:13.5px; }
+ 
+.breadcrumb{ display:flex; align-items:center; gap:8px; margin-bottom:18px; font-size:13px; color:var(--steel-500); flex-wrap:wrap; }
+.crumb-btn{ color:var(--rust); font-weight:600; }
+.crumb-btn:hover{ text-decoration:underline; }
+ 
+.mm-grid, .brand-grid, .size-grid{ display:grid; gap:12px; }
+.mm-grid{ grid-template-columns:repeat(5,1fr); }
+.brand-grid{ grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); }
+.size-grid{ grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); }
+ 
+.mm-tile{
+  background:white; border:2px solid var(--steel-100); border-radius:var(--radius);
+  padding:20px 10px; text-align:center; transition:.12s;
+}
+.mm-tile:hover{ border-color:var(--rust); transform:translateY(-2px); }
+.mm-tile .num{ font-family:'JetBrains Mono'; font-size:26px; font-weight:700; color:var(--steel-900); }
+.mm-tile .unit{ font-size:11px; color:var(--steel-500); margin-top:2px; }
+.mm-tile .count{ font-size:10.5px; color:var(--rust); margin-top:6px; font-weight:600; }
+ 
+.brand-tile{
+  background:white; border:1px solid var(--steel-100); border-radius:var(--radius);
+  padding:18px 14px; transition:.12s; text-align:left;
+}
+.brand-tile:hover{ border-color:var(--rust); box-shadow:0 4px 14px rgba(0,0,0,0.06); }
+.brand-tile .bname{ font-family:'Baloo Da 2'; font-size:16px; font-weight:700; }
+.brand-tile .bmeta{ font-size:11.5px; color:var(--steel-500); margin-top:4px; }
+ 
+.size-card{
+  background:white; border:1px solid var(--steel-100); border-radius:var(--radius);
+  padding:14px; display:flex; flex-direction:column; gap:6px;
+}
+.size-card .stitle{ font-family:'JetBrains Mono'; font-weight:700; font-size:16px; }
+.size-card .srow{ display:flex; justify-content:space-between; font-size:12px; color:var(--steel-500); }
+.size-card .srow b{ color:var(--ink); font-family:'JetBrains Mono'; }
+.size-card .stock-low{ color:var(--red); font-weight:700; }
+.size-card .add-btn{
+  margin-top:6px; background:var(--steel-900); color:white; padding:8px; border-radius:7px;
+  font-size:13px; font-weight:600; text-align:center;
+}
+.size-card .add-btn:hover{ background:var(--rust); }
+.size-card.out .add-btn{ background:var(--steel-300); pointer-events:none; }
+ 
+.pos-layout{ display:flex; gap:20px; align-items:flex-start; }
+.pos-main{ flex:1; min-width:0; }
+.cart-panel{
+  width:320px; flex-shrink:0; background:white; border-radius:var(--radius);
+  border:1px solid var(--steel-100); position:sticky; top:20px; overflow:hidden;
+}
+.cart-head{ background:var(--ink); color:white; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; }
+.cart-head h3{ font-size:14px; }
+.cart-items{ max-height:340px; overflow-y:auto; }
+.cart-item{ padding:12px 16px; border-bottom:1px solid var(--steel-100); }
+.cart-item-top{ display:flex; justify-content:space-between; font-size:13px; font-weight:600; }
+.cart-item .remove{ color:var(--red); font-size:11px; }
+.cart-item-row{ display:flex; align-items:center; gap:8px; margin-top:6px; font-size:12px; }
+.cart-item-row label{ color:var(--steel-500); width:44px; }
+.cart-item-row input{ width:70px; border:1px solid var(--steel-100); border-radius:5px; padding:4px 6px; font-family:'JetBrains Mono'; font-size:12.5px; }
+.cart-sub{ font-size:11.5px; color:var(--steel-500); text-align:right; margin-top:4px; }
+.cart-empty{ padding:30px 16px; text-align:center; color:var(--steel-500); font-size:13px; }
+.cart-foot{ padding:14px 16px; border-top:2px solid var(--ink); }
+.cart-total-row{ display:flex; justify-content:space-between; font-size:14px; margin-bottom:10px; }
+.cart-total-row.grand{ font-weight:700; font-size:17px; font-family:'JetBrains Mono'; }
+.checkout-btn{ width:100%; background:var(--rust); color:white; padding:12px; border-radius:8px; font-weight:700; font-size:14.5px; }
+.checkout-btn:hover{ background:var(--rust-dark); }
+.checkout-btn:disabled{ background:var(--steel-300); }
+ 
+/* ================= FORMS / MODALS ================= */
+.field{ margin-bottom:14px; }
+.field label{ display:block; font-size:12.5px; font-weight:600; color:var(--steel-700); margin-bottom:5px; }
+.field input, .field select{
+  width:100%; border:1.5px solid var(--steel-100); border-radius:7px; padding:9px 11px; font-size:14px;
+}
+.field input:focus, .field select:focus{ outline:none; border-color:var(--rust); }
+.btn{ display:inline-flex; align-items:center; gap:6px; padding:9px 16px; border-radius:8px; font-size:13.5px; font-weight:600; }
+.btn-primary{ background:var(--rust); color:white; }
+.btn-primary:hover{ background:var(--rust-dark); }
+.btn-outline{ background:white; border:1.5px solid var(--steel-100); color:var(--ink); }
+.btn-outline:hover{ border-color:var(--rust); color:var(--rust); }
+.btn-ghost{ color:var(--steel-500); font-size:13px; }
+ 
+.modal-overlay{ position:fixed; inset:0; background:rgba(20,24,27,0.55); display:none; align-items:center; justify-content:center; z-index:80; padding:20px; }
+.modal-overlay.active{ display:flex; }
+.modal{ background:white; border-radius:var(--radius); max-width:480px; width:100%; max-height:88vh; overflow-y:auto; }
+.modal-head{ padding:18px 22px; border-bottom:1px solid var(--steel-100); display:flex; justify-content:space-between; align-items:center; }
+.modal-head h3{ font-size:16px; }
+.modal-close{ font-size:20px; color:var(--steel-500); }
+.modal-body{ padding:20px 22px; }
+.modal-foot{ padding:16px 22px; border-top:1px solid var(--steel-100); display:flex; justify-content:flex-end; gap:10px; }
+ 
+/* ================= STOCK MGMT TABLE ================= */
+.mgmt-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:10px; flex-wrap:wrap; }
+.tbl{ width:100%; border-collapse:collapse; background:white; border-radius:var(--radius); overflow:hidden; border:1px solid var(--steel-100); }
+.tbl th{ background:var(--steel-100); text-align:left; padding:10px 14px; font-size:11.5px; color:var(--steel-700); font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+.tbl td{ padding:10px 14px; font-size:13.5px; border-top:1px solid var(--steel-100); }
+.tbl td.num{ font-family:'JetBrains Mono'; }
+.tbl tr:hover td{ background:#FAF9F6; }
+.pill{ display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; }
+.pill.ok{ background:#E4F1E8; color:var(--green); }
+.pill.low{ background:#FBEAE7; color:var(--red); }
+.tbl-actions button{ font-size:12px; color:var(--rust); font-weight:600; }
+ 
+/* ================= বাকি খাতা (LEDGER) ================= */
+.ledger-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.ledger-list{ display:flex; flex-direction:column; gap:10px; }
+.ledger-row{
+  background:white; border:1px solid var(--steel-100); border-radius:var(--radius);
+  padding:14px 16px; display:flex; align-items:center; gap:14px;
+}
+.ledger-serial{
+  width:34px; height:34px; border-radius:50%; background:var(--steel-100); color:var(--steel-700);
+  display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono'; font-weight:700; font-size:13px; flex-shrink:0;
+}
+.ledger-info{ flex:1; min-width:0; }
+.ledger-info .lname{ font-weight:700; font-size:14.5px; }
+.ledger-info .lmeta{ font-size:12px; color:var(--steel-500); margin-top:2px; }
+.ledger-due{ text-align:right; }
+.ledger-due .amt{ font-family:'JetBrains Mono'; font-weight:700; font-size:16px; color:var(--red); }
+.ledger-due .amt.clear{ color:var(--green); }
+.ledger-due .lbl{ font-size:10.5px; color:var(--steel-500); }
+.ledger-row .btn{ flex-shrink:0; }
+ 
+/* ================= INVOICE PRINT ================= */
+.invoice-box{ background:white; border:1px solid var(--steel-100); border-radius:var(--radius); padding:26px; max-width:520px; margin:0 auto; }
+.invoice-box .ihead{ text-align:center; border-bottom:2px dashed var(--steel-300); padding-bottom:14px; margin-bottom:14px; }
+.invoice-box .ihead h2{ font-size:20px; }
+.invoice-box .ihead p{ font-size:11.5px; color:var(--steel-500); margin-top:3px; }
+.itbl{ width:100%; border-collapse:collapse; font-size:13px; margin-bottom:14px; }
+.itbl th{ text-align:left; border-bottom:1.5px solid var(--ink); padding:6px 4px; font-size:11px; }
+.itbl td{ padding:6px 4px; border-bottom:1px dotted var(--steel-100); }
+.itbl td.r, .itbl th.r{ text-align:right; font-family:'JetBrains Mono'; }
+.itotal{ display:flex; justify-content:space-between; padding-top:8px; border-top:2px solid var(--ink); font-size:16px; font-weight:700; font-family:'JetBrains Mono'; }
+ 
+.toast{
+  position:fixed; bottom:26px; left:50%; transform:translateX(-50%);
+  background:var(--ink); color:white; padding:12px 22px; border-radius:8px; font-size:13.5px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.25); z-index:200; opacity:0; pointer-events:none; transition:.2s;
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
+ 
+.empty-state{ text-align:center; padding:50px 20px; color:var(--steel-500); }
+.empty-state .ic{ font-size:34px; margin-bottom:10px; }
+ 
+@media print{
+  body *{ visibility:hidden; }
+  #printArea, #printArea *{ visibility:visible; }
+  #printArea{ position:absolute; top:0; left:0; width:100%; }
+}
+#printArea{ display:none; }
+ 
+/* ================= RESPONSIVE ================= */
+.bottom-nav{ display:none; }
+@media (max-width: 860px){
+  .sidebar{ display:none; }
+  #app.active{ flex-direction:column; }
+  .content{ padding:18px 14px 90px; }
+  .stat-grid{ grid-template-columns:repeat(2,1fr); }
+  .mm-grid{ grid-template-columns:repeat(3,1fr); }
+  .pos-layout{ flex-direction:column; }
+  .cart-panel{ width:100%; position:static; }
+  .topbar{ padding:14px 16px; }
+  .bottom-nav{
+    display:flex; position:fixed; bottom:0; left:0; right:0; z-index:60;
+    background:var(--steel-900); padding:6px 4px 8px; justify-content:space-around;
+  }
+  .bn-item{ display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--steel-300); font-size:10px; padding:6px 8px; border-radius:8px; flex:1; }
+  .bn-item .ic{ font-size:18px; }
+  .bn-item.active{ color:white; background:var(--rust); }
+}
+</style>
+</head>
+<body>
+ 
+<!-- ================= LOCK SCREEN ================= -->
+<div id="lockScreen">
+  <div class="lock-card">
+    <div class="wave-strip top"></div>
+    <div class="lock-body">
+      <div class="lock-icon">🔒</div>
+      <h1>টিন হাউস</h1>
+      <p>দোকান ম্যানেজমেন্ট সিস্টেম</p>
+      <div class="pin-dots" id="pinDots"></div>
+      <div class="pin-pad" id="pinPad"></div>
+      <div class="lock-hint">ডেমো পিন: ১২৩৪</div>
+    </div>
+    <div class="wave-strip bottom"></div>
+  </div>
+</div>
+ 
+<!-- ================= APP ================= -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="brand-block">
+      <div class="display">করিম টিন হাউস</div>
+      <div class="sub">STOCK · SALES · খাতা</div>
+    </div>
+    <ul class="nav-list" id="navList"></ul>
+    <div class="sidebar-foot">সংস্করণ: ডেমো ১.০</div>
+  </aside>
+ 
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h2 id="pageTitle">ড্যাশবোর্ড</h2>
+        <div class="meta" id="pageMeta"></div>
+      </div>
+      <button class="btn btn-outline" onclick="logout()" style="color:white;border-color:rgba(255,255,255,0.25);">লগ-আউট</button>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+ 
+  <nav class="bottom-nav" id="bottomNav"></nav>
+</div>
+ 
+<!-- ================= MODALS ================= -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBox"></div>
+</div>
+ 
+<div id="printArea"></div>
+<div class="toast" id="toast"></div>
+ 
+<script>
+/* ============================================================
+   ডেটা মডেল (in-memory — সেশনভিত্তিক ডেমো ডেটা)
+   ============================================================ */
+const BRANDS = ['আকিজ','পিএইচপি','কেওয়াই স্টিল','নাহার','গ্যালকো'];
+const MM_LIST = [12,13,14,15,16,17,18,19,20];
+const SIZE_LIST = [6,7,8,9,10,11,12]; // ফুট
+ 
+function seededRand(seed){ let x = Math.sin(seed)*10000; return x - Math.floor(x); }
+ 
+// প্রতিটি ব্র্যান্ডের জন্য কিছু র‍্যান্ডম mm/সাইজ কম্বিনেশন তৈরি (বাস্তবসম্মত — সব ব্র্যান্ডে সব mm থাকে না)
+let inventory = {}; // inventory[brand][mm][size] = {buy, sell, stock}
+let seed = 1;
+BRANDS.forEach((brand, bi) => {
+  inventory[brand] = {};
+  MM_LIST.forEach((mm, mi) => {
+    const hasIt = seededRand(seed++) > 0.28; // প্রতি ব্র্যান্ডে বেশিরভাগ mm থাকবে
+    if(!hasIt) return;
+    inventory[brand][mm] = {};
+    SIZE_LIST.forEach((sz, si) => {
+      if(seededRand(seed++) > 0.35){
+        const baseBuy = 380 + mm*14 + sz*22 + bi*9;
+        const buy = Math.round(baseBuy/5)*5;
+        const sell = Math.round((buy * 1.14)/5)*5;
+        const stock = Math.floor(seededRand(seed++)*40) + (seededRand(seed++) > 0.85 ? 0 : 3);
+        inventory[brand][mm][sz] = { buy, sell, stock };
+      }
+    });
+  });
+});
+ 
+let ledger = [
+  { id:1, name:'হাজী নূর ইসলাম', address:'বাজার রোড, সাভার', phone:'01711-223344', due:4200, paidTotal:0 },
+  { id:2, name:'রফিক মিয়া (ঠিকাদার)', address:'ধামরাই', phone:'01822-334455', due:0, paidTotal:9600 },
+  { id:3, name:'সোহেল বিল্ডার্স', address:'ইপিজেড রোড, সাভার', phone:'01933-445566', due:12800, paidTotal:5000 },
+  { id:4, name:'মোঃ জসিম', address:'বিরুলিয়া', phone:'01644-556677', due:1500, paidTotal:1500 },
+];
+let ledgerNextId = 5;
+let ledgerNextSerial = ledger.length + 1;
+ 
+let invoices = [];
+let invoiceCounter = 1001;
+ 
+let cart = []; // {brand, mm, size, qty, sellPrice, buyPrice}
+ 
+let currentView = 'dashboard';
+let posStep = 1; // 1: mm বাছাই, 2: brand বাছাই, 3: size বাছাই
+let posMM = null, posBrand = null;
+let posSearch = '';
+let stockSearch = '';
+ 
+const nav = [
+  { id:'dashboard', label:'ড্যাশবোর্ড', icon:'📊' },
+  { id:'sales', label:'বিক্রয়', icon:'🧾' },
+  { id:'stock', label:'স্টক তালিকা', icon:'📦' },
+  { id:'ledger', label:'বাকির খাতা', icon:'📒' },
+  { id:'invoices', label:'ইনভয়েস হিস্ট্রি', icon:'🗂️' },
+];
+ 
+/* ============================================================
+   PIN LOCK
+   ============================================================ */
+const PIN = '1234';
+let pinEntry = '';
+function renderPinDots(){
+  document.getElementById('pinDots').innerHTML = [0,1,2,3].map(i =>
+    `<div class="pin-dot ${i < pinEntry.length ? 'filled' : ''}"></div>`).join('');
+}
+function renderPinPad(){
+  const keys = ['১','২','৩','৪','৫','৬','৭','৮','৯','','০','⌫'];
+  const digitMap = {'১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9','০':'0'};
+  document.getElementById('pinPad').innerHTML = keys.map(k => {
+    if(k === '') return `<div></div>`;
+    if(k === '⌫') return `<button class="pin-key clear" onclick="pinBackspace()">মুছুন</button>`;
+    return `<button class="pin-key" onclick="pinPress('${digitMap[k]}')">${k}</button>`;
+  }).join('');
+}
+function pinPress(d){
+  if(pinEntry.length >= 4) return;
+  pinEntry += d;
+  renderPinDots();
+  if(pinEntry.length === 4){
+    setTimeout(() => {
+      if(pinEntry === PIN){
+        document.getElementById('lockScreen').style.display = 'none';
+        document.getElementById('app').classList.add('active');
+        renderNav(); switchView('dashboard');
+      } else {
+        showToast('ভুল পিন — আবার চেষ্টা করুন');
+        pinEntry = ''; renderPinDots();
+      }
+    }, 150);
+  }
+}
+function pinBackspace(){ pinEntry = pinEntry.slice(0,-1); renderPinDots(); }
+function logout(){
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('lockScreen').style.display = 'flex';
+  pinEntry = ''; renderPinDots();
+}
+renderPinDots(); renderPinPad();
+ 
+/* ============================================================
+   NAV
+   ============================================================ */
+function renderNav(){
+  document.getElementById('navList').innerHTML = nav.map(n =>
+    `<li class="nav-item ${n.id===currentView?'active':''}" onclick="switchView('${n.id}')">
+       <span class="ic">${n.icon}</span><span>${n.label}</span>
+     </li>`).join('');
+  document.getElementById('bottomNav').innerHTML = nav.map(n =>
+    `<div class="bn-item ${n.id===currentView?'active':''}" onclick="switchView('${n.id}')">
+       <span class="ic">${n.icon}</span><span>${n.label}</span>
+     </div>`).join('');
+}
+function switchView(id){
+  currentView = id;
+  if(id === 'sales'){ posStep = 1; posMM = null; posBrand = null; }
+  renderNav();
+  const titles = {dashboard:'ড্যাশবোর্ড', sales:'বিক্রয়', stock:'স্টক তালিকা', ledger:'বাকির খাতা', invoices:'ইনভয়েস হিস্ট্রি'};
+  document.getElementById('pageTitle').textContent = titles[id];
+  document.getElementById('pageMeta').textContent = new Date().toLocaleDateString('bn-BD', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  render();
+}
+ 
+function render(){
+  const c = document.getElementById('content');
+  if(currentView === 'dashboard') c.innerHTML = renderDashboard();
+  else if(currentView === 'sales') c.innerHTML = renderSales();
+  else if(currentView === 'stock') c.innerHTML = renderStock();
+  else if(currentView === 'ledger') c.innerHTML = renderLedger();
+  else if(currentView === 'invoices') c.innerHTML = renderInvoices();
+}
+ 
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+function fmt(n){ return '৳' + Number(n).toLocaleString('en-IN'); }
+ 
+function renderDashboard(){
+  let totalStock = 0, totalDue = 0, todaySales = 0;
+  Object.values(inventory).forEach(mmObj => Object.values(mmObj).forEach(szObj => Object.values(szObj).forEach(v => totalStock += v.stock)));
+  ledger.forEach(l => totalDue += l.due);
+  invoices.forEach(inv => todaySales += inv.total);
+ 
+  return `
+    <div class="stat-grid">
+      <div class="stat-card" style="--accent:var(--rust)">
+        <div class="lbl">মোট স্টক (পিস)</div><div class="val">${totalStock}</div>
+      </div>
+      <div class="stat-card" style="--accent:var(--green)">
+        <div class="lbl">আজকের বিক্রয়</div><div class="val">${fmt(todaySales)}</div>
+      </div>
+      <div class="stat-card" style="--accent:var(--red)">
+        <div class="lbl">মোট বাকি (খাতা)</div><div class="val">${fmt(totalDue)}</div>
+      </div>
+      <div class="stat-card" style="--accent:var(--amber)">
+        <div class="lbl">মোট ইনভয়েস</div><div class="val">${invoices.length}</div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:16px;">
+      <div class="panel">
+        <h3>সাম্প্রতিক ইনভয়েস</h3>
+        ${invoices.length === 0 ? `<div class="empty-state"><div class="ic">🧾</div>এখনো কোনো বিক্রয় হয়নি</div>` :
+          `<table class="tbl"><thead><tr><th>নং</th><th>আইটেম</th><th class="r">মোট</th></tr></thead><tbody>
+          ${invoices.slice(-5).reverse().map(inv => `<tr><td>#${inv.id}</td><td>${inv.items.length} টি পণ্য</td><td class="num r">${fmt(inv.total)}</td></tr>`).join('')}
+          </tbody></table>`}
+      </div>
+      <div class="panel">
+        <h3>সবচেয়ে বেশি বাকি</h3>
+        ${[...ledger].sort((a,b)=>b.due-a.due).filter(l=>l.due>0).slice(0,4).map(l => `
+          <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--steel-100);font-size:13.5px;">
+            <span>${l.name}</span><span class="mono" style="color:var(--red);font-weight:700;">${fmt(l.due)}</span>
+          </div>`).join('') || `<div class="empty-state" style="padding:20px;"><div class="ic">✅</div>কোনো বাকি নেই</div>`}
+      </div>
+    </div>`;
+}
+ 
+/* ============================================================
+   বিক্রয় (POS): mm → brand → size → cart
+   ============================================================ */
+function renderSales(){
+  let stepHtml = '';
+  const crumbs = [`<button class="crumb-btn" onclick="posGoStep(1)">মিলিমিটার</button>`];
+  if(posMM) crumbs.push(`› <button class="crumb-btn" onclick="posGoStep(2)">${posMM} মিমি</button>`);
+  if(posBrand) crumbs.push(`› <span>${posBrand}</span>`);
+ 
+  const q = posSearch.trim().toLowerCase();
+  let searchPlaceholder = '';
+ 
+  if(posStep === 1){
+    searchPlaceholder = 'মিলিমিটার সার্চ করুন (যেমনঃ ১২)... এন্টার চাপুন সরাসরি যেতে';
+    const filtered = MM_LIST.filter(mm => q === '' || String(mm).includes(q));
+    stepHtml = filtered.length === 0 ? `<div class="no-match">🔍 কোনো মিলিমিটার পাওয়া যায়নি</div>` :
+      `<div class="mm-grid">` + filtered.map(mm => {
+      let brandCount = 0;
+      BRANDS.forEach(b => { if(inventory[b][mm]) brandCount++; });
+      return `<button class="mm-tile" onclick="posSelectMM(${mm})">
+        <div class="num">${mm}</div><div class="unit">মিলিমিটার</div>
+        <div class="count">${brandCount} টি ব্র্যান্ডে আছে</div>
+      </button>`;
+    }).join('') + `</div>`;
+  } else if(posStep === 2){
+    searchPlaceholder = 'ব্র্যান্ড সার্চ করুন...';
+    const availableBrands = BRANDS.filter(b => inventory[b][posMM] && (q === '' || b.toLowerCase().includes(q)));
+    stepHtml = availableBrands.length === 0 ? `<div class="no-match">🔍 কোনো ব্র্যান্ড পাওয়া যায়নি</div>` :
+      `<div class="brand-grid">` + availableBrands.map(b => {
+      const sizes = inventory[b][posMM];
+      const sizeCount = Object.keys(sizes).length;
+      const totalStock = Object.values(sizes).reduce((s,v)=>s+v.stock,0);
+      return `<button class="brand-tile" onclick="posSelectBrand('${b}')">
+        <div class="bname">${b}</div>
+        <div class="bmeta">${sizeCount} টি সাইজ · ${totalStock} পিস স্টক</div>
+      </button>`;
+    }).join('') + `</div>`;
+  } else if(posStep === 3){
+    searchPlaceholder = 'সাইজ (ফুট) সার্চ করুন...';
+    const sizes = inventory[posBrand][posMM];
+    const filteredSizes = Object.keys(sizes).sort((a,b)=>a-b).filter(sz => q === '' || String(sz).includes(q));
+    stepHtml = filteredSizes.length === 0 ? `<div class="no-match">🔍 কোনো সাইজ পাওয়া যায়নি</div>` :
+      `<div class="size-grid">` + filteredSizes.map(sz => {
+      const v = sizes[sz];
+      const out = v.stock === 0;
+      return `<div class="size-card ${out?'out':''}">
+        <div class="stitle">${sz} ফুট</div>
+        <div class="srow"><span>ক্রয়মূল্য</span><b>${fmt(v.buy)}</b></div>
+        <div class="srow"><span>বিক্রয়মূল্য</span><b>${fmt(v.sell)}</b></div>
+        <div class="srow"><span>স্টক</span><b class="${v.stock<=3?'stock-low':''}">${v.stock} পিস</b></div>
+        <div class="add-btn" onclick="addToCart('${posBrand}', ${posMM}, ${sz})">${out?'স্টক নেই':'+ কার্টে যোগ করুন'}</div>
+      </div>`;
+    }).join('') + `</div>`;
+  }
+ 
+  return `
+    <div class="pos-layout">
+      <div class="pos-main">
+        <div class="breadcrumb">${crumbs.join(' ')}</div>
+        <div class="search-bar ${q ? 'has-val' : ''}">
+          <span class="sic">🔍</span>
+          <input type="text" id="posSearchInput" value="${posSearch}" placeholder="${searchPlaceholder}"
+            oninput="posSearchInput(this.value)" onkeydown="posSearchKey(event)" autocomplete="off">
+          <span class="sclear" onclick="posSearchInput('')">✕</span>
+        </div>
+        ${stepHtml}
+      </div>
+      <div class="cart-panel">
+        <div class="cart-head"><h3>🧾 বর্তমান বিক্রয়</h3><span class="mono" style="font-size:12px;">${cart.length} আইটেম</span></div>
+        <div class="cart-items">
+          ${cart.length === 0 ? `<div class="cart-empty">কার্ট খালি — একটি সাইজ যোগ করুন</div>` :
+            cart.map((item, idx) => `
+            <div class="cart-item">
+              <div class="cart-item-top">
+                <span>${item.brand} · ${item.mm}মিমি · ${item.size}ফুট</span>
+                <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
+              </div>
+              <div class="cart-item-row">
+                <label>পরিমাণ</label>
+                <input type="number" min="1" value="${item.qty}" onchange="updateCartQty(${idx}, this.value)">
+                <label style="width:auto;margin-left:4px;">দর</label>
+                <input type="number" min="0" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)">
+              </div>
+              <div class="cart-sub">উপমোট: ${fmt(item.qty * item.sellPrice)}</div>
+            </div>`).join('')}
+        </div>
+        <div class="cart-foot">
+          <div class="cart-total-row"><span>মোট পিস</span><span class="mono">${cart.reduce((s,i)=>s+Number(i.qty),0)}</span></div>
+          <div class="cart-total-row grand"><span>সর্বমোট</span><span>${fmt(cart.reduce((s,i)=>s+i.qty*i.sellPrice,0))}</span></div>
+          <button class="checkout-btn" ${cart.length===0?'disabled':''} onclick="openCheckout()">ইনভয়েস তৈরি করুন</button>
+        </div>
+      </div>
+    </div>`;
+}
+function posGoStep(step){ posStep = step; posSearch=''; if(step===1){posMM=null;posBrand=null;} if(step===2){posBrand=null;} render(); }
+function posSelectMM(mm){ posMM = mm; posStep = 2; posSearch=''; render(); }
+function posSelectBrand(b){ posBrand = b; posStep = 3; posSearch=''; render(); }
+ 
+function posSearchInput(val){
+  posSearch = val;
+  render();
+  const el = document.getElementById('posSearchInput');
+  if(el){ el.focus(); const p = el.value.length; el.setSelectionRange(p,p); }
+}
+function posSearchKey(e){
+  if(e.key !== 'Enter') return;
+  const q = posSearch.trim();
+  if(q === '') return;
+  if(posStep === 1){
+    const num = parseInt(q);
+    if(MM_LIST.includes(num)) posSelectMM(num);
+  } else if(posStep === 2){
+    const match = BRANDS.filter(b => inventory[b][posMM] && b.toLowerCase().includes(q.toLowerCase()));
+    if(match.length === 1) posSelectBrand(match[0]);
+  }
+}
+ 
+function addToCart(brand, mm, size){
+  const item = inventory[brand][mm][size];
+  const existing = cart.find(c => c.brand===brand && c.mm===mm && c.size===size);
+  if(existing){ existing.qty++; }
+  else cart.push({ brand, mm, size, qty:1, sellPrice:item.sell, buyPrice:item.buy });
+  showToast(`${brand} ${mm}মিমি ${size}ফুট কার্টে যোগ হয়েছে`);
+  render();
+}
+function removeFromCart(idx){ cart.splice(idx,1); render(); }
+function updateCartQty(idx, val){ cart[idx].qty = Math.max(1, parseInt(val)||1); render(); }
+function updateCartPrice(idx, val){ cart[idx].sellPrice = Math.max(0, parseInt(val)||0); render(); }
+ 
+/* ---- চেকআউট / ইনভয়েস ---- */
+function openCheckout(){
+  const total = cart.reduce((s,i)=>s+i.qty*i.sellPrice,0);
+  const customerOptions = ledger.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+  openModal('ইনভয়েস নিশ্চিত করুন', `
+    <div class="field">
+      <label>ক্রেতা (ঐচ্ছিক — বাকি খাতায় যুক্ত করতে চাইলে বাছাই করুন)</label>
+      <select id="invCustomer"><option value="">— নগদ ক্রেতা —</option>${customerOptions}</select>
+    </div>
+    <div class="field">
+      <label>পরিশোধিত পরিমাণ</label>
+      <input type="number" id="invPaid" value="${total}" min="0">
+    </div>
+    <div style="background:var(--steel-100); border-radius:8px; padding:12px 14px; font-size:13.5px;">
+      <div style="display:flex;justify-content:space-between;"><span>সর্বমোট বিল</span><b class="mono">${fmt(total)}</b></div>
+    </div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+    <button class="btn btn-primary" onclick="confirmInvoice(${total})">ইনভয়েস প্রিন্ট করুন</button>
+  `);
+}
+function confirmInvoice(total){
+  const custId = document.getElementById('invCustomer').value;
+  const paid = Math.min(total, Math.max(0, parseInt(document.getElementById('invPaid').value) || 0));
+  const due = total - paid;
+ 
+  // স্টক কমানো
+  cart.forEach(item => { inventory[item.brand][item.mm][item.size].stock -= item.qty; });
+ 
+  const invoice = { id: invoiceCounter++, items:[...cart], total, paid, due, customer: custId ? ledger.find(l=>l.id==custId).name : 'নগদ ক্রেতা', date: new Date() };
+  invoices.push(invoice);
+ 
+  // বাকি খাতা আপডেট — সিরিয়াল/পজিশন অপরিবর্তিত থাকবে, শুধু due যোগ হবে
+  if(custId && due > 0){
+    const cust = ledger.find(l => l.id == custId);
+    cust.due += due;
+  }
+ 
+  closeModal();
+  printInvoice(invoice);
+  cart = [];
+  posStep = 1; posMM = null; posBrand = null;
+  showToast('ইনভয়েস তৈরি হয়েছে');
+  switchView(currentView === 'sales' ? 'sales' : currentView);
+}
+ 
+function printInvoice(inv){
+  const rows = inv.items.map(it => `
+    <tr>
+      <td>${it.brand} · ${it.mm}মিমি · ${it.size}ফুট</td>
+      <td class="r">${it.qty}</td>
+      <td class="r">${fmt(it.sellPrice)}</td>
+      <td class="r">${fmt(it.qty*it.sellPrice)}</td>
+    </tr>`).join('');
+  document.getElementById('printArea').innerHTML = `
+    <div class="invoice-box">
+      <div class="ihead">
+        <h2>করিম টিন হাউস</h2>
+        <p>বাজার রোড, সাভার, ঢাকা · ফোনঃ ০১৭xx-xxxxxx</p>
+        <p>ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString('bn-BD')} · ক্রেতা: ${inv.customer}</p>
+      </div>
+      <table class="itbl">
+        <thead><tr><th>পণ্য</th><th class="r">পরিমাণ</th><th class="r">দর</th><th class="r">মোট</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="itotal"><span>সর্বমোট</span><span>${fmt(inv.total)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:6px;color:var(--steel-700);">
+        <span>পরিশোধিত: ${fmt(inv.paid)}</span><span>বাকি: ${fmt(inv.due)}</span>
+      </div>
+    </div>`;
+  window.print();
+}
+ 
+/* ============================================================
+   স্টক তালিকা (ম্যানেজমেন্ট)
+   ============================================================ */
+function renderStock(){
+  const q = stockSearch.trim().toLowerCase();
+  let rows = '';
+  BRANDS.forEach(brand => {
+    Object.keys(inventory[brand]).sort((a,b)=>a-b).forEach(mm => {
+      Object.keys(inventory[brand][mm]).sort((a,b)=>a-b).forEach(sz => {
+        if(q !== '' && !(brand.toLowerCase().includes(q) || String(mm).includes(q) || String(sz).includes(q))) return;
+        const v = inventory[brand][mm][sz];
+        rows += `<tr>
+          <td>${brand}</td><td class="num">${mm} মিমি</td><td class="num">${sz} ফুট</td>
+          <td class="num">${fmt(v.buy)}</td><td class="num">${fmt(v.sell)}</td>
+          <td class="num">${v.stock}</td>
+          <td>${v.stock <= 3 ? `<span class="pill low">কম স্টক</span>` : `<span class="pill ok">স্বাভাবিক</span>`}</td>
+          <td class="tbl-actions"><button onclick="editStockPrompt('${brand}',${mm},${sz})">এডিট</button></td>
+        </tr>`;
+      });
+    });
+  });
+  return `
+    <div class="mgmt-toolbar">
+      <div style="font-size:13px;color:var(--steel-500);">সকল ব্র্যান্ড, মিলিমিটার ও সাইজ অনুযায়ী স্টক ও মূল্য তালিকা</div>
+      <button class="btn btn-primary" onclick="addStockPrompt()">+ নতুন এন্ট্রি</button>
+    </div>
+    <div class="search-bar ${q ? 'has-val' : ''}">
+      <span class="sic">🔍</span>
+      <input type="text" id="stockSearchInput" value="${stockSearch}" placeholder="ব্র্যান্ড, মিমি বা সাইজ দিয়ে সার্চ করুন..."
+        oninput="stockSearchInputFn(this.value)" autocomplete="off">
+      <span class="sclear" onclick="stockSearchInputFn('')">✕</span>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>ব্র্যান্ড</th><th>মিমি</th><th>সাইজ</th><th>ক্রয়মূল্য</th><th>বিক্রয়মূল্য</th><th>স্টক</th><th>অবস্থা</th><th></th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="8" class="no-match">🔍 কোনো ফলাফল পাওয়া যায়নি</td></tr>`}</tbody>
+    </table>`;
+}
+function stockSearchInputFn(val){
+  stockSearch = val;
+  render();
+  const el = document.getElementById('stockSearchInput');
+  if(el){ el.focus(); const p = el.value.length; el.setSelectionRange(p,p); }
+}
+function editStockPrompt(brand, mm, sz){
+  const v = inventory[brand][mm][sz];
+  openModal(`এডিট — ${brand} · ${mm}মিমি · ${sz}ফুট`, `
+    <div class="field"><label>ক্রয়মূল্য (৳)</label><input type="number" id="editBuy" value="${v.buy}"></div>
+    <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="editSell" value="${v.sell}"></div>
+    <div class="field"><label>স্টক (পিস)</label><input type="number" id="editStock" value="${v.stock}"></div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+    <button class="btn btn-primary" onclick="saveStockEdit('${brand}',${mm},${sz})">সংরক্ষণ করুন</button>
+  `);
+}
+function saveStockEdit(brand, mm, sz){
+  const v = inventory[brand][mm][sz];
+  v.buy = parseInt(document.getElementById('editBuy').value) || v.buy;
+  v.sell = parseInt(document.getElementById('editSell').value) || v.sell;
+  v.stock = parseInt(document.getElementById('editStock').value) ?? v.stock;
+  closeModal(); render(); showToast('আপডেট হয়েছে');
+}
+function addStockPrompt(){
+  const brandOptions = BRANDS.map(b=>`<option value="${b}">${b}</option>`).join('');
+  const mmOptions = MM_LIST.map(m=>`<option value="${m}">${m} মিমি</option>`).join('');
+  const szOptions = SIZE_LIST.map(s=>`<option value="${s}">${s} ফুট</option>`).join('');
+  openModal('নতুন স্টক এন্ট্রি', `
+    <div class="field"><label>ব্র্যান্ড</label><select id="newBrand">${brandOptions}</select></div>
+    <div class="field"><label>মিলিমিটার</label><select id="newMM">${mmOptions}</select></div>
+    <div class="field"><label>সাইজ</label><select id="newSize">${szOptions}</select></div>
+    <div class="field"><label>ক্রয়মূল্য (৳)</label><input type="number" id="newBuy" value="500"></div>
+    <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="newSell" value="570"></div>
+    <div class="field"><label>স্টক (পিস)</label><input type="number" id="newStock" value="10"></div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+    <button class="btn btn-primary" onclick="saveNewStock()">যোগ করুন</button>
+  `);
+}
+function saveNewStock(){
+  const brand = document.getElementById('newBrand').value;
+  const mm = document.getElementById('newMM').value;
+  const sz = document.getElementById('newSize').value;
+  if(!inventory[brand][mm]) inventory[brand][mm] = {};
+  inventory[brand][mm][sz] = {
+    buy: parseInt(document.getElementById('newBuy').value)||0,
+    sell: parseInt(document.getElementById('newSell').value)||0,
+    stock: parseInt(document.getElementById('newStock').value)||0,
+  };
+  closeModal(); render(); showToast('নতুন এন্ট্রি যোগ হয়েছে');
+}
+ 
+/* ============================================================
+   বাকির খাতা — সিরিয়াল/পজিশন অপরিবর্তিত (টগল হবে না)
+   ============================================================ */
+function renderLedger(){
+  return `
+    <div class="ledger-toolbar">
+      <div style="font-size:13px;color:var(--steel-500);">যে সিরিয়ালে গ্রাহক যুক্ত হয়েছে, পরিশোধ করলেও সেই সিরিয়ালেই থাকবে</div>
+      <button class="btn btn-primary" onclick="addCustomerPrompt()">+ নতুন গ্রাহক</button>
+    </div>
+    <div class="ledger-list">
+      ${ledger.map((l, idx) => `
+        <div class="ledger-row">
+          <div class="ledger-serial">${idx+1}</div>
+          <div class="ledger-info">
+            <div class="lname">${l.name}</div>
+            <div class="lmeta">${l.address} · ${l.phone}</div>
+          </div>
+          <div class="ledger-due">
+            <div class="amt ${l.due===0?'clear':''}">${l.due===0?'পরিশোধিত':fmt(l.due)}</div>
+            <div class="lbl">${l.due===0?'কোনো বাকি নেই':'বকেয়া'}</div>
+          </div>
+          <button class="btn btn-outline" onclick="paymentPrompt(${l.id})">পেমেন্ট</button>
+        </div>`).join('')}
+    </div>`;
+}
+function addCustomerPrompt(){
+  openModal('নতুন গ্রাহক যুক্ত করুন', `
+    <div class="field"><label>নাম</label><input type="text" id="custName" placeholder="যেমনঃ মোঃ করিম মিয়া"></div>
+    <div class="field"><label>ঠিকানা</label><input type="text" id="custAddr" placeholder="যেমনঃ বাজার রোড, সাভার"></div>
+    <div class="field"><label>মোবাইল নাম্বার</label><input type="text" id="custPhone" placeholder="01xxx-xxxxxx"></div>
+    <div class="field"><label>শুরুর বাকি (থাকলে)</label><input type="number" id="custDue" value="0"></div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+    <button class="btn btn-primary" onclick="saveNewCustomer()">যুক্ত করুন</button>
+  `);
+}
+function saveNewCustomer(){
+  const name = document.getElementById('custName').value.trim();
+  if(!name){ showToast('নাম আবশ্যক'); return; }
+  // নতুন গ্রাহক সবসময় তালিকার শেষে যুক্ত হবে — বিদ্যমান কারো সিরিয়াল পরিবর্তন হবে না
+  ledger.push({
+    id: ledgerNextId++, name,
+    address: document.getElementById('custAddr').value.trim(),
+    phone: document.getElementById('custPhone').value.trim(),
+    due: parseInt(document.getElementById('custDue').value) || 0,
+    paidTotal: 0,
+  });
+  closeModal(); render(); showToast('গ্রাহক যুক্ত হয়েছে');
+}
+function paymentPrompt(id){
+  const cust = ledger.find(l => l.id === id);
+  openModal(`পেমেন্ট — ${cust.name}`, `
+    <div style="background:var(--steel-100);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13.5px;display:flex;justify-content:space-between;">
+      <span>বর্তমান বাকি</span><b class="mono">${fmt(cust.due)}</b>
+    </div>
+    <div class="field"><label>পরিশোধের পরিমাণ (৳)</label><input type="number" id="payAmt" value="${cust.due}" min="0" max="${cust.due}"></div>
+    <div style="font-size:11.5px;color:var(--steel-500);">পরিশোধ করার পরও এই গ্রাহক তালিকার একই সিরিয়ালে (${ledger.indexOf(cust)+1} নং) থাকবে — উপরে-নিচে যাবে না।</div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+    <button class="btn btn-primary" onclick="applyPayment(${id})">জমা করুন</button>
+  `);
+}
+function applyPayment(id){
+  const cust = ledger.find(l => l.id === id);
+  const amt = Math.min(cust.due, Math.max(0, parseInt(document.getElementById('payAmt').value) || 0));
+  cust.due -= amt;
+  cust.paidTotal += amt;
+  // লক্ষ্য করুনঃ ledger অ্যারের ক্রম/ইনডেক্স স্পর্শ করা হয়নি — সিরিয়াল অপরিবর্তিত থাকে
+  closeModal(); render(); showToast(`${fmt(amt)} জমা হয়েছে`);
+}
+ 
+/* ============================================================
+   ইনভয়েস হিস্ট্রি
+   ============================================================ */
+function renderInvoices(){
+  if(invoices.length === 0) return `<div class="empty-state"><div class="ic">🗂️</div>এখনো কোনো ইনভয়েস তৈরি হয়নি<br><span style="font-size:12px;">"বিক্রয়" থেকে প্রথম ইনভয়েস তৈরি করুন</span></div>`;
+  return `<table class="tbl">
+    <thead><tr><th>ইনভয়েস</th><th>ক্রেতা</th><th>তারিখ</th><th>আইটেম</th><th class="r">সর্বমোট</th><th class="r">বাকি</th><th></th></tr></thead>
+    <tbody>${invoices.slice().reverse().map(inv => `
+      <tr>
+        <td class="num">#${inv.id}</td><td>${inv.customer}</td>
+        <td>${new Date(inv.date).toLocaleDateString('bn-BD')}</td>
+        <td>${inv.items.length} টি</td>
+        <td class="num">${fmt(inv.total)}</td>
+        <td class="num" style="color:${inv.due>0?'var(--red)':'var(--green)'}">${fmt(inv.due)}</td>
+        <td class="tbl-actions"><button onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">প্রিন্ট</button></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+ 
+/* ============================================================
+   MODAL / TOAST HELPERS
+   ============================================================ */
+function openModal(title, body, foot){
+  document.getElementById('modalBox').innerHTML = `
+    <div class="modal-head"><h3>${title}</h3><span class="modal-close" onclick="closeModal()">✕</span></div>
+    <div class="modal-body">${body}</div>
+    <div class="modal-foot">${foot}</div>`;
+  document.getElementById('modalOverlay').classList.add('active');
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('active'); }
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>
+ 
