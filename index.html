@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="bn">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>করিম টিন হাউস — ম্যানেজমেন্ট সিস্টেম</title>
+<title> টিন হাউস — ম্যানেজমেন্ট সিস্টেম</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -149,6 +150,25 @@ input, select{ font-family:inherit; }
 .search-bar.has-val .sclear{ display:block; }
 .no-match{ padding:26px; text-align:center; color:var(--steel-500); font-size:13.5px; }
  
+.search-results{ display:flex; flex-direction:column; gap:8px; }
+.result-row{
+  background:white; border:1px solid var(--steel-100); border-radius:var(--radius);
+  padding:12px 14px; display:flex; align-items:center; gap:12px;
+}
+.result-row.out{ opacity:0.55; }
+.result-serial{
+  width:28px; height:28px; border-radius:50%; background:var(--steel-100); color:var(--steel-700);
+  display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono'; font-weight:700; font-size:12px; flex-shrink:0;
+}
+.result-info{ flex:1; min-width:0; }
+.result-info .rname{ font-weight:700; font-size:14px; }
+.result-info .rname .rdim{ font-weight:500; color:var(--steel-500); font-size:12.5px; }
+.result-info .rmeta{ font-size:12px; color:var(--steel-500); margin-top:3px; }
+.result-info .rmeta b{ color:var(--ink); font-family:'JetBrains Mono'; font-weight:600; }
+.result-add{ flex-shrink:0; background:var(--steel-900); color:white; padding:9px 14px; border-radius:7px; font-size:12.5px; font-weight:600; }
+.result-add:hover{ background:var(--rust); }
+.result-add:disabled{ background:var(--steel-300); pointer-events:none; }
+ 
 .breadcrumb{ display:flex; align-items:center; gap:8px; margin-bottom:18px; font-size:13px; color:var(--steel-500); flex-wrap:wrap; }
 .crumb-btn{ color:var(--rust); font-weight:600; }
 .crumb-btn:hover{ text-decoration:underline; }
@@ -227,6 +247,8 @@ input, select{ font-family:inherit; }
 .btn-outline{ background:white; border:1.5px solid var(--steel-100); color:var(--ink); }
 .btn-outline:hover{ border-color:var(--rust); color:var(--rust); }
 .btn-ghost{ color:var(--steel-500); font-size:13px; }
+.logout-btn{ background:transparent; border:1.5px solid rgba(255,255,255,0.35); color:white; }
+.logout-btn:hover{ background:rgba(255,255,255,0.1); border-color:white; }
  
 .modal-overlay{ position:fixed; inset:0; background:rgba(20,24,27,0.55); display:none; align-items:center; justify-content:center; z-index:80; padding:20px; }
 .modal-overlay.active{ display:flex; }
@@ -292,8 +314,9 @@ input, select{ font-family:inherit; }
  
 @media print{
   body *{ visibility:hidden; }
-  #printArea, #printArea *{ visibility:visible; }
-  #printArea{ position:absolute; top:0; left:0; width:100%; }
+  #printArea{ display:block !important; visibility:visible; position:absolute; top:0; left:0; width:100%; margin:0; padding:0; }
+  #printArea *{ visibility:visible; }
+  .invoice-box{ border:none; max-width:100%; padding:0 18px; }
 }
 #printArea{ display:none; }
  
@@ -326,7 +349,7 @@ input, select{ font-family:inherit; }
     <div class="wave-strip top"></div>
     <div class="lock-body">
       <div class="lock-icon">🔒</div>
-      <h1>টিন হাউস</h1>
+      <h1>করিম টিন হাউস</h1>
       <p>দোকান ম্যানেজমেন্ট সিস্টেম</p>
       <div class="pin-dots" id="pinDots"></div>
       <div class="pin-pad" id="pinPad"></div>
@@ -353,7 +376,7 @@ input, select{ font-family:inherit; }
         <h2 id="pageTitle">ড্যাশবোর্ড</h2>
         <div class="meta" id="pageMeta"></div>
       </div>
-      <button class="btn btn-outline" onclick="logout()" style="color:white;border-color:rgba(255,255,255,0.25);">লগ-আউট</button>
+      <button class="btn logout-btn" onclick="logout()">🔓 লগ-আউট</button>
     </div>
     <div class="content" id="content"></div>
   </div>
@@ -551,73 +574,97 @@ function renderDashboard(){
    বিক্রয় (POS): mm → brand → size → cart
    ============================================================ */
 function renderSales(){
-  let stepHtml = '';
-  const crumbs = [`<button class="crumb-btn" onclick="posGoStep(1)">মিলিমিটার</button>`];
-  if(posMM) crumbs.push(`› <button class="crumb-btn" onclick="posGoStep(2)">${posMM} মিমি</button>`);
-  if(posBrand) crumbs.push(`› <span>${posBrand}</span>`);
- 
   const q = posSearch.trim().toLowerCase();
-  let searchPlaceholder = '';
  
-  if(posStep === 1){
-    searchPlaceholder = 'মিলিমিটার সার্চ করুন (যেমনঃ ১২)... এন্টার চাপুন সরাসরি যেতে';
-    const filtered = MM_LIST.filter(mm => q === '' || String(mm).includes(q));
-    stepHtml = filtered.length === 0 ? `<div class="no-match">🔍 কোনো মিলিমিটার পাওয়া যায়নি</div>` :
-      `<div class="mm-grid">` + filtered.map(mm => {
-      let brandCount = 0;
-      BRANDS.forEach(b => { if(inventory[b][mm]) brandCount++; });
-      return `<button class="mm-tile" onclick="posSelectMM(${mm})">
-        <div class="num">${mm}</div><div class="unit">মিলিমিটার</div>
-        <div class="count">${brandCount} টি ব্র্যান্ডে আছে</div>
-      </button>`;
-    }).join('') + `</div>`;
-  } else if(posStep === 2){
-    searchPlaceholder = 'ব্র্যান্ড সার্চ করুন...';
-    const availableBrands = BRANDS.filter(b => inventory[b][posMM] && (q === '' || b.toLowerCase().includes(q)));
-    stepHtml = availableBrands.length === 0 ? `<div class="no-match">🔍 কোনো ব্র্যান্ড পাওয়া যায়নি</div>` :
-      `<div class="brand-grid">` + availableBrands.map(b => {
-      const sizes = inventory[b][posMM];
-      const sizeCount = Object.keys(sizes).length;
-      const totalStock = Object.values(sizes).reduce((s,v)=>s+v.stock,0);
-      return `<button class="brand-tile" onclick="posSelectBrand('${b}')">
-        <div class="bname">${b}</div>
-        <div class="bmeta">${sizeCount} টি সাইজ · ${totalStock} পিস স্টক</div>
-      </button>`;
-    }).join('') + `</div>`;
-  } else if(posStep === 3){
-    searchPlaceholder = 'সাইজ (ফুট) সার্চ করুন...';
-    const sizes = inventory[posBrand][posMM];
-    const filteredSizes = Object.keys(sizes).sort((a,b)=>a-b).filter(sz => q === '' || String(sz).includes(q));
-    stepHtml = filteredSizes.length === 0 ? `<div class="no-match">🔍 কোনো সাইজ পাওয়া যায়নি</div>` :
-      `<div class="size-grid">` + filteredSizes.map(sz => {
-      const v = sizes[sz];
-      const out = v.stock === 0;
-      return `<div class="size-card ${out?'out':''}">
-        <div class="stitle">${sz} ফুট</div>
-        <div class="srow"><span>ক্রয়মূল্য</span><b>${fmt(v.buy)}</b></div>
-        <div class="srow"><span>বিক্রয়মূল্য</span><b>${fmt(v.sell)}</b></div>
-        <div class="srow"><span>স্টক</span><b class="${v.stock<=3?'stock-low':''}">${v.stock} পিস</b></div>
-        <div class="add-btn" onclick="addToCart('${posBrand}', ${posMM}, ${sz})">${out?'স্টক নেই':'+ কার্টে যোগ করুন'}</div>
-      </div>`;
-    }).join('') + `</div>`;
+  const searchBar = `
+    <div class="search-bar ${q ? 'has-val' : ''}">
+      <span class="sic">🔍</span>
+      <input type="text" id="posSearchInput" value="${posSearch}" placeholder="যেকোনো পণ্য সার্চ করুন — ব্র্যান্ড, মিমি বা সাইজ (যেমনঃ আকিজ, ১২, ৮ ফুট)"
+        oninput="posSearchInput(this.value)" autocomplete="off">
+      <span class="sclear" onclick="posSearchInput('')">✕</span>
+    </div>`;
+ 
+  let bodyHtml;
+ 
+  if(q !== ''){
+    /* ---- সর্বজনীন সার্চ: সব ব্র্যান্ড/মিমি/সাইজ থেকে মিলে যাওয়া সব পণ্য একটা সিরিয়াল লিস্টে ---- */
+    const results = [];
+    BRANDS.forEach(brand => {
+      Object.keys(inventory[brand]).forEach(mm => {
+        Object.keys(inventory[brand][mm]).forEach(sz => {
+          const hay = (brand + ' ' + mm + ' ' + sz).toLowerCase();
+          if(hay.includes(q)) results.push({ brand, mm, sz, v: inventory[brand][mm][sz] });
+        });
+      });
+    });
+    results.sort((a,b) => a.brand.localeCompare(b.brand,'bn') || a.mm-b.mm || a.sz-b.sz);
+ 
+    bodyHtml = results.length === 0 ? `<div class="no-match">🔍 "${posSearch}" এর সাথে মিলে এমন কোনো পণ্য পাওয়া যায়নি</div>` :
+      `<div class="search-results">` + results.map((r, i) => {
+        const out = r.v.stock === 0;
+        return `<div class="result-row ${out?'out':''}">
+          <div class="result-serial">${i+1}</div>
+          <div class="result-info">
+            <div class="rname">${r.brand} <span class="rdim">· ${r.mm} মিমি · ${r.sz} ফুট</span></div>
+            <div class="rmeta">ক্রয়ঃ <b>${fmt(r.v.buy)}</b> &nbsp;বিক্রয়ঃ <b>${fmt(r.v.sell)}</b> &nbsp;স্টকঃ <b class="${r.v.stock<=3?'stock-low':''}">${r.v.stock} পিস</b></div>
+          </div>
+          <button class="result-add" ${out?'disabled':''} onclick="addToCart('${r.brand}', ${r.mm}, ${r.sz})">${out?'স্টক নেই':'+ যোগ করুন'}</button>
+        </div>`;
+      }).join('') + `</div>`;
+  } else {
+    /* ---- সার্চ খালি থাকলে ধাপে ধাপে ব্রাউজ করুন (মিমি → ব্র্যান্ড → সাইজ) ---- */
+    const crumbs = [`<button class="crumb-btn" onclick="posGoStep(1)">মিলিমিটার</button>`];
+    if(posMM) crumbs.push(`› <button class="crumb-btn" onclick="posGoStep(2)">${posMM} মিমি</button>`);
+    if(posBrand) crumbs.push(`› <span>${posBrand}</span>`);
+ 
+    let stepHtml = '';
+    if(posStep === 1){
+      stepHtml = `<div class="mm-grid">` + MM_LIST.map(mm => {
+        let brandCount = 0;
+        BRANDS.forEach(b => { if(inventory[b][mm]) brandCount++; });
+        return `<button class="mm-tile" onclick="posSelectMM(${mm})">
+          <div class="num">${mm}</div><div class="unit">মিলিমিটার</div>
+          <div class="count">${brandCount} টি ব্র্যান্ডে আছে</div>
+        </button>`;
+      }).join('') + `</div>`;
+    } else if(posStep === 2){
+      const availableBrands = BRANDS.filter(b => inventory[b][posMM]);
+      stepHtml = `<div class="brand-grid">` + availableBrands.map(b => {
+        const sizes = inventory[b][posMM];
+        const sizeCount = Object.keys(sizes).length;
+        const totalStock = Object.values(sizes).reduce((s,v)=>s+v.stock,0);
+        return `<button class="brand-tile" onclick="posSelectBrand('${b}')">
+          <div class="bname">${b}</div>
+          <div class="bmeta">${sizeCount} টি সাইজ · ${totalStock} পিস স্টক</div>
+        </button>`;
+      }).join('') + `</div>`;
+    } else if(posStep === 3){
+      const sizes = inventory[posBrand][posMM];
+      stepHtml = `<div class="size-grid">` + Object.keys(sizes).sort((a,b)=>a-b).map(sz => {
+        const v = sizes[sz];
+        const out = v.stock === 0;
+        return `<div class="size-card ${out?'out':''}">
+          <div class="stitle">${sz} ফুট</div>
+          <div class="srow"><span>ক্রয়মূল্য</span><b>${fmt(v.buy)}</b></div>
+          <div class="srow"><span>বিক্রয়মূল্য</span><b>${fmt(v.sell)}</b></div>
+          <div class="srow"><span>স্টক</span><b class="${v.stock<=3?'stock-low':''}">${v.stock} পিস</b></div>
+          <div class="add-btn" onclick="addToCart('${posBrand}', ${posMM}, ${sz})">${out?'স্টক নেই':'+ কার্টে যোগ করুন'}</div>
+        </div>`;
+      }).join('') + `</div>`;
+    }
+    bodyHtml = `<div class="breadcrumb">${crumbs.join(' ')}</div>${stepHtml}`;
   }
  
   return `
     <div class="pos-layout">
       <div class="pos-main">
-        <div class="breadcrumb">${crumbs.join(' ')}</div>
-        <div class="search-bar ${q ? 'has-val' : ''}">
-          <span class="sic">🔍</span>
-          <input type="text" id="posSearchInput" value="${posSearch}" placeholder="${searchPlaceholder}"
-            oninput="posSearchInput(this.value)" onkeydown="posSearchKey(event)" autocomplete="off">
-          <span class="sclear" onclick="posSearchInput('')">✕</span>
-        </div>
-        ${stepHtml}
+        ${searchBar}
+        ${bodyHtml}
       </div>
       <div class="cart-panel">
         <div class="cart-head"><h3>🧾 বর্তমান বিক্রয়</h3><span class="mono" style="font-size:12px;">${cart.length} আইটেম</span></div>
         <div class="cart-items">
-          ${cart.length === 0 ? `<div class="cart-empty">কার্ট খালি — একটি সাইজ যোগ করুন</div>` :
+          ${cart.length === 0 ? `<div class="cart-empty">কার্ট খালি — একটি পণ্য যোগ করুন</div>` :
             cart.map((item, idx) => `
             <div class="cart-item">
               <div class="cart-item-top">
@@ -641,27 +688,15 @@ function renderSales(){
       </div>
     </div>`;
 }
-function posGoStep(step){ posStep = step; posSearch=''; if(step===1){posMM=null;posBrand=null;} if(step===2){posBrand=null;} render(); }
-function posSelectMM(mm){ posMM = mm; posStep = 2; posSearch=''; render(); }
-function posSelectBrand(b){ posBrand = b; posStep = 3; posSearch=''; render(); }
+function posGoStep(step){ posStep = step; if(step===1){posMM=null;posBrand=null;} if(step===2){posBrand=null;} render(); }
+function posSelectMM(mm){ posMM = mm; posStep = 2; render(); }
+function posSelectBrand(b){ posBrand = b; posStep = 3; render(); }
  
 function posSearchInput(val){
   posSearch = val;
   render();
   const el = document.getElementById('posSearchInput');
   if(el){ el.focus(); const p = el.value.length; el.setSelectionRange(p,p); }
-}
-function posSearchKey(e){
-  if(e.key !== 'Enter') return;
-  const q = posSearch.trim();
-  if(q === '') return;
-  if(posStep === 1){
-    const num = parseInt(q);
-    if(MM_LIST.includes(num)) posSelectMM(num);
-  } else if(posStep === 2){
-    const match = BRANDS.filter(b => inventory[b][posMM] && b.toLowerCase().includes(q.toLowerCase()));
-    if(match.length === 1) posSelectBrand(match[0]);
-  }
 }
  
 function addToCart(brand, mm, size){
