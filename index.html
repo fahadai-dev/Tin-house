@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -9,28 +8,28 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#161B1F;
-  --steel-900:#1E262C;
-  --steel-700:#3A464E;
-  --steel-500:#6B7A82;
-  --steel-300:#AEB9BD;
-  --steel-100:#E9ECED;
-  --paper:#F1EFE9;
-  --rust:#BE4A22;
-  --rust-dark:#9A3A19;
-  --amber:#E0A030;
-  --green:#3C7A54;
-  --red:#B23B2E;
-  --radius:10px;
-  --wave-h:14px;
+ --ink:#161B1F;
+ --steel-900:#1E262C;
+ --steel-700:#3A464E;
+ --steel-500:#6B7A82;
+ --steel-300:#AEB9BD;
+ --steel-100:#E9ECED;
+ --paper:#F1EFE9;
+ --rust:#BE4A22;
+ --rust-dark:#9A3A19;
+ --amber:#E0A030;
+ --green:#3C7A54;
+ --red:#B23B2E;
+ --radius:10px;
+ --wave-h:14px;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
 html,body{height:100%;}
 body{
-  font-family:'Hind Siliguri', sans-serif;
-  background:var(--paper);
-  color:var(--ink);
-  -webkit-font-smoothing:antialiased;
+ font-family:'Hind Siliguri', sans-serif;
+ background:var(--paper);
+ color:var(--ink);
+ -webkit-font-smoothing:antialiased;
 }
 h1,h2,h3,.display{ font-family:'Baloo Da 2', sans-serif; }
 .mono{ font-family:'JetBrains Mono', monospace; }
@@ -39,42 +38,42 @@ input, select{ font-family:inherit; }
  
 /* corrugated wave pattern — the ঢেউ (wave) of ঢেউটিন, used as the app's signature motif */
 .wave-strip{
-  height:var(--wave-h);
-  width:100%;
-  background-image: repeating-linear-gradient(90deg,
-    transparent 0px, transparent 2px,
-    rgba(0,0,0,0.10) 2px, rgba(0,0,0,0.10) 4px);
-  background-color:var(--rust);
-  -webkit-mask-image: repeating-radial-gradient(circle at 8px 0, transparent 0 4px, black 4.5px 8px);
-  mask-image: repeating-radial-gradient(circle at 8px 0, transparent 0 4px, black 4.5px 8px);
+ height:var(--wave-h);
+ width:100%;
+ background-image: repeating-linear-gradient(90deg,
+ transparent 0px, transparent 2px,
+ rgba(0,0,0,0.10) 2px, rgba(0,0,0,0.10) 4px);
+ background-color:var(--rust);
+ -webkit-mask-image: repeating-radial-gradient(circle at 8px 0, transparent 0 4px, black 4.5px 8px);
+ mask-image: repeating-radial-gradient(circle at 8px 0, transparent 0 4px, black 4.5px 8px);
 }
 .wave-strip.top{ -webkit-mask-position: 0 -6px; mask-position:0 -6px; }
 .wave-strip.bottom{ -webkit-mask-position: 0 6px; mask-position:0 6px; transform:scaleY(-1); }
  
 /* ================= LOCK SCREEN ================= */
 #lockScreen{
-  position:fixed; inset:0; z-index:100;
-  background:var(--steel-900);
-  display:flex; align-items:center; justify-content:center;
-  background-image:
-    linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%),
-    linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%);
-  background-size: 40px 40px;
+ position:fixed; inset:0; z-index:100;
+ background:var(--steel-900);
+ display:flex; align-items:center; justify-content:center;
+ background-image:
+ linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+ linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%);
+ background-size: 40px 40px;
 }
 .lock-card{
-  width:340px; max-width:90vw;
-  background:var(--ink);
-  border-radius:var(--radius);
-  overflow:hidden;
-  box-shadow:0 30px 60px rgba(0,0,0,0.5);
+ width:340px; max-width:90vw;
+ background:var(--ink);
+ border-radius:var(--radius);
+ overflow:hidden;
+ box-shadow:0 30px 60px rgba(0,0,0,0.5);
 }
 .lock-body{ padding:32px 28px 28px; text-align:center; }
 .lock-icon{
-  width:56px; height:56px; margin:0 auto 14px;
-  border-radius:50%;
-  background:var(--rust);
-  display:flex; align-items:center; justify-content:center;
-  color:white; font-size:24px;
+ width:56px; height:56px; margin:0 auto 14px;
+ border-radius:50%;
+ background:var(--rust);
+ display:flex; align-items:center; justify-content:center;
+ color:white; font-size:24px;
 }
 .lock-card h1{ color:white; font-size:22px; margin-bottom:4px; }
 .lock-card p{ color:var(--steel-300); font-size:13px; margin-bottom:22px; }
@@ -83,8 +82,8 @@ input, select{ font-family:inherit; }
 .pin-dot.filled{ background:var(--amber); border-color:var(--amber); }
 .pin-pad{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
 .pin-key{
-  padding:16px 0; border-radius:8px; background:var(--steel-900);
-  color:white; font-size:19px; font-weight:600; transition:.1s;
+ padding:16px 0; border-radius:8px; background:var(--steel-900);
+ color:white; font-size:19px; font-weight:600; transition:.1s;
 }
 .pin-key:active{ background:var(--rust); }
 .pin-key.clear{ color:var(--steel-300); font-size:13px; }
@@ -95,20 +94,20 @@ input, select{ font-family:inherit; }
 #app.active{ display:flex; }
  
 .sidebar{
-  width:220px; flex-shrink:0;
-  background:var(--steel-900);
-  color:white; display:flex; flex-direction:column;
-  position:sticky; top:0; height:100vh;
+ width:220px; flex-shrink:0;
+ background:var(--steel-900);
+ color:white; display:flex; flex-direction:column;
+ position:sticky; top:0; height:100vh;
 }
 .brand-block{ padding:22px 20px 16px; }
 .brand-block .display{ font-size:19px; font-weight:700; line-height:1.2; }
 .brand-block .sub{ font-size:11px; color:var(--steel-300); margin-top:2px; letter-spacing:.03em; }
 .nav-list{ list-style:none; padding:10px 12px; flex:1; }
 .nav-item{
-  display:flex; align-items:center; gap:11px;
-  padding:11px 12px; border-radius:8px; margin-bottom:3px;
-  color:var(--steel-300); font-size:14.5px; font-weight:500;
-  transition:.12s;
+ display:flex; align-items:center; gap:11px;
+ padding:11px 12px; border-radius:8px; margin-bottom:3px;
+ color:var(--steel-300); font-size:14.5px; font-weight:500;
+ transition:.12s;
 }
 .nav-item .ic{ font-size:17px; width:20px; text-align:center; }
 .nav-item:hover{ background:rgba(255,255,255,0.05); color:white; }
@@ -117,8 +116,8 @@ input, select{ font-family:inherit; }
  
 .main{ flex:1; min-width:0; display:flex; flex-direction:column; }
 .topbar{
-  background:var(--ink); color:white;
-  padding:16px 28px; display:flex; align-items:center; justify-content:space-between;
+ background:var(--ink); color:white;
+ padding:16px 28px; display:flex; align-items:center; justify-content:space-between;
 }
 .topbar h2{ font-size:19px; font-weight:700; }
 .topbar .meta{ font-size:12px; color:var(--steel-300); margin-top:2px; font-weight:400; font-family:'Hind Siliguri'; }
@@ -127,11 +126,11 @@ input, select{ font-family:inherit; }
 /* ================= DASHBOARD ================= */
 .stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
 .stat-card{
-  background:white; border-radius:var(--radius); padding:18px;
-  border:1px solid var(--steel-100); position:relative; overflow:hidden;
+ background:white; border-radius:var(--radius); padding:18px;
+ border:1px solid var(--steel-100); position:relative; overflow:hidden;
 }
 .stat-card::before{
-  content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--accent, var(--rust));
+ content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--accent, var(--rust));
 }
 .stat-card .lbl{ font-size:12px; color:var(--steel-500); font-weight:600; }
 .stat-card .val{ font-family:'JetBrains Mono'; font-size:24px; font-weight:700; margin-top:6px; }
@@ -141,8 +140,8 @@ input, select{ font-family:inherit; }
 /* ================= SALES / POS ================= */
 .search-bar{ position:relative; margin-bottom:16px; }
 .search-bar input{
-  width:100%; padding:12px 14px 12px 40px; border-radius:9px; border:1.5px solid var(--steel-100);
-  font-size:14.5px; background:white;
+ width:100%; padding:12px 14px 12px 40px; border-radius:9px; border:1.5px solid var(--steel-100);
+ font-size:14.5px; background:white;
 }
 .search-bar input:focus{ outline:none; border-color:var(--rust); }
 .search-bar .sic{ position:absolute; left:13px; top:50%; transform:translateY(-50%); font-size:15px; color:var(--steel-500); }
@@ -152,13 +151,13 @@ input, select{ font-family:inherit; }
  
 .search-results{ display:flex; flex-direction:column; gap:8px; }
 .result-row{
-  background:white; border:1px solid var(--steel-100); border-radius:var(--radius);
-  padding:12px 14px; display:flex; align-items:center; gap:12px;
+ background:white; border:1px solid var(--steel-100); border-radius:var(--radius);
+ padding:12px 14px; display:flex; align-items:center; gap:12px;
 }
 .result-row.out{ opacity:0.55; }
 .result-serial{
-  width:28px; height:28px; border-radius:50%; background:var(--steel-100); color:var(--steel-700);
-  display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono'; font-weight:700; font-size:12px; flex-shrink:0;
+ width:28px; height:28px; border-radius:50%; background:var(--steel-100); color:var(--steel-700);
+ display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono'; font-weight:700; font-size:12px; flex-shrink:0;
 }
 .result-info{ flex:1; min-width:0; }
 .result-info .rname{ font-weight:700; font-size:14px; }
@@ -179,8 +178,8 @@ input, select{ font-family:inherit; }
 .size-grid{ grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); }
  
 .mm-tile{
-  background:white; border:2px solid var(--steel-100); border-radius:var(--radius);
-  padding:20px 10px; text-align:center; transition:.12s;
+ background:white; border:2px solid var(--steel-100); border-radius:var(--radius);
+ padding:20px 10px; text-align:center; transition:.12s;
 }
 .mm-tile:hover{ border-color:var(--rust); transform:translateY(-2px); }
 .mm-tile .num{ font-family:'JetBrains Mono'; font-size:26px; font-weight:700; color:var(--steel-900); }
@@ -188,24 +187,24 @@ input, select{ font-family:inherit; }
 .mm-tile .count{ font-size:10.5px; color:var(--rust); margin-top:6px; font-weight:600; }
  
 .brand-tile{
-  background:white; border:1px solid var(--steel-100); border-radius:var(--radius);
-  padding:18px 14px; transition:.12s; text-align:left;
+ background:white; border:1px solid var(--steel-100); border-radius:var(--radius);
+ padding:18px 14px; transition:.12s; text-align:left;
 }
 .brand-tile:hover{ border-color:var(--rust); box-shadow:0 4px 14px rgba(0,0,0,0.06); }
 .brand-tile .bname{ font-family:'Baloo Da 2'; font-size:16px; font-weight:700; }
 .brand-tile .bmeta{ font-size:11.5px; color:var(--steel-500); margin-top:4px; }
  
 .size-card{
-  background:white; border:1px solid var(--steel-100); border-radius:var(--radius);
-  padding:14px; display:flex; flex-direction:column; gap:6px;
+ background:white; border:1px solid var(--steel-100); border-radius:var(--radius);
+ padding:14px; display:flex; flex-direction:column; gap:6px;
 }
 .size-card .stitle{ font-family:'JetBrains Mono'; font-weight:700; font-size:16px; }
 .size-card .srow{ display:flex; justify-content:space-between; font-size:12px; color:var(--steel-500); }
 .size-card .srow b{ color:var(--ink); font-family:'JetBrains Mono'; }
 .size-card .stock-low{ color:var(--red); font-weight:700; }
 .size-card .add-btn{
-  margin-top:6px; background:var(--steel-900); color:white; padding:8px; border-radius:7px;
-  font-size:13px; font-weight:600; text-align:center;
+ margin-top:6px; background:var(--steel-900); color:white; padding:8px; border-radius:7px;
+ font-size:13px; font-weight:600; text-align:center;
 }
 .size-card .add-btn:hover{ background:var(--rust); }
 .size-card.out .add-btn{ background:var(--steel-300); pointer-events:none; }
@@ -213,8 +212,8 @@ input, select{ font-family:inherit; }
 .pos-layout{ display:flex; gap:20px; align-items:flex-start; }
 .pos-main{ flex:1; min-width:0; }
 .cart-panel{
-  width:320px; flex-shrink:0; background:white; border-radius:var(--radius);
-  border:1px solid var(--steel-100); position:sticky; top:20px; overflow:hidden;
+ width:320px; flex-shrink:0; background:white; border-radius:var(--radius);
+ border:1px solid var(--steel-100); position:sticky; top:20px; overflow:hidden;
 }
 .cart-head{ background:var(--ink); color:white; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; }
 .cart-head h3{ font-size:14px; }
@@ -238,7 +237,7 @@ input, select{ font-family:inherit; }
 .field{ margin-bottom:14px; }
 .field label{ display:block; font-size:12.5px; font-weight:600; color:var(--steel-700); margin-bottom:5px; }
 .field input, .field select{
-  width:100%; border:1.5px solid var(--steel-100); border-radius:7px; padding:9px 11px; font-size:14px;
+ width:100%; border:1.5px solid var(--steel-100); border-radius:7px; padding:9px 11px; font-size:14px;
 }
 .field input:focus, .field select:focus{ outline:none; border-color:var(--rust); }
 .btn{ display:inline-flex; align-items:center; gap:6px; padding:9px 16px; border-radius:8px; font-size:13.5px; font-weight:600; }
@@ -275,12 +274,12 @@ input, select{ font-family:inherit; }
 .ledger-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
 .ledger-list{ display:flex; flex-direction:column; gap:10px; }
 .ledger-row{
-  background:white; border:1px solid var(--steel-100); border-radius:var(--radius);
-  padding:14px 16px; display:flex; align-items:center; gap:14px;
+ background:white; border:1px solid var(--steel-100); border-radius:var(--radius);
+ padding:14px 16px; display:flex; align-items:center; gap:14px;
 }
 .ledger-serial{
-  width:34px; height:34px; border-radius:50%; background:var(--steel-100); color:var(--steel-700);
-  display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono'; font-weight:700; font-size:13px; flex-shrink:0;
+ width:34px; height:34px; border-radius:50%; background:var(--steel-100); color:var(--steel-700);
+ display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono'; font-weight:700; font-size:13px; flex-shrink:0;
 }
 .ledger-info{ flex:1; min-width:0; }
 .ledger-info .lname{ font-weight:700; font-size:14.5px; }
@@ -303,9 +302,9 @@ input, select{ font-family:inherit; }
 .itotal{ display:flex; justify-content:space-between; padding-top:8px; border-top:2px solid var(--ink); font-size:16px; font-weight:700; font-family:'JetBrains Mono'; }
  
 .toast{
-  position:fixed; bottom:26px; left:50%; transform:translateX(-50%);
-  background:var(--ink); color:white; padding:12px 22px; border-radius:8px; font-size:13.5px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.25); z-index:200; opacity:0; pointer-events:none; transition:.2s;
+ position:fixed; bottom:26px; left:50%; transform:translateX(-50%);
+ background:var(--ink); color:white; padding:12px 22px; border-radius:8px; font-size:13.5px;
+ box-shadow:0 10px 30px rgba(0,0,0,0.25); z-index:200; opacity:0; pointer-events:none; transition:.2s;
 }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
  
@@ -313,31 +312,46 @@ input, select{ font-family:inherit; }
 .empty-state .ic{ font-size:34px; margin-bottom:10px; }
  
 @media print{
-  body *{ visibility:hidden; }
-  #printArea{ display:block !important; visibility:visible; position:absolute; top:0; left:0; width:100%; margin:0; padding:0; }
-  #printArea *{ visibility:visible; }
-  .invoice-box{ border:none; max-width:100%; padding:0 18px; }
+ body *{ visibility:hidden; }
+ #printArea{ display:block !important; visibility:visible; position:absolute; top:0; left:0; width:100%; margin:0; padding:0; }
+ #printArea *{ visibility:visible; }
+ .invoice-box{ border:none; max-width:100%; padding:0 18px; }
 }
 #printArea{ display:none; }
+ 
+/* ================= মোবাইল কার্ট বার (সবসময় দৃশ্যমান — বিক্রয় ঠিক কোথা থেকে করবেন সেটা স্পষ্ট রাখতে) ================= */
+.back-row{ display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+.back-row .cur-brand{ font-family:'Baloo Da 2'; font-weight:700; font-size:16px; }
+.mobile-cart-bar{ display:none; }
  
 /* ================= RESPONSIVE ================= */
 .bottom-nav{ display:none; }
 @media (max-width: 860px){
-  .sidebar{ display:none; }
-  #app.active{ flex-direction:column; }
-  .content{ padding:18px 14px 90px; }
-  .stat-grid{ grid-template-columns:repeat(2,1fr); }
-  .mm-grid{ grid-template-columns:repeat(3,1fr); }
-  .pos-layout{ flex-direction:column; }
-  .cart-panel{ width:100%; position:static; }
-  .topbar{ padding:14px 16px; }
-  .bottom-nav{
-    display:flex; position:fixed; bottom:0; left:0; right:0; z-index:60;
-    background:var(--steel-900); padding:6px 4px 8px; justify-content:space-around;
-  }
-  .bn-item{ display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--steel-300); font-size:10px; padding:6px 8px; border-radius:8px; flex:1; }
-  .bn-item .ic{ font-size:18px; }
-  .bn-item.active{ color:white; background:var(--rust); }
+ .sidebar{ display:none; }
+ #app.active{ flex-direction:column; }
+ .content{ padding:18px 14px 90px; }
+ .stat-grid{ grid-template-columns:repeat(2,1fr); }
+ .mm-grid{ grid-template-columns:repeat(3,1fr); }
+ .pos-layout{ flex-direction:column; }
+ .cart-panel{ width:100%; position:static; }
+ .topbar{ padding:14px 16px; }
+ .bottom-nav{
+ display:flex; position:fixed; bottom:0; left:0; right:0; z-index:60;
+ background:var(--steel-900); padding:6px 4px 8px; justify-content:space-around;
+ }
+ .bn-item{ display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--steel-300); font-size:10px; padding:6px 8px; border-radius:8px; flex:1; }
+ .bn-item .ic{ font-size:18px; }
+ .bn-item.active{ color:white; background:var(--rust); }
+ .mobile-cart-bar{
+ display:flex; position:fixed; left:10px; right:10px; bottom:72px; z-index:59;
+ background:var(--ink); color:white; border-radius:10px; padding:12px 14px 12px 16px;
+ align-items:center; justify-content:space-between; gap:10px;
+ box-shadow:0 10px 28px rgba(0,0,0,0.35);
+ }
+ .mobile-cart-bar .mcb-info{ font-size:12.5px; line-height:1.4; }
+ .mobile-cart-bar .mcb-info b{ font-family:'JetBrains Mono'; }
+ .mobile-cart-bar .mcb-btn{ background:var(--rust); color:white; padding:10px 16px; border-radius:8px; font-weight:700; font-size:13px; flex-shrink:0; }
+ .mobile-cart-bar .mcb-btn:hover{ background:var(--rust-dark); }
 }
 </style>
 </head>
@@ -345,48 +359,48 @@ input, select{ font-family:inherit; }
  
 <!-- ================= LOCK SCREEN ================= -->
 <div id="lockScreen">
-  <div class="lock-card">
-    <div class="wave-strip top"></div>
-    <div class="lock-body">
-      <div class="lock-icon">🔒</div>
-      <h1>করিম টিন হাউস</h1>
-      <p>দোকান ম্যানেজমেন্ট সিস্টেম</p>
-      <div class="pin-dots" id="pinDots"></div>
-      <div class="pin-pad" id="pinPad"></div>
-      <div class="lock-hint">ডেমো পিন: ১২৩৪</div>
-    </div>
-    <div class="wave-strip bottom"></div>
-  </div>
+ <div class="lock-card">
+ <div class="wave-strip top"></div>
+ <div class="lock-body">
+ <div class="lock-icon">🔒</div>
+ <h1>টিন হাউস</h1>
+ <p>দোকান ম্যানেজমেন্ট সিস্টেম</p>
+ <div class="pin-dots" id="pinDots"></div>
+ <div class="pin-pad" id="pinPad"></div>
+ <div class="lock-hint">ডেমো পিন: ১২৩৪</div>
+ </div>
+ <div class="wave-strip bottom"></div>
+ </div>
 </div>
  
 <!-- ================= APP ================= -->
 <div id="app">
-  <aside class="sidebar">
-    <div class="brand-block">
-      <div class="display">করিম টিন হাউস</div>
-      <div class="sub">STOCK · SALES · খাতা</div>
-    </div>
-    <ul class="nav-list" id="navList"></ul>
-    <div class="sidebar-foot">সংস্করণ: ডেমো ১.০</div>
-  </aside>
+ <aside class="sidebar">
+ <div class="brand-block">
+ <div class="display">টিন হাউস</div>
+ <div class="sub">STOCK · SALES · খাতা</div>
+ </div>
+ <ul class="nav-list" id="navList"></ul>
+ <div class="sidebar-foot">সংস্করণ: ডেমো ১.০</div>
+ </aside>
  
-  <div class="main">
-    <div class="topbar">
-      <div>
-        <h2 id="pageTitle">ড্যাশবোর্ড</h2>
-        <div class="meta" id="pageMeta"></div>
-      </div>
-      <button class="btn logout-btn" onclick="logout()">🔓 লগ-আউট</button>
-    </div>
-    <div class="content" id="content"></div>
-  </div>
+ <div class="main">
+ <div class="topbar">
+ <div>
+ <h2 id="pageTitle">ড্যাশবোর্ড</h2>
+ <div class="meta" id="pageMeta"></div>
+ </div>
+ <button class="btn logout-btn" onclick="logout()">🔓 লগ-আউট</button>
+ </div>
+ <div class="content" id="content"></div>
+ </div>
  
-  <nav class="bottom-nav" id="bottomNav"></nav>
+ <nav class="bottom-nav" id="bottomNav"></nav>
 </div>
  
 <!-- ================= MODALS ================= -->
 <div class="modal-overlay" id="modalOverlay">
-  <div class="modal" id="modalBox"></div>
+ <div class="modal" id="modalBox"></div>
 </div>
  
 <div id="printArea"></div>
@@ -394,9 +408,9 @@ input, select{ font-family:inherit; }
  
 <script>
 /* ============================================================
-   ডেটা মডেল (in-memory — সেশনভিত্তিক ডেমো ডেটা)
-   ============================================================ */
-const BRANDS = ['আকিজ','পিএইচপি','কেওয়াই স্টিল','নাহার','গ্যালকো'];
+ ডেটা মডেল (in-memory — সেশনভিত্তিক ডেমো ডেটা)
+ ============================================================ */
+let BRANDS = ['আকিজ','পিএইচপি','কেওয়াই স্টিল','নাহার','গ্যালকো'];
 const MM_LIST = [12,13,14,15,16,17,18,19,20];
 const SIZE_LIST = [6,7,8,9,10,11,12]; // ফুট
  
@@ -406,31 +420,35 @@ function seededRand(seed){ let x = Math.sin(seed)*10000; return x - Math.floor(x
 let inventory = {}; // inventory[brand][mm][size] = {buy, sell, stock}
 let seed = 1;
 BRANDS.forEach((brand, bi) => {
-  inventory[brand] = {};
-  MM_LIST.forEach((mm, mi) => {
-    const hasIt = seededRand(seed++) > 0.28; // প্রতি ব্র্যান্ডে বেশিরভাগ mm থাকবে
-    if(!hasIt) return;
-    inventory[brand][mm] = {};
-    SIZE_LIST.forEach((sz, si) => {
-      if(seededRand(seed++) > 0.35){
-        const baseBuy = 380 + mm*14 + sz*22 + bi*9;
-        const buy = Math.round(baseBuy/5)*5;
-        const sell = Math.round((buy * 1.14)/5)*5;
-        const stock = Math.floor(seededRand(seed++)*40) + (seededRand(seed++) > 0.85 ? 0 : 3);
-        inventory[brand][mm][sz] = { buy, sell, stock };
-      }
-    });
-  });
+ inventory[brand] = {};
+ MM_LIST.forEach((mm, mi) => {
+ const hasIt = seededRand(seed++) > 0.28; // প্রতি ব্র্যান্ডে বেশিরভাগ mm থাকবে
+ if(!hasIt) return;
+ inventory[brand][mm] = {};
+ SIZE_LIST.forEach((sz, si) => {
+ if(seededRand(seed++) > 0.35){
+ const baseBuy = 380 + mm*14 + sz*22 + bi*9;
+ const buy = Math.round(baseBuy/5)*5;
+ const sell = Math.round((buy * 1.14)/5)*5;
+ const stock = Math.floor(seededRand(seed++)*40) + (seededRand(seed++) > 0.85 ? 0 : 3);
+ inventory[brand][mm][sz] = { buy, sell, stock };
+ }
+ });
+ });
 });
  
 let ledger = [
-  { id:1, name:'হাজী নূর ইসলাম', address:'বাজার রোড, সাভার', phone:'01711-223344', due:4200, paidTotal:0 },
-  { id:2, name:'রফিক মিয়া (ঠিকাদার)', address:'ধামরাই', phone:'01822-334455', due:0, paidTotal:9600 },
-  { id:3, name:'সোহেল বিল্ডার্স', address:'ইপিজেড রোড, সাভার', phone:'01933-445566', due:12800, paidTotal:5000 },
-  { id:4, name:'মোঃ জসিম', address:'বিরুলিয়া', phone:'01644-556677', due:1500, paidTotal:1500 },
+ { id:1, name:'হাজী নূর ইসলাম', address:'বাজার রোড, সাভার', phone:'01711-223344', due:4200, paidTotal:0 },
+ { id:2, name:'রফিক মিয়া (ঠিকাদার)', address:'ধামরাই', phone:'01822-334455', due:0, paidTotal:9600 },
+ { id:3, name:'সোহেল বিল্ডার্স', address:'ইপিজেড রোড, সাভার', phone:'01933-445566', due:12800, paidTotal:5000 },
+ { id:4, name:'মোঃ জসিম', address:'বিরুলিয়া', phone:'01644-556677', due:1500, paidTotal:1500 },
 ];
 let ledgerNextId = 5;
 let ledgerNextSerial = ledger.length + 1;
+ 
+// নগদ ক্রেতা তালিকা — যারা পুরো টাকা একবারে পরিশোধ করে দিয়েছেন (বাকির খাতা থেকে সম্পূর্ণ আলাদা)
+let cashCustomers = []; // {id, name, phone, invoiceIds:[], totalSpent, lastDate}
+let cashNextId = 1;
  
 let invoices = [];
 let invoiceCounter = 1001;
@@ -438,549 +456,798 @@ let invoiceCounter = 1001;
 let cart = []; // {brand, mm, size, qty, sellPrice, buyPrice}
  
 let currentView = 'dashboard';
-let posStep = 1; // 1: mm বাছাই, 2: brand বাছাই, 3: size বাছাই
-let posMM = null, posBrand = null;
-let posSearch = '';
+let posStep = 1; // 1: ব্র্যান্ড বাছাই, 2: ব্র্যান্ডের ভেতরে আইটেম সার্চ করে বিক্রি
+let posBrand = null;
+let posBrandSearch = '';
+let posItemSearch = '';
+let stockStep = 1; // 1: ব্র্যান্ড তালিকা, 2: ব্র্যান্ডের ভেতরে স্টক ম্যানেজমেন্ট
+let stockBrand = null;
 let stockSearch = '';
+let invoiceSearch = '';
+let ledgerSearch = '';
+let cashSearch = '';
  
 const nav = [
-  { id:'dashboard', label:'ড্যাশবোর্ড', icon:'📊' },
-  { id:'sales', label:'বিক্রয়', icon:'🧾' },
-  { id:'stock', label:'স্টক তালিকা', icon:'📦' },
-  { id:'ledger', label:'বাকির খাতা', icon:'📒' },
-  { id:'invoices', label:'ইনভয়েস হিস্ট্রি', icon:'🗂️' },
+ { id:'dashboard', label:'ড্যাশবোর্ড', icon:'📊' },
+ { id:'sales', label:'বিক্রয়', icon:'🧾' },
+ { id:'stock', label:'স্টক তালিকা', icon:'📦' },
+ { id:'ledger', label:'বাকির খাতা', icon:'📒' },
+ { id:'cash', label:'নগদ ক্রেতা', icon:'💵' },
+ { id:'invoices', label:'ইনভয়েস হিস্ট্রি', icon:'🗂️' },
 ];
  
 /* ============================================================
-   PIN LOCK
-   ============================================================ */
+ PIN LOCK
+ ============================================================ */
 const PIN = '1234';
 let pinEntry = '';
 function renderPinDots(){
-  document.getElementById('pinDots').innerHTML = [0,1,2,3].map(i =>
-    `<div class="pin-dot ${i < pinEntry.length ? 'filled' : ''}"></div>`).join('');
+ document.getElementById('pinDots').innerHTML = [0,1,2,3].map(i =>
+ `<div class="pin-dot ${i < pinEntry.length ? 'filled' : ''}"></div>`).join('');
 }
 function renderPinPad(){
-  const keys = ['১','২','৩','৪','৫','৬','৭','৮','৯','','০','⌫'];
-  const digitMap = {'১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9','০':'0'};
-  document.getElementById('pinPad').innerHTML = keys.map(k => {
-    if(k === '') return `<div></div>`;
-    if(k === '⌫') return `<button class="pin-key clear" onclick="pinBackspace()">মুছুন</button>`;
-    return `<button class="pin-key" onclick="pinPress('${digitMap[k]}')">${k}</button>`;
-  }).join('');
+ const keys = ['১','২','৩','৪','৫','৬','৭','৮','৯','','০','⌫'];
+ const digitMap = {'১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9','০':'0'};
+ document.getElementById('pinPad').innerHTML = keys.map(k => {
+ if(k === '') return `<div></div>`;
+ if(k === '⌫') return `<button class="pin-key clear" onclick="pinBackspace()">মুছুন</button>`;
+ return `<button class="pin-key" onclick="pinPress('${digitMap[k]}')">${k}</button>`;
+ }).join('');
 }
 function pinPress(d){
-  if(pinEntry.length >= 4) return;
-  pinEntry += d;
-  renderPinDots();
-  if(pinEntry.length === 4){
-    setTimeout(() => {
-      if(pinEntry === PIN){
-        document.getElementById('lockScreen').style.display = 'none';
-        document.getElementById('app').classList.add('active');
-        renderNav(); switchView('dashboard');
-      } else {
-        showToast('ভুল পিন — আবার চেষ্টা করুন');
-        pinEntry = ''; renderPinDots();
-      }
-    }, 150);
-  }
+ if(pinEntry.length >= 4) return;
+ pinEntry += d;
+ renderPinDots();
+ if(pinEntry.length === 4){
+ setTimeout(() => {
+ if(pinEntry === PIN){
+ document.getElementById('lockScreen').style.display = 'none';
+ document.getElementById('app').classList.add('active');
+ renderNav(); switchView('dashboard');
+ } else {
+ showToast('ভুল পিন — আবার চেষ্টা করুন');
+ pinEntry = ''; renderPinDots();
+ }
+ }, 150);
+ }
 }
 function pinBackspace(){ pinEntry = pinEntry.slice(0,-1); renderPinDots(); }
 function logout(){
-  document.getElementById('app').classList.remove('active');
-  document.getElementById('lockScreen').style.display = 'flex';
-  pinEntry = ''; renderPinDots();
+ document.getElementById('app').classList.remove('active');
+ document.getElementById('lockScreen').style.display = 'flex';
+ pinEntry = ''; renderPinDots();
 }
 renderPinDots(); renderPinPad();
  
 /* ============================================================
-   NAV
-   ============================================================ */
+ NAV
+ ============================================================ */
 function renderNav(){
-  document.getElementById('navList').innerHTML = nav.map(n =>
-    `<li class="nav-item ${n.id===currentView?'active':''}" onclick="switchView('${n.id}')">
-       <span class="ic">${n.icon}</span><span>${n.label}</span>
-     </li>`).join('');
-  document.getElementById('bottomNav').innerHTML = nav.map(n =>
-    `<div class="bn-item ${n.id===currentView?'active':''}" onclick="switchView('${n.id}')">
-       <span class="ic">${n.icon}</span><span>${n.label}</span>
-     </div>`).join('');
+ document.getElementById('navList').innerHTML = nav.map(n =>
+ `<li class="nav-item ${n.id===currentView?'active':''}" onclick="switchView('${n.id}')">
+ <span class="ic">${n.icon}</span><span>${n.label}</span>
+ </li>`).join('');
+ document.getElementById('bottomNav').innerHTML = nav.map(n =>
+ `<div class="bn-item ${n.id===currentView?'active':''}" onclick="switchView('${n.id}')">
+ <span class="ic">${n.icon}</span><span>${n.label}</span>
+ </div>`).join('');
 }
 function switchView(id){
-  currentView = id;
-  if(id === 'sales'){ posStep = 1; posMM = null; posBrand = null; }
-  renderNav();
-  const titles = {dashboard:'ড্যাশবোর্ড', sales:'বিক্রয়', stock:'স্টক তালিকা', ledger:'বাকির খাতা', invoices:'ইনভয়েস হিস্ট্রি'};
-  document.getElementById('pageTitle').textContent = titles[id];
-  document.getElementById('pageMeta').textContent = new Date().toLocaleDateString('bn-BD', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-  render();
+ currentView = id;
+ if(id === 'sales'){ posStep = 1; posBrand = null; posBrandSearch = ''; posItemSearch = ''; }
+ if(id === 'stock'){ stockStep = 1; stockBrand = null; stockSearch = ''; }
+ if(id === 'invoices'){ invoiceSearch = ''; }
+ if(id === 'ledger'){ ledgerSearch = ''; }
+ if(id === 'cash'){ cashSearch = ''; }
+ renderNav();
+ const titles = {dashboard:'ড্যাশবোর্ড', sales:'বিক্রয়', stock:'স্টক তালিকা', ledger:'বাকির খাতা', cash:'নগদ ক্রেতা', invoices:'ইনভয়েস হিস্ট্রি'};
+ document.getElementById('pageTitle').textContent = titles[id];
+ document.getElementById('pageMeta').textContent = new Date().toLocaleDateString('bn-BD', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+ render();
 }
  
 function render(){
-  const c = document.getElementById('content');
-  if(currentView === 'dashboard') c.innerHTML = renderDashboard();
-  else if(currentView === 'sales') c.innerHTML = renderSales();
-  else if(currentView === 'stock') c.innerHTML = renderStock();
-  else if(currentView === 'ledger') c.innerHTML = renderLedger();
-  else if(currentView === 'invoices') c.innerHTML = renderInvoices();
+ const c = document.getElementById('content');
+ if(currentView === 'dashboard') c.innerHTML = renderDashboard();
+ else if(currentView === 'sales') c.innerHTML = renderSales();
+ else if(currentView === 'stock') c.innerHTML = renderStock();
+ else if(currentView === 'ledger') c.innerHTML = renderLedger();
+ else if(currentView === 'cash') c.innerHTML = renderCashCustomers();
+ else if(currentView === 'invoices') c.innerHTML = renderInvoices();
 }
  
 /* ============================================================
-   DASHBOARD
-   ============================================================ */
+ DASHBOARD
+ ============================================================ */
 function fmt(n){ return '৳' + Number(n).toLocaleString('en-IN'); }
+// ব্যবহারকারীর টাইপ করা লেখা (ব্র্যান্ড/গ্রাহকের নাম ইত্যাদি) নিরাপদে দেখানোর জন্য
+function esc(str){
+ return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+// onclick="fn('...')" এর ভেতরে বসানোর সময় নিরাপদ করার জন্য (নামে যদি quote বা ব্যাকস্ল্যাশ থাকে)
+function jsq(str){
+ return String(str ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
  
 function renderDashboard(){
-  let totalStock = 0, totalDue = 0, todaySales = 0;
-  Object.values(inventory).forEach(mmObj => Object.values(mmObj).forEach(szObj => Object.values(szObj).forEach(v => totalStock += v.stock)));
-  ledger.forEach(l => totalDue += l.due);
-  invoices.forEach(inv => todaySales += inv.total);
+ let totalStock = 0, totalDue = 0, todaySales = 0;
+ Object.values(inventory).forEach(mmObj => Object.values(mmObj).forEach(szObj => Object.values(szObj).forEach(v => totalStock += v.stock)));
+ ledger.forEach(l => totalDue += l.due);
+ const todayStr = new Date().toDateString();
+ invoices.forEach(inv => { if(new Date(inv.date).toDateString() === todayStr) todaySales += inv.total; });
  
-  return `
-    <div class="stat-grid">
-      <div class="stat-card" style="--accent:var(--rust)">
-        <div class="lbl">মোট স্টক (পিস)</div><div class="val">${totalStock}</div>
-      </div>
-      <div class="stat-card" style="--accent:var(--green)">
-        <div class="lbl">আজকের বিক্রয়</div><div class="val">${fmt(todaySales)}</div>
-      </div>
-      <div class="stat-card" style="--accent:var(--red)">
-        <div class="lbl">মোট বাকি (খাতা)</div><div class="val">${fmt(totalDue)}</div>
-      </div>
-      <div class="stat-card" style="--accent:var(--amber)">
-        <div class="lbl">মোট ইনভয়েস</div><div class="val">${invoices.length}</div>
-      </div>
-    </div>
-    <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:16px;">
-      <div class="panel">
-        <h3>সাম্প্রতিক ইনভয়েস</h3>
-        ${invoices.length === 0 ? `<div class="empty-state"><div class="ic">🧾</div>এখনো কোনো বিক্রয় হয়নি</div>` :
-          `<table class="tbl"><thead><tr><th>নং</th><th>আইটেম</th><th class="r">মোট</th></tr></thead><tbody>
-          ${invoices.slice(-5).reverse().map(inv => `<tr><td>#${inv.id}</td><td>${inv.items.length} টি পণ্য</td><td class="num r">${fmt(inv.total)}</td></tr>`).join('')}
-          </tbody></table>`}
-      </div>
-      <div class="panel">
-        <h3>সবচেয়ে বেশি বাকি</h3>
-        ${[...ledger].sort((a,b)=>b.due-a.due).filter(l=>l.due>0).slice(0,4).map(l => `
-          <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--steel-100);font-size:13.5px;">
-            <span>${l.name}</span><span class="mono" style="color:var(--red);font-weight:700;">${fmt(l.due)}</span>
-          </div>`).join('') || `<div class="empty-state" style="padding:20px;"><div class="ic">✅</div>কোনো বাকি নেই</div>`}
-      </div>
-    </div>`;
+ return `
+ <div class="stat-grid">
+ <div class="stat-card" style="--accent:var(--rust)">
+ <div class="lbl">মোট স্টক (পিস)</div><div class="val">${totalStock}</div>
+ </div>
+ <div class="stat-card" style="--accent:var(--green)">
+ <div class="lbl">আজকের বিক্রয়</div><div class="val">${fmt(todaySales)}</div>
+ </div>
+ <div class="stat-card" style="--accent:var(--red)">
+ <div class="lbl">মোট বাকি (খাতা)</div><div class="val">${fmt(totalDue)}</div>
+ </div>
+ <div class="stat-card" style="--accent:var(--amber)">
+ <div class="lbl">মোট ইনভয়েস</div><div class="val">${invoices.length}</div>
+ </div>
+ </div>
+ <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:16px;">
+ <div class="panel">
+ <h3>সাম্প্রতিক ইনভয়েস</h3>
+ ${invoices.length === 0 ? `<div class="empty-state"><div class="ic">🧾</div>এখনো কোনো বিক্রয় হয়নি</div>` :
+ `<table class="tbl"><thead><tr><th>নং</th><th>আইটেম</th><th class="r">মোট</th></tr></thead><tbody>
+ ${invoices.slice(-5).reverse().map(inv => `<tr><td>#${inv.id}</td><td>${inv.items.length} টি পণ্য</td><td class="num r">${fmt(inv.total)}</td></tr>`).join('')}
+ </tbody></table>`}
+ </div>
+ <div class="panel">
+ <h3>সবচেয়ে বেশি বাকি</h3>
+ ${[...ledger].sort((a,b)=>b.due-a.due).filter(l=>l.due>0).slice(0,4).map(l => `
+ <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--steel-100);font-size:13.5px;">
+ <span>${esc(l.name)}</span><span class="mono" style="color:var(--red);font-weight:700;">${fmt(l.due)}</span>
+ </div>`).join('') || `<div class="empty-state" style="padding:20px;"><div class="ic">✅</div>কোনো বাকি নেই</div>`}
+ </div>
+ </div>`;
 }
  
 /* ============================================================
-   বিক্রয় (POS): mm → brand → size → cart
-   ============================================================ */
+ বিক্রয় (POS): ব্র্যান্ডের ঘর → ভেতরে ঢুকে সার্চ করে সরাসরি কার্টে যোগ
+ ============================================================ */
 function renderSales(){
-  const q = posSearch.trim().toLowerCase();
+ let bodyHtml;
  
-  const searchBar = `
-    <div class="search-bar ${q ? 'has-val' : ''}">
-      <span class="sic">🔍</span>
-      <input type="text" id="posSearchInput" value="${posSearch}" placeholder="যেকোনো পণ্য সার্চ করুন — ব্র্যান্ড, মিমি বা সাইজ (যেমনঃ আকিজ, ১২, ৮ ফুট)"
-        oninput="posSearchInput(this.value)" autocomplete="off">
-      <span class="sclear" onclick="posSearchInput('')">✕</span>
-    </div>`;
+ if(posStep === 1){
+ /* ---- ধাপ ১: ব্র্যান্ডের আলাদা আলাদা ঘর — সার্চ করলে ব্র্যান্ড ফিল্টার হবে ---- */
+ const q = posBrandSearch.trim().toLowerCase();
+ const filteredBrands = BRANDS.filter(b => b.toLowerCase().includes(q));
  
-  let bodyHtml;
+ const searchBar = `
+ <div class="search-bar ${q ? 'has-val' : ''}">
+ <span class="sic">🔍</span>
+ <input type="text" id="posBrandSearchInput" value="${posBrandSearch}" placeholder="ব্র্যান্ডের নাম দিয়ে সার্চ করুন (যেমনঃ আকিজ)"
+ oninput="posBrandSearchInput(this.value)" autocomplete="off">
+ <span class="sclear" onclick="posBrandSearchInput('')">✕</span>
+ </div>`;
  
-  if(q !== ''){
-    /* ---- সর্বজনীন সার্চ: সব ব্র্যান্ড/মিমি/সাইজ থেকে মিলে যাওয়া সব পণ্য একটা সিরিয়াল লিস্টে ---- */
-    const results = [];
-    BRANDS.forEach(brand => {
-      Object.keys(inventory[brand]).forEach(mm => {
-        Object.keys(inventory[brand][mm]).forEach(sz => {
-          const hay = (brand + ' ' + mm + ' ' + sz).toLowerCase();
-          if(hay.includes(q)) results.push({ brand, mm, sz, v: inventory[brand][mm][sz] });
-        });
-      });
-    });
-    results.sort((a,b) => a.brand.localeCompare(b.brand,'bn') || a.mm-b.mm || a.sz-b.sz);
+ const grid = filteredBrands.length === 0 ? `<div class="no-match">🔍 "${posBrandSearch}" নামে কোনো ব্র্যান্ড পাওয়া যায়নি</div>` :
+ `<div class="brand-grid">` + filteredBrands.map(b => {
+ let itemCount = 0, totalStock = 0;
+ Object.values(inventory[b] || {}).forEach(szObj => Object.values(szObj).forEach(v => { itemCount++; totalStock += v.stock; }));
+ return `<button class="brand-tile" onclick="posSelectBrand('${jsq(b)}')">
+ <div class="bname">${esc(b)}</div>
+ <div class="bmeta">${itemCount} টি আইটেম · ${totalStock} পিস স্টক</div>
+ </button>`;
+ }).join('') + `</div>`;
  
-    bodyHtml = results.length === 0 ? `<div class="no-match">🔍 "${posSearch}" এর সাথে মিলে এমন কোনো পণ্য পাওয়া যায়নি</div>` :
-      `<div class="search-results">` + results.map((r, i) => {
-        const out = r.v.stock === 0;
-        return `<div class="result-row ${out?'out':''}">
-          <div class="result-serial">${i+1}</div>
-          <div class="result-info">
-            <div class="rname">${r.brand} <span class="rdim">· ${r.mm} মিমি · ${r.sz} ফুট</span></div>
-            <div class="rmeta">ক্রয়ঃ <b>${fmt(r.v.buy)}</b> &nbsp;বিক্রয়ঃ <b>${fmt(r.v.sell)}</b> &nbsp;স্টকঃ <b class="${r.v.stock<=3?'stock-low':''}">${r.v.stock} পিস</b></div>
-          </div>
-          <button class="result-add" ${out?'disabled':''} onclick="addToCart('${r.brand}', ${r.mm}, ${r.sz})">${out?'স্টক নেই':'+ যোগ করুন'}</button>
-        </div>`;
-      }).join('') + `</div>`;
-  } else {
-    /* ---- সার্চ খালি থাকলে ধাপে ধাপে ব্রাউজ করুন (মিমি → ব্র্যান্ড → সাইজ) ---- */
-    const crumbs = [`<button class="crumb-btn" onclick="posGoStep(1)">মিলিমিটার</button>`];
-    if(posMM) crumbs.push(`› <button class="crumb-btn" onclick="posGoStep(2)">${posMM} মিমি</button>`);
-    if(posBrand) crumbs.push(`› <span>${posBrand}</span>`);
+ bodyHtml = searchBar + grid;
+ } else {
+ /* ---- ধাপ ২: নির্বাচিত ব্র্যান্ডের ভেতরে সার্চ লিস্ট — সিলেক্ট করলেই সরাসরি কার্টে যোগ হবে ---- */
+ const q = posItemSearch.trim().toLowerCase();
+ const results = [];
+ Object.keys(inventory[posBrand] || {}).forEach(mm => {
+ Object.keys(inventory[posBrand][mm]).forEach(sz => {
+ const hay = (mm + ' মিমি ' + sz + ' ফুট').toLowerCase();
+ if(q === '' || hay.includes(q)) results.push({ mm, sz, v: inventory[posBrand][mm][sz] });
+ });
+ });
+ results.sort((a,b) => a.mm-b.mm || a.sz-b.sz);
  
-    let stepHtml = '';
-    if(posStep === 1){
-      stepHtml = `<div class="mm-grid">` + MM_LIST.map(mm => {
-        let brandCount = 0;
-        BRANDS.forEach(b => { if(inventory[b][mm]) brandCount++; });
-        return `<button class="mm-tile" onclick="posSelectMM(${mm})">
-          <div class="num">${mm}</div><div class="unit">মিলিমিটার</div>
-          <div class="count">${brandCount} টি ব্র্যান্ডে আছে</div>
-        </button>`;
-      }).join('') + `</div>`;
-    } else if(posStep === 2){
-      const availableBrands = BRANDS.filter(b => inventory[b][posMM]);
-      stepHtml = `<div class="brand-grid">` + availableBrands.map(b => {
-        const sizes = inventory[b][posMM];
-        const sizeCount = Object.keys(sizes).length;
-        const totalStock = Object.values(sizes).reduce((s,v)=>s+v.stock,0);
-        return `<button class="brand-tile" onclick="posSelectBrand('${b}')">
-          <div class="bname">${b}</div>
-          <div class="bmeta">${sizeCount} টি সাইজ · ${totalStock} পিস স্টক</div>
-        </button>`;
-      }).join('') + `</div>`;
-    } else if(posStep === 3){
-      const sizes = inventory[posBrand][posMM];
-      stepHtml = `<div class="size-grid">` + Object.keys(sizes).sort((a,b)=>a-b).map(sz => {
-        const v = sizes[sz];
-        const out = v.stock === 0;
-        return `<div class="size-card ${out?'out':''}">
-          <div class="stitle">${sz} ফুট</div>
-          <div class="srow"><span>ক্রয়মূল্য</span><b>${fmt(v.buy)}</b></div>
-          <div class="srow"><span>বিক্রয়মূল্য</span><b>${fmt(v.sell)}</b></div>
-          <div class="srow"><span>স্টক</span><b class="${v.stock<=3?'stock-low':''}">${v.stock} পিস</b></div>
-          <div class="add-btn" onclick="addToCart('${posBrand}', ${posMM}, ${sz})">${out?'স্টক নেই':'+ কার্টে যোগ করুন'}</div>
-        </div>`;
-      }).join('') + `</div>`;
-    }
-    bodyHtml = `<div class="breadcrumb">${crumbs.join(' ')}</div>${stepHtml}`;
-  }
+ const backBar = `<div class="back-row">
+ <button class="btn btn-outline" onclick="posGoStep(1)">← পেছনে যান</button>
+ <div class="cur-brand">${esc(posBrand)}</div>
+ </div>`;
+ const searchBar = `
+ <div class="search-bar ${q ? 'has-val' : ''}">
+ <span class="sic">🔍</span>
+ <input type="text" id="posItemSearchInput" value="${posItemSearch}" placeholder="মিমি বা ফুট দিয়ে সার্চ করুন (যেমনঃ ১৪, ৮ ফুট)"
+ oninput="posItemSearchInput(this.value)" autocomplete="off">
+ <span class="sclear" onclick="posItemSearchInput('')">✕</span>
+ </div>`;
  
-  return `
-    <div class="pos-layout">
-      <div class="pos-main">
-        ${searchBar}
-        ${bodyHtml}
-      </div>
-      <div class="cart-panel">
-        <div class="cart-head"><h3>🧾 বর্তমান বিক্রয়</h3><span class="mono" style="font-size:12px;">${cart.length} আইটেম</span></div>
-        <div class="cart-items">
-          ${cart.length === 0 ? `<div class="cart-empty">কার্ট খালি — একটি পণ্য যোগ করুন</div>` :
-            cart.map((item, idx) => `
-            <div class="cart-item">
-              <div class="cart-item-top">
-                <span>${item.brand} · ${item.mm}মিমি · ${item.size}ফুট</span>
-                <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
-              </div>
-              <div class="cart-item-row">
-                <label>পরিমাণ</label>
-                <input type="number" min="1" value="${item.qty}" onchange="updateCartQty(${idx}, this.value)">
-                <label style="width:auto;margin-left:4px;">দর</label>
-                <input type="number" min="0" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)">
-              </div>
-              <div class="cart-sub">উপমোট: ${fmt(item.qty * item.sellPrice)}</div>
-            </div>`).join('')}
-        </div>
-        <div class="cart-foot">
-          <div class="cart-total-row"><span>মোট পিস</span><span class="mono">${cart.reduce((s,i)=>s+Number(i.qty),0)}</span></div>
-          <div class="cart-total-row grand"><span>সর্বমোট</span><span>${fmt(cart.reduce((s,i)=>s+i.qty*i.sellPrice,0))}</span></div>
-          <button class="checkout-btn" ${cart.length===0?'disabled':''} onclick="openCheckout()">ইনভয়েস তৈরি করুন</button>
-        </div>
-      </div>
-    </div>`;
+ const isBrandEmpty = Object.keys(inventory[posBrand] || {}).length === 0;
+ const list = results.length === 0 ?
+ (isBrandEmpty
+ ? `<div class="no-match">📦 ${esc(posBrand)}-এ এখনো কোনো মাল স্টকে যোগ করা হয়নি। "স্টক তালিকা" থেকে আগে এই ব্র্যান্ডে মাল যোগ করুন।</div>`
+ : `<div class="no-match">🔍 এই ব্র্যান্ডে মিল খুঁজে পাওয়া যায়নি</div>`) :
+ `<div class="search-results">` + results.map((r, i) => {
+ const out = r.v.stock === 0;
+ return `<div class="result-row ${out?'out':''}">
+ <div class="result-serial">${i+1}</div>
+ <div class="result-info">
+ <div class="rname">${esc(posBrand)} <span class="rdim">· ${r.mm} মিমি · ${r.sz} ফুট</span></div>
+ <div class="rmeta">ক্রয়ঃ <b>${fmt(r.v.buy)}</b> &nbsp;বিক্রয়ঃ <b>${fmt(r.v.sell)}</b> &nbsp;স্টকঃ <b class="${r.v.stock<=3?'stock-low':''}">${r.v.stock} পিস</b></div>
+ </div>
+ <button class="result-add" ${out?'disabled':''} onclick="addToCart('${jsq(posBrand)}', ${r.mm}, ${r.sz})">${out?'স্টক নেই':'+ যোগ করুন'}</button>
+ </div>`;
+ }).join('') + `</div>`;
+ 
+ bodyHtml = `${backBar}${searchBar}${list}`;
+ }
+ 
+ const mobileCartBar = cart.length > 0 ? `
+ <div class="mobile-cart-bar">
+ <div class="mcb-info">🧾 <b>${cart.reduce((s,i)=>s+Number(i.qty),0)}</b> পিস · <b>${fmt(cart.reduce((s,i)=>s+i.qty*i.sellPrice,0))}</b> — কার্টে আছে</div>
+ <button class="mcb-btn" onclick="openCheckout()">ইনভয়েস করুন</button>
+ </div>` : '';
+ 
+ return mobileCartBar + `
+ <div class="pos-layout">
+ <div class="pos-main">
+ ${bodyHtml}
+ </div>
+ <div class="cart-panel">
+ <div class="cart-head"><h3>🧾 বর্তমান বিক্রয়</h3><span class="mono" style="font-size:12px;">${cart.length} আইটেম</span></div>
+ <div class="cart-items">
+ ${cart.length === 0 ? `<div class="cart-empty">কার্ট খালি — একটি পণ্য যোগ করুন</div>` :
+ cart.map((item, idx) => `
+ <div class="cart-item">
+ <div class="cart-item-top">
+ <span>${esc(item.brand)} · ${item.mm}মিমি · ${item.size}ফুট</span>
+ <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
+ </div>
+ <div class="cart-item-row">
+ <label>পরিমাণ</label>
+ <input type="number" min="1" value="${item.qty}" onchange="updateCartQty(${idx}, this.value)">
+ <label style="width:auto;margin-left:4px;">দর</label>
+ <input type="number" min="0" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)">
+ </div>
+ <div class="cart-sub">উপমোট: ${fmt(item.qty * item.sellPrice)}</div>
+ </div>`).join('')}
+ </div>
+ <div class="cart-foot">
+ <div class="cart-total-row"><span>মোট পিস</span><span class="mono">${cart.reduce((s,i)=>s+Number(i.qty),0)}</span></div>
+ <div class="cart-total-row grand"><span>সর্বমোট</span><span>${fmt(cart.reduce((s,i)=>s+i.qty*i.sellPrice,0))}</span></div>
+ <button class="checkout-btn" ${cart.length===0?'disabled':''} onclick="openCheckout()">ইনভয়েস তৈরি করুন</button>
+ </div>
+ </div>
+ </div>`;
 }
-function posGoStep(step){ posStep = step; if(step===1){posMM=null;posBrand=null;} if(step===2){posBrand=null;} render(); }
-function posSelectMM(mm){ posMM = mm; posStep = 2; render(); }
-function posSelectBrand(b){ posBrand = b; posStep = 3; render(); }
+function posGoStep(step){ posStep = step; if(step===1){ posBrand=null; posItemSearch=''; } render(); }
+function posSelectBrand(b){ posBrand = b; posStep = 2; posItemSearch=''; render(); }
  
-function posSearchInput(val){
-  posSearch = val;
-  render();
-  const el = document.getElementById('posSearchInput');
-  if(el){ el.focus(); const p = el.value.length; el.setSelectionRange(p,p); }
+function posBrandSearchInput(val){
+ posBrandSearch = val;
+ render();
+ const el = document.getElementById('posBrandSearchInput');
+ if(el){ el.focus(); const p = el.value.length; el.setSelectionRange(p,p); }
+}
+function posItemSearchInput(val){
+ posItemSearch = val;
+ render();
+ const el = document.getElementById('posItemSearchInput');
+ if(el){ el.focus(); const p = el.value.length; el.setSelectionRange(p,p); }
 }
  
 function addToCart(brand, mm, size){
-  const item = inventory[brand][mm][size];
-  const existing = cart.find(c => c.brand===brand && c.mm===mm && c.size===size);
-  if(existing){ existing.qty++; }
-  else cart.push({ brand, mm, size, qty:1, sellPrice:item.sell, buyPrice:item.buy });
-  showToast(`${brand} ${mm}মিমি ${size}ফুট কার্টে যোগ হয়েছে`);
-  render();
+ const item = inventory[brand][mm][size];
+ const existing = cart.find(c => c.brand===brand && c.mm===mm && c.size===size);
+ const inCart = existing ? existing.qty : 0;
+ if(inCart >= item.stock){ showToast('এই পণ্যের স্টকে যতটুকু আছে তার বেশি যোগ করা যাবে না'); return; }
+ if(existing){ existing.qty++; }
+ else cart.push({ brand, mm, size, qty:1, sellPrice:item.sell, buyPrice:item.buy });
+ showToast(`${brand} ${mm}মিমি ${size}ফুট কার্টে যোগ হয়েছে`);
+ render();
 }
 function removeFromCart(idx){ cart.splice(idx,1); render(); }
-function updateCartQty(idx, val){ cart[idx].qty = Math.max(1, parseInt(val)||1); render(); }
+function updateCartQty(idx, val){
+ const item = cart[idx];
+ const maxStock = inventory[item.brand][item.mm][item.size].stock;
+ let qty = Math.max(1, parseInt(val)||1);
+ if(qty > maxStock){ qty = maxStock; showToast('স্টকে যতটুকু আছে তার বেশি বিক্রি করা যাবে না'); }
+ item.qty = qty;
+ render();
+}
 function updateCartPrice(idx, val){ cart[idx].sellPrice = Math.max(0, parseInt(val)||0); render(); }
  
 /* ---- চেকআউট / ইনভয়েস ---- */
 function openCheckout(){
-  const total = cart.reduce((s,i)=>s+i.qty*i.sellPrice,0);
-  const customerOptions = ledger.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
-  openModal('ইনভয়েস নিশ্চিত করুন', `
-    <div class="field">
-      <label>ক্রেতা (ঐচ্ছিক — বাকি খাতায় যুক্ত করতে চাইলে বাছাই করুন)</label>
-      <select id="invCustomer"><option value="">— নগদ ক্রেতা —</option>${customerOptions}</select>
-    </div>
-    <div class="field">
-      <label>পরিশোধিত পরিমাণ</label>
-      <input type="number" id="invPaid" value="${total}" min="0">
-    </div>
-    <div style="background:var(--steel-100); border-radius:8px; padding:12px 14px; font-size:13.5px;">
-      <div style="display:flex;justify-content:space-between;"><span>সর্বমোট বিল</span><b class="mono">${fmt(total)}</b></div>
-    </div>
-  `, `
-    <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
-    <button class="btn btn-primary" onclick="confirmInvoice(${total})">ইনভয়েস প্রিন্ট করুন</button>
-  `);
+ const total = cart.reduce((s,i)=>s+i.qty*i.sellPrice,0);
+ const customerOptions = ledger.map(l => `<option value="${l.id}">${esc(l.name)}${l.phone ? ' · '+esc(l.phone) : ''}</option>`).join('');
+ openModal('ইনভয়েস নিশ্চিত করুন', `
+ <div class="field">
+ <label>বিদ্যমান গ্রাহক হলে বাছাই করুন (নাহলে নিচে নাম লিখুন)</label>
+ <select id="invCustomer" onchange="invCustomerChange(this.value)"><option value="">— নতুন / নগদ ক্রেতা —</option>${customerOptions}</select>
+ </div>
+ <div class="field"><label>ক্রেতার নাম</label><input type="text" id="invCustName" placeholder="যেমনঃ নগদ ক্রেতা"></div>
+ <div class="field"><label>মোবাইল নাম্বার (ঐচ্ছিক)</label><input type="text" id="invCustPhone" placeholder="01xxx-xxxxxx"></div>
+ <div class="field">
+ <label>পরিশোধিত পরিমাণ</label>
+ <input type="number" id="invPaid" value="${total}" min="0">
+ </div>
+ <div style="background:var(--steel-100); border-radius:8px; padding:12px 14px; font-size:13.5px;">
+ <div style="display:flex;justify-content:space-between;"><span>সর্বমোট বিল</span><b class="mono">${fmt(total)}</b></div>
+ </div>
+ <div style="font-size:11.5px;color:var(--steel-500);margin-top:8px;">পুরো টাকা পরিশোধ হলে এই গ্রাহক "নগদ ক্রেতা" পেজে (সার্চযোগ্য) যুক্ত হবে। বাকি বা আংশিক বাকি থাকলে ক্রেতা স্বয়ংক্রিয়ভাবে বাকির খাতায় যুক্ত হয়ে যাবেন।</div>
+ `, `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="confirmInvoice(${total})">ইনভয়েস প্রিন্ট/ডাউনলোড করুন</button>
+ `);
+}
+function invCustomerChange(id){
+ const nameEl = document.getElementById('invCustName');
+ const phoneEl = document.getElementById('invCustPhone');
+ if(!id){ nameEl.value = ''; phoneEl.value = ''; return; }
+ const cust = ledger.find(l => l.id == id);
+ nameEl.value = cust.name;
+ phoneEl.value = cust.phone || '';
 }
 function confirmInvoice(total){
-  const custId = document.getElementById('invCustomer').value;
-  const paid = Math.min(total, Math.max(0, parseInt(document.getElementById('invPaid').value) || 0));
-  const due = total - paid;
+ const custId = document.getElementById('invCustomer').value;
+ const typedName = document.getElementById('invCustName').value.trim();
+ const typedPhone = document.getElementById('invCustPhone').value.trim();
+ const paid = Math.min(total, Math.max(0, parseInt(document.getElementById('invPaid').value) || 0));
+ const due = total - paid;
  
-  // স্টক কমানো
-  cart.forEach(item => { inventory[item.brand][item.mm][item.size].stock -= item.qty; });
+ // স্টক কমানো
+ cart.forEach(item => { inventory[item.brand][item.mm][item.size].stock -= item.qty; });
  
-  const invoice = { id: invoiceCounter++, items:[...cart], total, paid, due, customer: custId ? ledger.find(l=>l.id==custId).name : 'নগদ ক্রেতা', date: new Date() };
-  invoices.push(invoice);
+ let customerName, customerPhone, custIdFinal = null, isCash = false;
+ if(custId){
+ // বিদ্যমান গ্রাহক (বাকির খাতার) — সিরিয়াল/পজিশন অপরিবর্তিত থাকবে, শুধু due যোগ হবে
+ const cust = ledger.find(l => l.id == custId);
+ customerName = cust.name;
+ customerPhone = cust.phone;
+ custIdFinal = cust.id;
+ if(due > 0) cust.due += due;
+ } else {
+ // নতুন গ্রাহক
+ customerName = typedName || 'নগদ ক্রেতা';
+ customerPhone = typedPhone;
+ if(due > 0){
+ // বাকি বা আংশিক বাকি থাকলে সে স্বয়ংক্রিয়ভাবে বাকির খাতায় যুক্ত হবে
+ const newCust = { id: ledgerNextId++, name: customerName, address:'', phone: customerPhone, due: due, paidTotal: paid };
+ ledger.push(newCust);
+ custIdFinal = newCust.id;
+ } else {
+ // সম্পূর্ণ নগদে পরিশোধ — বাকির খাতায় নয়, বরং আলাদা "নগদ ক্রেতা" তালিকায় যুক্ত/আপডেট হবে
+ isCash = true;
+ let cc = cashCustomers.find(c => (customerPhone && c.phone === customerPhone) || (!customerPhone && c.name === customerName));
+ if(!cc){
+ cc = { id: cashNextId++, name: customerName, phone: customerPhone, invoiceIds: [], totalSpent: 0, lastDate: null };
+ cashCustomers.push(cc);
+ }
+ cc.invoiceIds.push(invoiceCounter);
+ cc.totalSpent += total;
+ cc.lastDate = new Date();
+ if(customerPhone && !cc.phone) cc.phone = customerPhone;
+ custIdFinal = cc.id;
+ }
+ }
  
-  // বাকি খাতা আপডেট — সিরিয়াল/পজিশন অপরিবর্তিত থাকবে, শুধু due যোগ হবে
-  if(custId && due > 0){
-    const cust = ledger.find(l => l.id == custId);
-    cust.due += due;
-  }
+ const invoice = { id: invoiceCounter++, items:[...cart], total, paid, due, customer: customerName, customerPhone, date: new Date(), custId: custIdFinal, isCash };
+ invoices.push(invoice);
  
-  closeModal();
-  printInvoice(invoice);
-  cart = [];
-  posStep = 1; posMM = null; posBrand = null;
-  showToast('ইনভয়েস তৈরি হয়েছে');
-  switchView(currentView === 'sales' ? 'sales' : currentView);
+ closeModal();
+ printInvoice(invoice);
+ cart = [];
+ posStep = 1; posBrand = null; posBrandSearch = ''; posItemSearch = '';
+ showToast('ইনভয়েস তৈরি হয়েছে');
+ switchView(currentView === 'sales' ? 'sales' : currentView);
 }
  
 function printInvoice(inv){
-  const rows = inv.items.map(it => `
-    <tr>
-      <td>${it.brand} · ${it.mm}মিমি · ${it.size}ফুট</td>
-      <td class="r">${it.qty}</td>
-      <td class="r">${fmt(it.sellPrice)}</td>
-      <td class="r">${fmt(it.qty*it.sellPrice)}</td>
-    </tr>`).join('');
-  document.getElementById('printArea').innerHTML = `
-    <div class="invoice-box">
-      <div class="ihead">
-        <h2>করিম টিন হাউস</h2>
-        <p>বাজার রোড, সাভার, ঢাকা · ফোনঃ ০১৭xx-xxxxxx</p>
-        <p>ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString('bn-BD')} · ক্রেতা: ${inv.customer}</p>
-      </div>
-      <table class="itbl">
-        <thead><tr><th>পণ্য</th><th class="r">পরিমাণ</th><th class="r">দর</th><th class="r">মোট</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div class="itotal"><span>সর্বমোট</span><span>${fmt(inv.total)}</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:6px;color:var(--steel-700);">
-        <span>পরিশোধিত: ${fmt(inv.paid)}</span><span>বাকি: ${fmt(inv.due)}</span>
-      </div>
-    </div>`;
-  window.print();
+ const rows = inv.items.map(it => `
+ <tr>
+ <td>${esc(it.brand)} · ${it.mm}মিমি · ${it.size}ফুট</td>
+ <td class="r">${it.qty}</td>
+ <td class="r">${fmt(it.sellPrice)}</td>
+ <td class="r">${fmt(it.qty*it.sellPrice)}</td>
+ </tr>`).join('');
+ document.getElementById('printArea').innerHTML = `
+ <div class="invoice-box">
+ <div class="ihead">
+ <h2>করিম টিন হাউস</h2>
+ <p>বাজার রোড, সাভার, ঢাকা · ফোনঃ ০১৭xx-xxxxxx</p>
+ <p>ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString('bn-BD')} · ক্রেতা: ${esc(inv.customer)}${inv.customerPhone ? ' · '+esc(inv.customerPhone) : ''}</p>
+ </div>
+ <table class="itbl">
+ <thead><tr><th>পণ্য</th><th class="r">পরিমাণ</th><th class="r">দর</th><th class="r">মোট</th></tr></thead>
+ <tbody>${rows}</tbody>
+ </table>
+ <div class="itotal"><span>সর্বমোট</span><span>${fmt(inv.total)}</span></div>
+ <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:6px;color:var(--steel-700);">
+ <span>পরিশোধিত: ${fmt(inv.paid)}</span><span>বাকি: ${fmt(inv.due)}</span>
+ </div>
+ </div>`;
+ window.print();
 }
  
 /* ============================================================
-   স্টক তালিকা (ম্যানেজমেন্ট)
-   ============================================================ */
+ স্টক তালিকা (ম্যানেজমেন্ট) — ব্র্যান্ডের ঘর → ভেতরে ঢুকে সেই ব্র্যান্ডের মাল দেখা ও যোগ করা
+ ============================================================ */
 function renderStock(){
-  const q = stockSearch.trim().toLowerCase();
-  let rows = '';
-  BRANDS.forEach(brand => {
-    Object.keys(inventory[brand]).sort((a,b)=>a-b).forEach(mm => {
-      Object.keys(inventory[brand][mm]).sort((a,b)=>a-b).forEach(sz => {
-        if(q !== '' && !(brand.toLowerCase().includes(q) || String(mm).includes(q) || String(sz).includes(q))) return;
-        const v = inventory[brand][mm][sz];
-        rows += `<tr>
-          <td>${brand}</td><td class="num">${mm} মিমি</td><td class="num">${sz} ফুট</td>
-          <td class="num">${fmt(v.buy)}</td><td class="num">${fmt(v.sell)}</td>
-          <td class="num">${v.stock}</td>
-          <td>${v.stock <= 3 ? `<span class="pill low">কম স্টক</span>` : `<span class="pill ok">স্বাভাবিক</span>`}</td>
-          <td class="tbl-actions"><button onclick="editStockPrompt('${brand}',${mm},${sz})">এডিট</button></td>
-        </tr>`;
-      });
-    });
-  });
-  return `
-    <div class="mgmt-toolbar">
-      <div style="font-size:13px;color:var(--steel-500);">সকল ব্র্যান্ড, মিলিমিটার ও সাইজ অনুযায়ী স্টক ও মূল্য তালিকা</div>
-      <button class="btn btn-primary" onclick="addStockPrompt()">+ নতুন এন্ট্রি</button>
-    </div>
-    <div class="search-bar ${q ? 'has-val' : ''}">
-      <span class="sic">🔍</span>
-      <input type="text" id="stockSearchInput" value="${stockSearch}" placeholder="ব্র্যান্ড, মিমি বা সাইজ দিয়ে সার্চ করুন..."
-        oninput="stockSearchInputFn(this.value)" autocomplete="off">
-      <span class="sclear" onclick="stockSearchInputFn('')">✕</span>
-    </div>
-    <table class="tbl">
-      <thead><tr><th>ব্র্যান্ড</th><th>মিমি</th><th>সাইজ</th><th>ক্রয়মূল্য</th><th>বিক্রয়মূল্য</th><th>স্টক</th><th>অবস্থা</th><th></th></tr></thead>
-      <tbody>${rows || `<tr><td colspan="8" class="no-match">🔍 কোনো ফলাফল পাওয়া যায়নি</td></tr>`}</tbody>
-    </table>`;
+ if(stockStep === 1){
+ /* ---- ধাপ ১: প্রতিটি ব্র্যান্ডের জন্য আলাদা ঘর — নতুন ব্র্যান্ড যোগ করারও সুযোগ ---- */
+ return `
+ <div class="mgmt-toolbar">
+ <div style="font-size:13px;color:var(--steel-500);">একটি ব্র্যান্ডের ঘরে ক্লিক করে তার মিমি ও সাইজ অনুযায়ী স্টক পরিচালনা করুন</div>
+ <button class="btn btn-primary" onclick="addBrandPrompt()">+ নতুন ব্র্যান্ড</button>
+ </div>
+ <div class="brand-grid">
+ ${BRANDS.map(b => {
+ let itemCount = 0, totalStock = 0;
+ Object.values(inventory[b] || {}).forEach(szObj => Object.values(szObj).forEach(v => { itemCount++; totalStock += v.stock; }));
+ return `<button class="brand-tile" onclick="stockSelectBrand('${jsq(b)}')">
+ <div class="bname">${esc(b)}</div>
+ <div class="bmeta">${itemCount} টি আইটেম · ${totalStock} পিস স্টক</div>
+ </button>`;
+ }).join('')}
+ </div>`;
+ }
+ 
+ /* ---- ধাপ ২: নির্বাচিত ব্র্যান্ডের ভেতরে — শুধু এই ব্র্যান্ডের মিমি/সাইজ তালিকা ---- */
+ const q = stockSearch.trim().toLowerCase();
+ let rows = '';
+ Object.keys(inventory[stockBrand] || {}).sort((a,b)=>a-b).forEach(mm => {
+ Object.keys(inventory[stockBrand][mm]).sort((a,b)=>a-b).forEach(sz => {
+ if(q !== '' && !(String(mm).includes(q) || String(sz).includes(q))) return;
+ const v = inventory[stockBrand][mm][sz];
+ rows += `<tr>
+ <td class="num">${mm} মিমি</td><td class="num">${sz} ফুট</td>
+ <td class="num">${fmt(v.buy)}</td><td class="num">${fmt(v.sell)}</td>
+ <td class="num">${v.stock}</td>
+ <td>${v.stock <= 3 ? `<span class="pill low">কম স্টক</span>` : `<span class="pill ok">স্বাভাবিক</span>`}</td>
+ <td class="tbl-actions"><button onclick="editStockPrompt('${jsq(stockBrand)}',${mm},${sz})">এডিট</button></td>
+ </tr>`;
+ });
+ });
+ const isBrandEmpty = Object.keys(inventory[stockBrand] || {}).length === 0;
+ const emptyMsg = isBrandEmpty
+ ? `<tr><td colspan="7" class="no-match">📦 ${esc(stockBrand)}-এ এখনো কোনো মাল যোগ করা হয়নি — উপরের "+ নতুন মাল যোগ করুন" চেপে শুরু করুন</td></tr>`
+ : `<tr><td colspan="7" class="no-match">🔍 কোনো ফলাফল পাওয়া যায়নি</td></tr>`;
+ return `
+ <div class="back-row">
+ <button class="btn btn-outline" onclick="stockGoStep(1)">← পেছনে যান</button>
+ <div class="cur-brand">${esc(stockBrand)}</div>
+ </div>
+ <div class="mgmt-toolbar">
+ <div style="font-size:13px;color:var(--steel-500);">${esc(stockBrand)}-এর মিলিমিটার ও সাইজ অনুযায়ী স্টক ও মূল্য তালিকা</div>
+ <button class="btn btn-primary" onclick="addStockPrompt()">+ নতুন মাল যোগ করুন</button>
+ </div>
+ <div class="search-bar ${q ? 'has-val' : ''}">
+ <span class="sic">🔍</span>
+ <input type="text" id="stockSearchInput" value="${stockSearch}" placeholder="মিমি বা ফুট দিয়ে সার্চ করুন..."
+ oninput="stockSearchInputFn(this.value)" autocomplete="off">
+ <span class="sclear" onclick="stockSearchInputFn('')">✕</span>
+ </div>
+ <table class="tbl">
+ <thead><tr><th>মিমি</th><th>সাইজ</th><th>ক্রয়মূল্য</th><th>বিক্রয়মূল্য</th><th>স্টক</th><th>অবস্থা</th><th></th></tr></thead>
+ <tbody>${rows || emptyMsg}</tbody>
+ </table>`;
+}
+function stockGoStep(step){ stockStep = step; if(step===1){ stockBrand=null; stockSearch=''; } render(); }
+function stockSelectBrand(b){ stockBrand = b; stockStep = 2; stockSearch=''; render(); }
+function addBrandPrompt(){
+ openModal('নতুন ব্র্যান্ড যোগ করুন', `
+ <div class="field"><label>ব্র্যান্ডের নাম</label><input type="text" id="newBrandName" placeholder="যেমনঃ বসুন্ধরা স্টিল"></div>
+ `, `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveNewBrand()">যোগ করুন</button>
+ `);
+}
+function saveNewBrand(){
+ const name = document.getElementById('newBrandName').value.trim();
+ if(!name){ showToast('ব্র্যান্ডের নাম আবশ্যক'); return; }
+ if(BRANDS.includes(name)){ showToast('এই ব্র্যান্ড আগে থেকেই আছে'); return; }
+ BRANDS.push(name);
+ inventory[name] = {};
+ closeModal(); render(); showToast('নতুন ব্র্যান্ড যুক্ত হয়েছে');
 }
 function stockSearchInputFn(val){
-  stockSearch = val;
-  render();
-  const el = document.getElementById('stockSearchInput');
-  if(el){ el.focus(); const p = el.value.length; el.setSelectionRange(p,p); }
+ stockSearch = val;
+ render();
+ const el = document.getElementById('stockSearchInput');
+ if(el){ el.focus(); const p = el.value.length; el.setSelectionRange(p,p); }
 }
 function editStockPrompt(brand, mm, sz){
-  const v = inventory[brand][mm][sz];
-  openModal(`এডিট — ${brand} · ${mm}মিমি · ${sz}ফুট`, `
-    <div class="field"><label>ক্রয়মূল্য (৳)</label><input type="number" id="editBuy" value="${v.buy}"></div>
-    <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="editSell" value="${v.sell}"></div>
-    <div class="field"><label>স্টক (পিস)</label><input type="number" id="editStock" value="${v.stock}"></div>
-  `, `
-    <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
-    <button class="btn btn-primary" onclick="saveStockEdit('${brand}',${mm},${sz})">সংরক্ষণ করুন</button>
-  `);
+ const v = inventory[brand][mm][sz];
+ openModal(`এডিট — ${esc(brand)} · ${mm}মিমি · ${sz}ফুট`, `
+ <div class="field"><label>ক্রয়মূল্য (৳)</label><input type="number" id="editBuy" value="${v.buy}" min="0"></div>
+ <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="editSell" value="${v.sell}" min="0"></div>
+ <div class="field"><label>স্টক (পিস)</label><input type="number" id="editStock" value="${v.stock}" min="0"></div>
+ `, `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveStockEdit('${jsq(brand)}',${mm},${sz})">সংরক্ষণ করুন</button>
+ `);
 }
 function saveStockEdit(brand, mm, sz){
-  const v = inventory[brand][mm][sz];
-  v.buy = parseInt(document.getElementById('editBuy').value) || v.buy;
-  v.sell = parseInt(document.getElementById('editSell').value) || v.sell;
-  v.stock = parseInt(document.getElementById('editStock').value) ?? v.stock;
-  closeModal(); render(); showToast('আপডেট হয়েছে');
+ const v = inventory[brand][mm][sz];
+ v.buy = parseInt(document.getElementById('editBuy').value) || v.buy;
+ v.sell = parseInt(document.getElementById('editSell').value) || v.sell;
+ v.stock = parseInt(document.getElementById('editStock').value) ?? v.stock;
+ closeModal(); render(); showToast('আপডেট হয়েছে');
 }
 function addStockPrompt(){
-  const brandOptions = BRANDS.map(b=>`<option value="${b}">${b}</option>`).join('');
-  const mmOptions = MM_LIST.map(m=>`<option value="${m}">${m} মিমি</option>`).join('');
-  const szOptions = SIZE_LIST.map(s=>`<option value="${s}">${s} ফুট</option>`).join('');
-  openModal('নতুন স্টক এন্ট্রি', `
-    <div class="field"><label>ব্র্যান্ড</label><select id="newBrand">${brandOptions}</select></div>
-    <div class="field"><label>মিলিমিটার</label><select id="newMM">${mmOptions}</select></div>
-    <div class="field"><label>সাইজ</label><select id="newSize">${szOptions}</select></div>
-    <div class="field"><label>ক্রয়মূল্য (৳)</label><input type="number" id="newBuy" value="500"></div>
-    <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="newSell" value="570"></div>
-    <div class="field"><label>স্টক (পিস)</label><input type="number" id="newStock" value="10"></div>
-  `, `
-    <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
-    <button class="btn btn-primary" onclick="saveNewStock()">যোগ করুন</button>
-  `);
+ const mmOptions = MM_LIST.map(m=>`<option value="${m}">${m} মিমি</option>`).join('');
+ const szOptions = SIZE_LIST.map(s=>`<option value="${s}">${s} ফুট</option>`).join('');
+ openModal(`নতুন মাল যোগ করুন — ${esc(stockBrand)}`, `
+ <div class="field"><label>মিলিমিটার</label><select id="newMM">${mmOptions}</select></div>
+ <div class="field"><label>সাইজ</label><select id="newSize">${szOptions}</select></div>
+ <div class="field"><label>ক্রয়মূল্য (৳)</label><input type="number" id="newBuy" value="500" min="0"></div>
+ <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="newSell" value="570" min="0"></div>
+ <div class="field"><label>স্টক (পিস)</label><input type="number" id="newStock" value="10" min="0"></div>
+ `, `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveNewStock()">যোগ করুন</button>
+ `);
 }
 function saveNewStock(){
-  const brand = document.getElementById('newBrand').value;
-  const mm = document.getElementById('newMM').value;
-  const sz = document.getElementById('newSize').value;
-  if(!inventory[brand][mm]) inventory[brand][mm] = {};
-  inventory[brand][mm][sz] = {
-    buy: parseInt(document.getElementById('newBuy').value)||0,
-    sell: parseInt(document.getElementById('newSell').value)||0,
-    stock: parseInt(document.getElementById('newStock').value)||0,
-  };
-  closeModal(); render(); showToast('নতুন এন্ট্রি যোগ হয়েছে');
+ const mm = document.getElementById('newMM').value;
+ const sz = document.getElementById('newSize').value;
+ if(!inventory[stockBrand][mm]) inventory[stockBrand][mm] = {};
+ inventory[stockBrand][mm][sz] = {
+ buy: parseInt(document.getElementById('newBuy').value)||0,
+ sell: parseInt(document.getElementById('newSell').value)||0,
+ stock: parseInt(document.getElementById('newStock').value)||0,
+ };
+ closeModal(); render(); showToast('নতুন মাল যোগ হয়েছে');
 }
  
 /* ============================================================
-   বাকির খাতা — সিরিয়াল/পজিশন অপরিবর্তিত (টগল হবে না)
-   ============================================================ */
+ বাকির খাতা — সিরিয়াল/পজিশন অপরিবর্তিত (টগল হবে না), নাম/মোবাইল দিয়ে সার্চযোগ্য
+ ============================================================ */
 function renderLedger(){
-  return `
-    <div class="ledger-toolbar">
-      <div style="font-size:13px;color:var(--steel-500);">যে সিরিয়ালে গ্রাহক যুক্ত হয়েছে, পরিশোধ করলেও সেই সিরিয়ালেই থাকবে</div>
-      <button class="btn btn-primary" onclick="addCustomerPrompt()">+ নতুন গ্রাহক</button>
-    </div>
-    <div class="ledger-list">
-      ${ledger.map((l, idx) => `
-        <div class="ledger-row">
-          <div class="ledger-serial">${idx+1}</div>
-          <div class="ledger-info">
-            <div class="lname">${l.name}</div>
-            <div class="lmeta">${l.address} · ${l.phone}</div>
-          </div>
-          <div class="ledger-due">
-            <div class="amt ${l.due===0?'clear':''}">${l.due===0?'পরিশোধিত':fmt(l.due)}</div>
-            <div class="lbl">${l.due===0?'কোনো বাকি নেই':'বকেয়া'}</div>
-          </div>
-          <button class="btn btn-outline" onclick="paymentPrompt(${l.id})">পেমেন্ট</button>
-        </div>`).join('')}
-    </div>`;
+ const q = ledgerSearch.trim().toLowerCase();
+ const searchBar = `
+ <div class="search-bar ${q ? 'has-val' : ''}">
+ <span class="sic">🔍</span>
+ <input type="text" id="ledgerSearchInput" value="${ledgerSearch}" placeholder="নাম, মোবাইল নাম্বার বা ঠিকানা দিয়ে সার্চ করুন..."
+ oninput="ledgerSearchInputFn(this.value)" autocomplete="off">
+ <span class="sclear" onclick="ledgerSearchInputFn('')">✕</span>
+ </div>`;
+ 
+ const filtered = ledger
+ .map((l, idx) => ({ l, serial: idx+1 }))
+ .filter(({l}) => q === '' || (l.name+' '+(l.phone||'')+' '+(l.address||'')).toLowerCase().includes(q));
+ 
+ const list = filtered.length === 0 ? `<div class="no-match">🔍 "${ledgerSearch}" এর সাথে মিলে এমন কোনো গ্রাহক পাওয়া যায়নি</div>` :
+ `<div class="ledger-list">
+ ${filtered.map(({l, serial}) => `
+ <div class="ledger-row">
+ <div class="ledger-serial">${serial}</div>
+ <div class="ledger-info">
+ <div class="lname">${esc(l.name)}</div>
+ <div class="lmeta">${[esc(l.address), esc(l.phone)].filter(Boolean).join(' · ') || 'কোনো তথ্য নেই'}</div>
+ </div>
+ <div class="ledger-due">
+ <div class="amt ${l.due===0?'clear':''}">${l.due===0?'পরিশোধিত':fmt(l.due)}</div>
+ <div class="lbl">${l.due===0?'কোনো বাকি নেই':'বকেয়া'}</div>
+ </div>
+ <button class="btn btn-outline" onclick="viewCustomerInvoices(${l.id})">ইনভয়েস</button>
+ <button class="btn btn-primary" onclick="paymentPrompt(${l.id})">পেমেন্ট</button>
+ </div>`).join('')}
+ </div>`;
+ 
+ return `
+ <div class="ledger-toolbar">
+ <div style="font-size:13px;color:var(--steel-500);">যে সিরিয়ালে গ্রাহক যুক্ত হয়েছে, পরিশোধ করলেও সেই সিরিয়ালেই থাকবে</div>
+ <button class="btn btn-primary" onclick="addCustomerPrompt()">+ নতুন গ্রাহক</button>
+ </div>
+ ${searchBar}
+ ${list}`;
+}
+function ledgerSearchInputFn(val){
+ ledgerSearch = val;
+ render();
+ const el = document.getElementById('ledgerSearchInput');
+ if(el){ el.focus(); const p = el.value.length; el.setSelectionRange(p,p); }
+}
+function viewCustomerInvoices(custId){
+ const cust = ledger.find(l => l.id === custId);
+ const custInvoices = invoices.filter(inv => inv.custId === custId);
+ const rows = custInvoices.length === 0 ? `<div class="no-match">এখনো কোনো ইনভয়েস নেই</div>` :
+ custInvoices.slice().reverse().map(inv => `
+ <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--steel-100);font-size:13px;">
+ <div>
+ <div style="font-weight:600;">ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString('bn-BD')}</div>
+ <div style="color:var(--steel-500);font-size:12px;">সর্বমোট ${fmt(inv.total)} · বাকি ${fmt(inv.due)}</div>
+ </div>
+ <button class="btn btn-outline" onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">প্রিন্ট/ডাউনলোড</button>
+ </div>`).join('');
+ openModal(`ইনভয়েস — ${esc(cust.name)}`, rows, `<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>`);
 }
 function addCustomerPrompt(){
-  openModal('নতুন গ্রাহক যুক্ত করুন', `
-    <div class="field"><label>নাম</label><input type="text" id="custName" placeholder="যেমনঃ মোঃ করিম মিয়া"></div>
-    <div class="field"><label>ঠিকানা</label><input type="text" id="custAddr" placeholder="যেমনঃ বাজার রোড, সাভার"></div>
-    <div class="field"><label>মোবাইল নাম্বার</label><input type="text" id="custPhone" placeholder="01xxx-xxxxxx"></div>
-    <div class="field"><label>শুরুর বাকি (থাকলে)</label><input type="number" id="custDue" value="0"></div>
-  `, `
-    <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
-    <button class="btn btn-primary" onclick="saveNewCustomer()">যুক্ত করুন</button>
-  `);
+ openModal('নতুন গ্রাহক যুক্ত করুন', `
+ <div class="field"><label>নাম</label><input type="text" id="custName" placeholder="যেমনঃ মোঃ করিম মিয়া"></div>
+ <div class="field"><label>ঠিকানা</label><input type="text" id="custAddr" placeholder="যেমনঃ বাজার রোড, সাভার"></div>
+ <div class="field"><label>মোবাইল নাম্বার</label><input type="text" id="custPhone" placeholder="01xxx-xxxxxx"></div>
+ <div class="field"><label>শুরুর বাকি (থাকলে)</label><input type="number" id="custDue" value="0" min="0"></div>
+ `, `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveNewCustomer()">যুক্ত করুন</button>
+ `);
 }
 function saveNewCustomer(){
-  const name = document.getElementById('custName').value.trim();
-  if(!name){ showToast('নাম আবশ্যক'); return; }
-  // নতুন গ্রাহক সবসময় তালিকার শেষে যুক্ত হবে — বিদ্যমান কারো সিরিয়াল পরিবর্তন হবে না
-  ledger.push({
-    id: ledgerNextId++, name,
-    address: document.getElementById('custAddr').value.trim(),
-    phone: document.getElementById('custPhone').value.trim(),
-    due: parseInt(document.getElementById('custDue').value) || 0,
-    paidTotal: 0,
-  });
-  closeModal(); render(); showToast('গ্রাহক যুক্ত হয়েছে');
+ const name = document.getElementById('custName').value.trim();
+ if(!name){ showToast('নাম আবশ্যক'); return; }
+ // নতুন গ্রাহক সবসময় তালিকার শেষে যুক্ত হবে — বিদ্যমান কারো সিরিয়াল পরিবর্তন হবে না
+ ledger.push({
+ id: ledgerNextId++, name,
+ address: document.getElementById('custAddr').value.trim(),
+ phone: document.getElementById('custPhone').value.trim(),
+ due: parseInt(document.getElementById('custDue').value) || 0,
+ paidTotal: 0,
+ });
+ closeModal(); render(); showToast('গ্রাহক যুক্ত হয়েছে');
 }
 function paymentPrompt(id){
-  const cust = ledger.find(l => l.id === id);
-  openModal(`পেমেন্ট — ${cust.name}`, `
-    <div style="background:var(--steel-100);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13.5px;display:flex;justify-content:space-between;">
-      <span>বর্তমান বাকি</span><b class="mono">${fmt(cust.due)}</b>
-    </div>
-    <div class="field"><label>পরিশোধের পরিমাণ (৳)</label><input type="number" id="payAmt" value="${cust.due}" min="0" max="${cust.due}"></div>
-    <div style="font-size:11.5px;color:var(--steel-500);">পরিশোধ করার পরও এই গ্রাহক তালিকার একই সিরিয়ালে (${ledger.indexOf(cust)+1} নং) থাকবে — উপরে-নিচে যাবে না।</div>
-  `, `
-    <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
-    <button class="btn btn-primary" onclick="applyPayment(${id})">জমা করুন</button>
-  `);
+ const cust = ledger.find(l => l.id === id);
+ openModal(`পেমেন্ট — ${esc(cust.name)}`, `
+ <div style="background:var(--steel-100);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13.5px;display:flex;justify-content:space-between;">
+ <span>বর্তমান বাকি</span><b class="mono">${fmt(cust.due)}</b>
+ </div>
+ <div class="field"><label>পরিশোধের পরিমাণ (৳)</label><input type="number" id="payAmt" value="${cust.due}" min="0" max="${cust.due}"></div>
+ <div style="font-size:11.5px;color:var(--steel-500);">পরিশোধ করার পরও এই গ্রাহক তালিকার একই সিরিয়ালে (${ledger.indexOf(cust)+1} নং) থাকবে — উপরে-নিচে যাবে না। পেমেন্ট নেওয়ার পর একটি রশিদ স্বয়ংক্রিয়ভাবে প্রিন্ট/ডাউনলোডের জন্য দেখানো হবে।</div>
+ `, `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="applyPayment(${id})">জমা করুন ও রশিদ দিন</button>
+ `);
 }
 function applyPayment(id){
-  const cust = ledger.find(l => l.id === id);
-  const amt = Math.min(cust.due, Math.max(0, parseInt(document.getElementById('payAmt').value) || 0));
-  cust.due -= amt;
-  cust.paidTotal += amt;
-  // লক্ষ্য করুনঃ ledger অ্যারের ক্রম/ইনডেক্স স্পর্শ করা হয়নি — সিরিয়াল অপরিবর্তিত থাকে
-  closeModal(); render(); showToast(`${fmt(amt)} জমা হয়েছে`);
+ const cust = ledger.find(l => l.id === id);
+ const dueBefore = cust.due;
+ const amt = Math.min(cust.due, Math.max(0, parseInt(document.getElementById('payAmt').value) || 0));
+ cust.due -= amt;
+ cust.paidTotal += amt;
+ // লক্ষ্য করুনঃ ledger অ্যারের ক্রম/ইনডেক্স স্পর্শ করা হয়নি — সিরিয়াল অপরিবর্তিত থাকে
+ closeModal(); render(); showToast(`${fmt(amt)} জমা হয়েছে`);
+ printPaymentReceipt(cust, amt, dueBefore);
+}
+function printPaymentReceipt(cust, amt, dueBefore){
+ document.getElementById('printArea').innerHTML = `
+ <div class="invoice-box">
+ <div class="ihead">
+ <h2>করিম টিন হাউস</h2>
+ <p>বাজার রোড, সাভার, ঢাকা · ফোনঃ ০১৭xx-xxxxxx</p>
+ <p>পেমেন্ট রশিদ · ${new Date().toLocaleDateString('bn-BD')} · গ্রাহক: ${esc(cust.name)}${cust.phone ? ' · '+esc(cust.phone) : ''}</p>
+ </div>
+ <table class="itbl">
+ <thead><tr><th>বিবরণ</th><th class="r">পরিমাণ</th></tr></thead>
+ <tbody>
+ <tr><td>পূর্বের বকেয়া</td><td class="r">${fmt(dueBefore)}</td></tr>
+ <tr><td>জমাকৃত পরিমাণ</td><td class="r">${fmt(amt)}</td></tr>
+ <tr><td>বর্তমান বকেয়া</td><td class="r">${fmt(cust.due)}</td></tr>
+ </tbody>
+ </table>
+ <div class="itotal"><span>জমাকৃত</span><span>${fmt(amt)}</span></div>
+ </div>`;
+ window.print();
 }
  
 /* ============================================================
-   ইনভয়েস হিস্ট্রি
-   ============================================================ */
+ নগদ ক্রেতা — যারা পুরো টাকা একবারেই পরিশোধ করে দিয়েছেন (বাকির খাতা থেকে সম্পূর্ণ আলাদা পেজ), নাম/মোবাইল দিয়ে সার্চযোগ্য
+ ============================================================ */
+function renderCashCustomers(){
+ const q = cashSearch.trim().toLowerCase();
+ const searchBar = `
+ <div class="search-bar ${q ? 'has-val' : ''}">
+ <span class="sic">🔍</span>
+ <input type="text" id="cashSearchInput" value="${cashSearch}" placeholder="নাম বা মোবাইল নাম্বার দিয়ে সার্চ করুন..."
+ oninput="cashSearchInputFn(this.value)" autocomplete="off">
+ <span class="sclear" onclick="cashSearchInputFn('')">✕</span>
+ </div>`;
+ 
+ if(cashCustomers.length === 0) return `${searchBar}<div class="empty-state"><div class="ic">💵</div>এখনো কোনো নগদ ক্রেতা নেই<br><span style="font-size:12px;">বিক্রয় সম্পূর্ণ পরিশোধ হলে ক্রেতা এখানে স্বয়ংক্রিয়ভাবে যুক্ত হবে</span></div>`;
+ 
+ const filtered = cashCustomers.filter(c => q === '' || (c.name+' '+(c.phone||'')).toLowerCase().includes(q));
+ if(filtered.length === 0) return searchBar + `<div class="no-match">🔍 "${cashSearch}" এর সাথে মিলে এমন কোনো নগদ ক্রেতা পাওয়া যায়নি</div>`;
+ 
+ return searchBar + `<div class="ledger-list">
+ ${filtered.map((c, idx) => `
+ <div class="ledger-row">
+ <div class="ledger-serial">${idx+1}</div>
+ <div class="ledger-info">
+ <div class="lname">${esc(c.name)}</div>
+ <div class="lmeta">${esc(c.phone) || 'মোবাইল নাম্বার নেই'} · সর্বমোট ক্রয় ${fmt(c.totalSpent)} · সর্বশেষ ${c.lastDate ? new Date(c.lastDate).toLocaleDateString('bn-BD') : '—'}</div>
+ </div>
+ <div class="ledger-due"><div class="amt clear">নগদ</div><div class="lbl">সম্পূর্ণ পরিশোধিত</div></div>
+ <button class="btn btn-outline" onclick="viewCashInvoices(${c.id})">ইনভয়েস</button>
+ </div>`).join('')}
+ </div>`;
+}
+function cashSearchInputFn(val){
+ cashSearch = val;
+ render();
+ const el = document.getElementById('cashSearchInput');
+ if(el){ el.focus(); const p = el.value.length; el.setSelectionRange(p,p); }
+}
+function viewCashInvoices(ccId){
+ const cc = cashCustomers.find(c => c.id === ccId);
+ const rows = cc.invoiceIds.length === 0 ? `<div class="no-match">এখনো কোনো ইনভয়েস নেই</div>` :
+ cc.invoiceIds.slice().reverse().map(iid => {
+ const inv = invoices.find(x => x.id === iid);
+ if(!inv) return '';
+ return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--steel-100);font-size:13px;">
+ <div>
+ <div style="font-weight:600;">ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString('bn-BD')}</div>
+ <div style="color:var(--steel-500);font-size:12px;">সর্বমোট ${fmt(inv.total)}</div>
+ </div>
+ <button class="btn btn-outline" onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">প্রিন্ট/ডাউনলোড</button>
+ </div>`;
+ }).join('');
+ openModal(`ইনভয়েস — ${esc(cc.name)}`, rows, `<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>`);
+}
+ 
+/* ============================================================
+ ইনভয়েস হিস্ট্রি — নাম, নাম্বার বা তারিখ দিয়ে সার্চ করা যাবে
+ ============================================================ */
 function renderInvoices(){
-  if(invoices.length === 0) return `<div class="empty-state"><div class="ic">🗂️</div>এখনো কোনো ইনভয়েস তৈরি হয়নি<br><span style="font-size:12px;">"বিক্রয়" থেকে প্রথম ইনভয়েস তৈরি করুন</span></div>`;
-  return `<table class="tbl">
-    <thead><tr><th>ইনভয়েস</th><th>ক্রেতা</th><th>তারিখ</th><th>আইটেম</th><th class="r">সর্বমোট</th><th class="r">বাকি</th><th></th></tr></thead>
-    <tbody>${invoices.slice().reverse().map(inv => `
-      <tr>
-        <td class="num">#${inv.id}</td><td>${inv.customer}</td>
-        <td>${new Date(inv.date).toLocaleDateString('bn-BD')}</td>
-        <td>${inv.items.length} টি</td>
-        <td class="num">${fmt(inv.total)}</td>
-        <td class="num" style="color:${inv.due>0?'var(--red)':'var(--green)'}">${fmt(inv.due)}</td>
-        <td class="tbl-actions"><button onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">প্রিন্ট</button></td>
-      </tr>`).join('')}
-    </tbody></table>`;
+ const q = invoiceSearch.trim().toLowerCase();
+ const searchBar = `
+ <div class="search-bar ${q ? 'has-val' : ''}">
+ <span class="sic">🔍</span>
+ <input type="text" id="invoiceSearchInput" value="${invoiceSearch}" placeholder="নাম, মোবাইল নাম্বার বা তারিখ দিয়ে সার্চ করুন (যেমনঃ ২১ জুলাই)"
+ oninput="invoiceSearchInputFn(this.value)" autocomplete="off">
+ <span class="sclear" onclick="invoiceSearchInputFn('')">✕</span>
+ </div>`;
+ 
+ if(invoices.length === 0) return `<div class="empty-state"><div class="ic">🗂️</div>এখনো কোনো ইনভয়েস তৈরি হয়নি<br><span style="font-size:12px;">"বিক্রয়" থেকে প্রথম ইনভয়েস তৈরি করুন</span></div>`;
+ 
+ const filtered = invoices.filter(inv => {
+ if(q === '') return true;
+ const dateStr = new Date(inv.date).toLocaleDateString('bn-BD', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+ const hay = (inv.customer + ' ' + (inv.customerPhone||'') + ' ' + dateStr + ' ' + inv.id).toLowerCase();
+ return hay.includes(q);
+ });
+ 
+ if(filtered.length === 0) return searchBar + `<div class="no-match">🔍 "${invoiceSearch}" এর সাথে মিলে এমন কোনো ইনভয়েস পাওয়া যায়নি</div>`;
+ 
+ return searchBar + `<table class="tbl">
+ <thead><tr><th>ইনভয়েস</th><th>ক্রেতা</th><th>মোবাইল</th><th>তারিখ</th><th>আইটেম</th><th class="r">সর্বমোট</th><th class="r">বাকি</th><th></th></tr></thead>
+ <tbody>${filtered.slice().reverse().map(inv => `
+ <tr>
+ <td class="num">#${inv.id}</td><td>${esc(inv.customer)}</td><td class="num">${esc(inv.customerPhone) || '—'}</td>
+ <td>${new Date(inv.date).toLocaleDateString('bn-BD')}</td>
+ <td>${inv.items.length} টি</td>
+ <td class="num">${fmt(inv.total)}</td>
+ <td class="num" style="color:${inv.due>0?'var(--red)':'var(--green)'}">${fmt(inv.due)}</td>
+ <td class="tbl-actions"><button onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">প্রিন্ট/ডাউনলোড</button></td>
+ </tr>`).join('')}
+ </tbody></table>`;
+}
+function invoiceSearchInputFn(val){
+ invoiceSearch = val;
+ render();
+ const el = document.getElementById('invoiceSearchInput');
+ if(el){ el.focus(); const p = el.value.length; el.setSelectionRange(p,p); }
 }
  
 /* ============================================================
-   MODAL / TOAST HELPERS
-   ============================================================ */
+ MODAL / TOAST HELPERS
+ ============================================================ */
 function openModal(title, body, foot){
-  document.getElementById('modalBox').innerHTML = `
-    <div class="modal-head"><h3>${title}</h3><span class="modal-close" onclick="closeModal()">✕</span></div>
-    <div class="modal-body">${body}</div>
-    <div class="modal-foot">${foot}</div>`;
-  document.getElementById('modalOverlay').classList.add('active');
+ document.getElementById('modalBox').innerHTML = `
+ <div class="modal-head"><h3>${title}</h3><span class="modal-close" onclick="closeModal()">✕</span></div>
+ <div class="modal-body">${body}</div>
+ <div class="modal-foot">${foot}</div>`;
+ document.getElementById('modalOverlay').classList.add('active');
 }
 function closeModal(){ document.getElementById('modalOverlay').classList.remove('active'); }
 let toastTimer;
 function showToast(msg){
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
+ const t = document.getElementById('toast');
+ t.textContent = msg; t.classList.add('show');
+ clearTimeout(toastTimer);
+ toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
 }
 </script>
 </body>
