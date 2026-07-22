@@ -36,7 +36,6 @@ h1,h2,h3,.display{ font-family:'Baloo Da 2', sans-serif; }
 button{ font-family:inherit; cursor:pointer; border:none; background:none; }
 input, select{ font-family:inherit; }
  
-/* corrugated wave pattern — the ঢেউ (wave) of ঢেউটিন, used as the app's signature motif */
 .wave-strip{
  height:var(--wave-h);
  width:100%;
@@ -50,7 +49,6 @@ input, select{ font-family:inherit; }
 .wave-strip.top{ -webkit-mask-position: 0 -6px; mask-position:0 -6px; }
 .wave-strip.bottom{ -webkit-mask-position: 0 6px; mask-position:0 6px; transform:scaleY(-1); }
  
-/* ================= LOCK SCREEN ================= */
 #lockScreen{
  position:fixed; inset:0; z-index:100;
  background:var(--steel-900);
@@ -89,7 +87,6 @@ input, select{ font-family:inherit; }
 .pin-key.clear{ color:var(--steel-300); font-size:13px; }
 .lock-hint{ margin-top:16px; font-size:11px; color:var(--steel-500); }
  
-/* ================= APP SHELL ================= */
 #app{ display:none; min-height:100vh; }
 #app.active{ display:flex; }
  
@@ -123,7 +120,6 @@ input, select{ font-family:inherit; }
 .topbar .meta{ font-size:12px; color:var(--steel-300); margin-top:2px; font-weight:400; font-family:'Hind Siliguri'; }
 .content{ padding:26px 28px 90px; flex:1; }
  
-/* ================= DASHBOARD ================= */
 .stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
 .stat-card{
  background:white; border-radius:var(--radius); padding:18px;
@@ -137,7 +133,6 @@ input, select{ font-family:inherit; }
 .panel{ background:white; border-radius:var(--radius); border:1px solid var(--steel-100); padding:20px; }
 .panel h3{ font-size:15px; margin-bottom:14px; }
  
-/* ================= SALES / POS ================= */
 .search-bar{ position:relative; margin-bottom:16px; }
 .search-bar input{
  width:100%; padding:12px 14px 12px 40px; border-radius:9px; border:1.5px solid var(--steel-100);
@@ -233,7 +228,6 @@ input, select{ font-family:inherit; }
 .checkout-btn:hover{ background:var(--rust-dark); }
 .checkout-btn:disabled{ background:var(--steel-300); }
  
-/* ================= FORMS / MODALS ================= */
 .field{ margin-bottom:14px; }
 .field label{ display:block; font-size:12.5px; font-weight:600; color:var(--steel-700); margin-bottom:5px; }
 .field input, .field select{
@@ -256,9 +250,8 @@ input, select{ font-family:inherit; }
 .modal-head h3{ font-size:16px; }
 .modal-close{ font-size:20px; color:var(--steel-500); }
 .modal-body{ padding:20px 22px; }
-.modal-foot{ padding:16px 22px; border-top:1px solid var(--steel-100); display:flex; justify-content:flex-end; gap:10px; }
+.modal-foot{ padding:16px 22px; border-top:1px solid var(--steel-100); display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
  
-/* ================= STOCK MGMT TABLE ================= */
 .mgmt-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:10px; flex-wrap:wrap; }
 .tbl{ width:100%; border-collapse:collapse; background:white; border-radius:var(--radius); overflow:hidden; border:1px solid var(--steel-100); }
 .tbl th{ background:var(--steel-100); text-align:left; padding:10px 14px; font-size:11.5px; color:var(--steel-700); font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
@@ -270,18 +263,17 @@ input, select{ font-family:inherit; }
 .pill.low{ background:#FBEAE7; color:var(--red); }
 .tbl-actions button{ font-size:12px; color:var(--rust); font-weight:600; }
  
-/* ================= বাকি খাতা (LEDGER) ================= */
 .ledger-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
 .ledger-list{ display:flex; flex-direction:column; gap:10px; }
 .ledger-row{
  background:white; border:1px solid var(--steel-100); border-radius:var(--radius);
- padding:14px 16px; display:flex; align-items:center; gap:14px;
+ padding:14px 16px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
 }
 .ledger-serial{
  width:34px; height:34px; border-radius:50%; background:var(--steel-100); color:var(--steel-700);
  display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono'; font-weight:700; font-size:13px; flex-shrink:0;
 }
-.ledger-info{ flex:1; min-width:0; }
+.ledger-info{ flex:1; min-width:160px; }
 .ledger-info .lname{ font-weight:700; font-size:14.5px; }
 .ledger-info .lmeta{ font-size:12px; color:var(--steel-500); margin-top:2px; }
 .ledger-due{ text-align:right; }
@@ -290,7 +282,6 @@ input, select{ font-family:inherit; }
 .ledger-due .lbl{ font-size:10.5px; color:var(--steel-500); }
 .ledger-row .btn{ flex-shrink:0; }
  
-/* ================= INVOICE PRINT ================= */
 .invoice-box{ background:white; border:1px solid var(--steel-100); border-radius:var(--radius); padding:26px; max-width:520px; margin:0 auto; }
 .invoice-box .ihead{ text-align:center; border-bottom:2px dashed var(--steel-300); padding-bottom:14px; margin-bottom:14px; }
 .invoice-box .ihead h2{ font-size:20px; }
@@ -300,6 +291,7 @@ input, select{ font-family:inherit; }
 .itbl td{ padding:6px 4px; border-bottom:1px dotted var(--steel-100); }
 .itbl td.r, .itbl th.r{ text-align:right; font-family:'JetBrains Mono'; }
 .itotal{ display:flex; justify-content:space-between; padding-top:8px; border-top:2px solid var(--ink); font-size:16px; font-weight:700; font-family:'JetBrains Mono'; }
+.idiscount{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--green); margin-top:4px; }
  
 .toast{
  position:fixed; bottom:26px; left:50%; transform:translateX(-50%);
@@ -319,12 +311,29 @@ input, select{ font-family:inherit; }
 }
 #printArea{ display:none; }
  
-/* ================= মোবাইল কার্ট বার (সবসময় দৃশ্যমান — বিক্রয় ঠিক কোথা থেকে করবেন সেটা স্পষ্ট রাখতে) ================= */
 .back-row{ display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
 .back-row .cur-brand{ font-family:'Baloo Da 2'; font-weight:700; font-size:16px; }
 .mobile-cart-bar{ display:none; }
  
-/* ================= RESPONSIVE ================= */
+.day-card{
+ background:white; border:1px solid var(--steel-100); border-radius:var(--radius);
+ padding:16px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+ margin-bottom:10px; transition:.12s;
+}
+.day-card:hover{ border-color:var(--rust); box-shadow:0 4px 14px rgba(0,0,0,0.06); }
+.day-card .dname{ font-family:'Baloo Da 2'; font-weight:700; font-size:16px; }
+.day-card .dmeta{ font-size:12px; color:var(--steel-500); margin-top:3px; }
+.day-stats{ display:flex; gap:18px; flex-wrap:wrap; }
+.day-stats div{ text-align:right; }
+.day-stats .dv{ font-family:'JetBrains Mono'; font-weight:700; font-size:14.5px; }
+.day-stats .dl{ font-size:10.5px; color:var(--steel-500); }
+.day-tx{ background:white; border:1px solid var(--steel-100); border-radius:var(--radius); padding:12px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+.day-tx .txname{ font-weight:600; font-size:13.5px; }
+.day-tx .txmeta{ font-size:11.5px; color:var(--steel-500); margin-top:2px; }
+.tx-tag{ display:inline-block; padding:2px 8px; border-radius:12px; font-size:10.5px; font-weight:700; margin-right:6px; }
+.tx-tag.sale{ background:#FDEEE7; color:var(--rust); }
+.tx-tag.payment{ background:#E4F1E8; color:var(--green); }
+ 
 .bottom-nav{ display:none; }
 @media (max-width: 860px){
  .sidebar{ display:none; }
@@ -337,9 +346,9 @@ input, select{ font-family:inherit; }
  .topbar{ padding:14px 16px; }
  .bottom-nav{
  display:flex; position:fixed; bottom:0; left:0; right:0; z-index:60;
- background:var(--steel-900); padding:6px 4px 8px; justify-content:space-around;
+ background:var(--steel-900); padding:6px 4px 8px; justify-content:space-around; overflow-x:auto;
  }
- .bn-item{ display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--steel-300); font-size:10px; padding:6px 8px; border-radius:8px; flex:1; }
+ .bn-item{ display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--steel-300); font-size:10px; padding:6px 8px; border-radius:8px; flex:1; min-width:52px; }
  .bn-item .ic{ font-size:18px; }
  .bn-item.active{ color:white; background:var(--rust); }
  .mobile-cart-bar{
@@ -357,7 +366,6 @@ input, select{ font-family:inherit; }
 </head>
 <body>
  
-<!-- ================= LOCK SCREEN ================= -->
 <div id="lockScreen">
  <div class="lock-card">
  <div class="wave-strip top"></div>
@@ -373,7 +381,6 @@ input, select{ font-family:inherit; }
  </div>
 </div>
  
-<!-- ================= APP ================= -->
 <div id="app">
  <aside class="sidebar">
  <div class="brand-block">
@@ -381,7 +388,7 @@ input, select{ font-family:inherit; }
  <div class="sub">STOCK · SALES · খাতা</div>
  </div>
  <ul class="nav-list" id="navList"></ul>
- <div class="sidebar-foot">সংস্করণ: ডেমো ১.০</div>
+ <div class="sidebar-foot">সংস্করণ: ডেমো ১.১</div>
  </aside>
  
  <div class="main">
@@ -398,7 +405,6 @@ input, select{ font-family:inherit; }
  <nav class="bottom-nav" id="bottomNav"></nav>
 </div>
  
-<!-- ================= MODALS ================= -->
 <div class="modal-overlay" id="modalOverlay">
  <div class="modal" id="modalBox"></div>
 </div>
@@ -412,17 +418,16 @@ input, select{ font-family:inherit; }
  ============================================================ */
 let BRANDS = ['আকিজ','পিএইচপি','কেওয়াই স্টিল','নাহার','গ্যালকো'];
 const MM_LIST = [12,13,14,15,16,17,18,19,20];
-const SIZE_LIST = [6,7,8,9,10,11,12]; // ফুট
+const SIZE_LIST = [6,7,8,9,10,11,12];
  
 function seededRand(seed){ let x = Math.sin(seed)*10000; return x - Math.floor(x); }
  
-// প্রতিটি ব্র্যান্ডের জন্য কিছু র‍্যান্ডম mm/সাইজ কম্বিনেশন তৈরি (বাস্তবসম্মত — সব ব্র্যান্ডে সব mm থাকে না)
-let inventory = {}; // inventory[brand][mm][size] = {buy, sell, stock}
+let inventory = {};
 let seed = 1;
 BRANDS.forEach((brand, bi) => {
  inventory[brand] = {};
  MM_LIST.forEach((mm, mi) => {
- const hasIt = seededRand(seed++) > 0.28; // প্রতি ব্র্যান্ডে বেশিরভাগ mm থাকবে
+ const hasIt = seededRand(seed++) > 0.28;
  if(!hasIt) return;
  inventory[brand][mm] = {};
  SIZE_LIST.forEach((sz, si) => {
@@ -438,34 +443,37 @@ BRANDS.forEach((brand, bi) => {
 });
  
 let ledger = [
- { id:1, name:'হাজী নূর ইসলাম', address:'বাজার রোড, সাভার', phone:'01711-223344', due:4200, paidTotal:0 },
- { id:2, name:'রফিক মিয়া (ঠিকাদার)', address:'ধামরাই', phone:'01822-334455', due:0, paidTotal:9600 },
- { id:3, name:'সোহেল বিল্ডার্স', address:'ইপিজেড রোড, সাভার', phone:'01933-445566', due:12800, paidTotal:5000 },
- { id:4, name:'মোঃ জসিম', address:'বিরুলিয়া', phone:'01644-556677', due:1500, paidTotal:1500 },
+ { id:1, name:'হাজী নূর ইসলাম', address:'বাজার রোড, সাভার', phone:'01711-223344', due:4200, paidTotal:0, discountTotal:0 },
+ { id:2, name:'রফিক মিয়া (ঠিকাদার)', address:'ধামরাই', phone:'01822-334455', due:0, paidTotal:9600, discountTotal:0 },
+ { id:3, name:'সোহেল বিল্ডার্স', address:'ইপিজেড রোড, সাভার', phone:'01933-445566', due:12800, paidTotal:5000, discountTotal:0 },
+ { id:4, name:'মোঃ জসিম', address:'বিরুলিয়া', phone:'01644-556677', due:1500, paidTotal:1500, discountTotal:0 },
 ];
 let ledgerNextId = 5;
-let ledgerNextSerial = ledger.length + 1;
  
-// নগদ ক্রেতা তালিকা — যারা পুরো টাকা একবারে পরিশোধ করে দিয়েছেন (বাকির খাতা থেকে সম্পূর্ণ আলাদা)
-let cashCustomers = []; // {id, name, phone, invoiceIds:[], totalSpent, lastDate}
+let cashCustomers = [];
 let cashNextId = 1;
  
 let invoices = [];
 let invoiceCounter = 1001;
  
-let cart = []; // {brand, mm, size, qty, sellPrice, buyPrice}
+// পেমেন্ট/জমার ইতিহাস — দৈনিক হিসাব পেজে ব্যবহারের জন্য
+let payments = [];
+let paymentCounter = 1;
+ 
+let cart = [];
  
 let currentView = 'dashboard';
-let posStep = 1; // 1: ব্র্যান্ড বাছাই, 2: ব্র্যান্ডের ভেতরে আইটেম সার্চ করে বিক্রি
+let posStep = 1;
 let posBrand = null;
 let posBrandSearch = '';
 let posItemSearch = '';
-let stockStep = 1; // 1: ব্র্যান্ড তালিকা, 2: ব্র্যান্ডের ভেতরে স্টক ম্যানেজমেন্ট
+let stockStep = 1;
 let stockBrand = null;
 let stockSearch = '';
 let invoiceSearch = '';
 let ledgerSearch = '';
 let cashSearch = '';
+let dailySelectedDate = null; // YYYY-MM-DD, null মানে তারিখের তালিকা দেখানো হচ্ছে
  
 const nav = [
  { id:'dashboard', label:'ড্যাশবোর্ড', icon:'📊' },
@@ -474,6 +482,7 @@ const nav = [
  { id:'ledger', label:'বাকির খাতা', icon:'📒' },
  { id:'cash', label:'নগদ ক্রেতা', icon:'💵' },
  { id:'invoices', label:'ইনভয়েস হিস্ট্রি', icon:'🗂️' },
+ { id:'daily', label:'দৈনিক হিসাব', icon:'📅' },
 ];
  
 /* ============================================================
@@ -539,8 +548,9 @@ function switchView(id){
  if(id === 'invoices'){ invoiceSearch = ''; }
  if(id === 'ledger'){ ledgerSearch = ''; }
  if(id === 'cash'){ cashSearch = ''; }
+ if(id === 'daily'){ dailySelectedDate = null; }
  renderNav();
- const titles = {dashboard:'ড্যাশবোর্ড', sales:'বিক্রয়', stock:'স্টক তালিকা', ledger:'বাকির খাতা', cash:'নগদ ক্রেতা', invoices:'ইনভয়েস হিস্ট্রি'};
+ const titles = {dashboard:'ড্যাশবোর্ড', sales:'বিক্রয়', stock:'স্টক তালিকা', ledger:'বাকির খাতা', cash:'নগদ ক্রেতা', invoices:'ইনভয়েস হিস্ট্রি', daily:'দৈনিক হিসাব'};
  document.getElementById('pageTitle').textContent = titles[id];
  document.getElementById('pageMeta').textContent = new Date().toLocaleDateString('bn-BD', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
  render();
@@ -554,27 +564,87 @@ function render(){
  else if(currentView === 'ledger') c.innerHTML = renderLedger();
  else if(currentView === 'cash') c.innerHTML = renderCashCustomers();
  else if(currentView === 'invoices') c.innerHTML = renderInvoices();
+ else if(currentView === 'daily') c.innerHTML = renderDaily();
+}
+ 
+/* ============================================================
+ সাধারণ হেল্পার
+ ============================================================ */
+function fmt(n){ return '৳' + Number(n).toLocaleString('en-IN'); }
+function esc(str){
+ return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function jsq(str){
+ return String(str ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+// তারিখকে input[type=date] এর জন্য YYYY-MM-DD ফরম্যাটে দেয় (লোকাল সময় অনুযায়ী)
+function toDateInputValue(d){
+ const dt = d ? new Date(d) : new Date();
+ const off = dt.getTimezoneOffset();
+ const local = new Date(dt.getTime() - off*60000);
+ return local.toISOString().slice(0,10);
+}
+// input[type=date] থেকে পাওয়া YYYY-MM-DD কে বর্তমান সময়সহ Date বানায় (যাতে ঐদিনের হিসেবে ধরা হয়, কিন্তু আজকের তারিখ হলে প্রকৃত সময় রাখে)
+function dateFromInput(val){
+ if(!val) return new Date();
+ const now = new Date();
+ const [y,m,d] = val.split('-').map(Number);
+ const chosen = new Date(y, m-1, d, now.getHours(), now.getMinutes(), now.getSeconds());
+ return chosen;
+}
+function dayKey(d){ return toDateInputValue(d); }
+function dayLabel(key){
+ const [y,m,d] = key.split('-').map(Number);
+ const dt = new Date(y, m-1, d);
+ return dt.toLocaleDateString('bn-BD', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+}
+// ব্রাউজারে প্রিন্ট ডায়ালগ খোলার চেষ্টা করে; ব্যর্থ হলে ব্যবহারকারীকে ডাউনলোড অপশন ব্যবহার করতে বলে
+function tryPrint(){
+ try{
+ window.print();
+ } catch(e){
+ showToast('প্রিন্ট চালু করা যায়নি — এর বদলে "ডাউনলোড করুন" বাটন চাপুন');
+ }
+}
+// #printArea এর ভেতরের বর্তমান রশিদ/ইনভয়েসকে স্বয়ংসম্পূর্ণ HTML ফাইল হিসেবে ডাউনলোড করে
+function downloadPrintArea(filename){
+ try{
+ const inner = document.getElementById('printArea').innerHTML;
+ const styles = `
+ body{font-family:'Hind Siliguri',sans-serif;background:#fff;color:#161B1F;padding:24px;}
+ .invoice-box{background:#fff;border:1px solid #E9ECED;border-radius:10px;padding:26px;max-width:520px;margin:0 auto;}
+ .invoice-box .ihead{text-align:center;border-bottom:2px dashed #AEB9BD;padding-bottom:14px;margin-bottom:14px;}
+ .invoice-box .ihead h2{font-size:20px;margin:0;}
+ .invoice-box .ihead p{font-size:11.5px;color:#6B7A82;margin-top:3px;}
+ .itbl{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px;}
+ .itbl th{text-align:left;border-bottom:1.5px solid #161B1F;padding:6px 4px;font-size:11px;}
+ .itbl td{padding:6px 4px;border-bottom:1px dotted #E9ECED;}
+ .itbl td.r, .itbl th.r{text-align:right;font-family:monospace;}
+ .itotal{display:flex;justify-content:space-between;padding-top:8px;border-top:2px solid #161B1F;font-size:16px;font-weight:700;font-family:monospace;}
+ .idiscount{display:flex;justify-content:space-between;font-size:12.5px;color:#3C7A54;margin-top:4px;}
+ `;
+ const doc = `<!DOCTYPE html><html lang="bn"><head><meta charset="UTF-8"><title>${filename}</title><style>${styles}</style></head><body>${inner}</body></html>`;
+ const blob = new Blob([doc], {type:'text/html'});
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ a.href = url; a.download = filename + '.html';
+ document.body.appendChild(a); a.click(); document.body.removeChild(a);
+ setTimeout(()=> URL.revokeObjectURL(url), 3000);
+ showToast('ডাউনলোড হয়েছে — ফাইলটি ব্রাউজারে খুলে প্রিন্ট করতে পারবেন');
+ } catch(e){
+ showToast('ডাউনলোড ব্যর্থ হয়েছে, আবার চেষ্টা করুন');
+ }
 }
  
 /* ============================================================
  DASHBOARD
  ============================================================ */
-function fmt(n){ return '৳' + Number(n).toLocaleString('en-IN'); }
-// ব্যবহারকারীর টাইপ করা লেখা (ব্র্যান্ড/গ্রাহকের নাম ইত্যাদি) নিরাপদে দেখানোর জন্য
-function esc(str){
- return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-// onclick="fn('...')" এর ভেতরে বসানোর সময় নিরাপদ করার জন্য (নামে যদি quote বা ব্যাকস্ল্যাশ থাকে)
-function jsq(str){
- return String(str ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-}
- 
 function renderDashboard(){
  let totalStock = 0, totalDue = 0, todaySales = 0;
  Object.values(inventory).forEach(mmObj => Object.values(mmObj).forEach(szObj => Object.values(szObj).forEach(v => totalStock += v.stock)));
  ledger.forEach(l => totalDue += l.due);
- const todayStr = new Date().toDateString();
- invoices.forEach(inv => { if(new Date(inv.date).toDateString() === todayStr) todaySales += inv.total; });
+ const todayKey = dayKey(new Date());
+ invoices.forEach(inv => { if(dayKey(inv.date) === todayKey) todaySales += inv.total; });
  
  return `
  <div class="stat-grid">
@@ -610,13 +680,12 @@ function renderDashboard(){
 }
  
 /* ============================================================
- বিক্রয় (POS): ব্র্যান্ডের ঘর → ভেতরে ঢুকে সার্চ করে সরাসরি কার্টে যোগ
+ বিক্রয় (POS)
  ============================================================ */
 function renderSales(){
  let bodyHtml;
  
  if(posStep === 1){
- /* ---- ধাপ ১: ব্র্যান্ডের আলাদা আলাদা ঘর — সার্চ করলে ব্র্যান্ড ফিল্টার হবে ---- */
  const q = posBrandSearch.trim().toLowerCase();
  const filteredBrands = BRANDS.filter(b => b.toLowerCase().includes(q));
  
@@ -640,7 +709,6 @@ function renderSales(){
  
  bodyHtml = searchBar + grid;
  } else {
- /* ---- ধাপ ২: নির্বাচিত ব্র্যান্ডের ভেতরে সার্চ লিস্ট — সিলেক্ট করলেই সরাসরি কার্টে যোগ হবে ---- */
  const q = posItemSearch.trim().toLowerCase();
  const results = [];
  Object.keys(inventory[posBrand] || {}).forEach(mm => {
@@ -769,18 +837,28 @@ function openCheckout(){
  </div>
  <div class="field"><label>ক্রেতার নাম</label><input type="text" id="invCustName" placeholder="যেমনঃ নগদ ক্রেতা"></div>
  <div class="field"><label>মোবাইল নাম্বার (ঐচ্ছিক)</label><input type="text" id="invCustPhone" placeholder="01xxx-xxxxxx"></div>
+ <div class="field"><label>বিক্রয়ের তারিখ</label><input type="date" id="invDate" value="${toDateInputValue(new Date())}"></div>
  <div class="field">
  <label>পরিশোধিত পরিমাণ</label>
- <input type="number" id="invPaid" value="${total}" min="0">
+ <input type="number" id="invPaid" value="${total}" min="0" oninput="checkoutRecalc(${total})">
  </div>
  <div style="background:var(--steel-100); border-radius:8px; padding:12px 14px; font-size:13.5px;">
  <div style="display:flex;justify-content:space-between;"><span>সর্বমোট বিল</span><b class="mono">${fmt(total)}</b></div>
+ <div style="display:flex;justify-content:space-between;margin-top:4px;" id="invDueRow"><span>বাকি থাকবে</span><b class="mono" id="invDueVal">${fmt(0)}</b></div>
  </div>
  <div style="font-size:11.5px;color:var(--steel-500);margin-top:8px;">পুরো টাকা পরিশোধ হলে এই গ্রাহক "নগদ ক্রেতা" পেজে (সার্চযোগ্য) যুক্ত হবে। বাকি বা আংশিক বাকি থাকলে ক্রেতা স্বয়ংক্রিয়ভাবে বাকির খাতায় যুক্ত হয়ে যাবেন।</div>
  `, `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
- <button class="btn btn-primary" onclick="confirmInvoice(${total})">ইনভয়েস প্রিন্ট/ডাউনলোড করুন</button>
+ <button class="btn btn-primary" onclick="confirmInvoice(${total})">ইনভয়েস তৈরি করুন</button>
  `);
+ checkoutRecalc(total);
+}
+function checkoutRecalc(total){
+ const paidEl = document.getElementById('invPaid');
+ if(!paidEl) return;
+ const paid = Math.min(total, Math.max(0, parseInt(paidEl.value) || 0));
+ const dueVal = document.getElementById('invDueVal');
+ if(dueVal) dueVal.textContent = fmt(total - paid);
 }
 function invCustomerChange(id){
  const nameEl = document.getElementById('invCustName');
@@ -796,29 +874,25 @@ function confirmInvoice(total){
  const typedPhone = document.getElementById('invCustPhone').value.trim();
  const paid = Math.min(total, Math.max(0, parseInt(document.getElementById('invPaid').value) || 0));
  const due = total - paid;
+ const invDate = dateFromInput(document.getElementById('invDate').value);
  
- // স্টক কমানো
  cart.forEach(item => { inventory[item.brand][item.mm][item.size].stock -= item.qty; });
  
  let customerName, customerPhone, custIdFinal = null, isCash = false;
  if(custId){
- // বিদ্যমান গ্রাহক (বাকির খাতার) — সিরিয়াল/পজিশন অপরিবর্তিত থাকবে, শুধু due যোগ হবে
  const cust = ledger.find(l => l.id == custId);
  customerName = cust.name;
  customerPhone = cust.phone;
  custIdFinal = cust.id;
  if(due > 0) cust.due += due;
  } else {
- // নতুন গ্রাহক
  customerName = typedName || 'নগদ ক্রেতা';
  customerPhone = typedPhone;
  if(due > 0){
- // বাকি বা আংশিক বাকি থাকলে সে স্বয়ংক্রিয়ভাবে বাকির খাতায় যুক্ত হবে
- const newCust = { id: ledgerNextId++, name: customerName, address:'', phone: customerPhone, due: due, paidTotal: paid };
+ const newCust = { id: ledgerNextId++, name: customerName, address:'', phone: customerPhone, due: due, paidTotal: paid, discountTotal: 0 };
  ledger.push(newCust);
  custIdFinal = newCust.id;
  } else {
- // সম্পূর্ণ নগদে পরিশোধ — বাকির খাতায় নয়, বরং আলাদা "নগদ ক্রেতা" তালিকায় যুক্ত/আপডেট হবে
  isCash = true;
  let cc = cashCustomers.find(c => (customerPhone && c.phone === customerPhone) || (!customerPhone && c.name === customerName));
  if(!cc){
@@ -827,24 +901,24 @@ function confirmInvoice(total){
  }
  cc.invoiceIds.push(invoiceCounter);
  cc.totalSpent += total;
- cc.lastDate = new Date();
+ cc.lastDate = invDate;
  if(customerPhone && !cc.phone) cc.phone = customerPhone;
  custIdFinal = cc.id;
  }
  }
  
- const invoice = { id: invoiceCounter++, items:[...cart], total, paid, due, customer: customerName, customerPhone, date: new Date(), custId: custIdFinal, isCash };
+ const invoice = { id: invoiceCounter++, items:[...cart], total, paid, due, customer: customerName, customerPhone, date: invDate, custId: custIdFinal, isCash };
  invoices.push(invoice);
  
  closeModal();
- printInvoice(invoice);
+ openReceiptModal('invoice', invoice.id);
  cart = [];
  posStep = 1; posBrand = null; posBrandSearch = ''; posItemSearch = '';
  showToast('ইনভয়েস তৈরি হয়েছে');
  switchView(currentView === 'sales' ? 'sales' : currentView);
 }
  
-function printInvoice(inv){
+function buildInvoiceHtml(inv){
  const rows = inv.items.map(it => `
  <tr>
  <td>${esc(it.brand)} · ${it.mm}মিমি · ${it.size}ফুট</td>
@@ -852,7 +926,7 @@ function printInvoice(inv){
  <td class="r">${fmt(it.sellPrice)}</td>
  <td class="r">${fmt(it.qty*it.sellPrice)}</td>
  </tr>`).join('');
- document.getElementById('printArea').innerHTML = `
+ return `
  <div class="invoice-box">
  <div class="ihead">
  <h2>করিম টিন হাউস</h2>
@@ -868,15 +942,38 @@ function printInvoice(inv){
  <span>পরিশোধিত: ${fmt(inv.paid)}</span><span>বাকি: ${fmt(inv.due)}</span>
  </div>
  </div>`;
- window.print();
+}
+function printInvoice(inv){ openReceiptModal('invoice', inv.id); }
+ 
+// প্রিন্ট/ডাউনলোড এর জন্য একটি প্রিভিউ মোডাল দেখায় — যেহেতু ব্রাউজার/পরিবেশভেদে window.print() কাজ নাও করতে পারে,
+// এখানে সবসময় একটি নিশ্চিত "ডাউনলোড" অপশন থাকে
+function openReceiptModal(kind, id){
+ let html, filename;
+ if(kind === 'invoice'){
+ const inv = invoices.find(x=>x.id===id);
+ html = buildInvoiceHtml(inv);
+ filename = 'ইনভয়েস-' + inv.id;
+ } else {
+ const p = payments.find(x=>x.id===id);
+ html = buildPaymentReceiptHtml(p);
+ filename = 'রশিদ-' + p.id;
+ }
+ document.getElementById('printArea').innerHTML = html;
+ openModal('প্রিভিউ — প্রিন্ট বা ডাউনলোড করুন', `
+ <div style="max-height:50vh; overflow:auto; border:1px solid var(--steel-100); border-radius:8px; padding:10px; background:var(--paper);">${html}</div>
+ <div style="font-size:11.5px;color:var(--steel-500);margin-top:10px;">প্রিন্ট বাটনে কাজ না করলে (কিছু ব্রাউজার/ডিভাইসে ব্লক হতে পারে) "ডাউনলোড করুন" চাপুন — এটি সবসময় কাজ করবে এবং ফাইলটি খুলে যেকোনো প্রিন্টার থেকে প্রিন্ট করা যাবে।</div>
+ `, `
+ <button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>
+ <button class="btn btn-outline" onclick="downloadPrintArea('${jsq(filename)}')">⬇ ডাউনলোড করুন</button>
+ <button class="btn btn-primary" onclick="tryPrint()">🖨 প্রিন্ট করুন</button>
+ `);
 }
  
 /* ============================================================
- স্টক তালিকা (ম্যানেজমেন্ট) — ব্র্যান্ডের ঘর → ভেতরে ঢুকে সেই ব্র্যান্ডের মাল দেখা ও যোগ করা
+ স্টক তালিকা (ম্যানেজমেন্ট)
  ============================================================ */
 function renderStock(){
  if(stockStep === 1){
- /* ---- ধাপ ১: প্রতিটি ব্র্যান্ডের জন্য আলাদা ঘর — নতুন ব্র্যান্ড যোগ করারও সুযোগ ---- */
  return `
  <div class="mgmt-toolbar">
  <div style="font-size:13px;color:var(--steel-500);">একটি ব্র্যান্ডের ঘরে ক্লিক করে তার মিমি ও সাইজ অনুযায়ী স্টক পরিচালনা করুন</div>
@@ -894,7 +991,6 @@ function renderStock(){
  </div>`;
  }
  
- /* ---- ধাপ ২: নির্বাচিত ব্র্যান্ডের ভেতরে — শুধু এই ব্র্যান্ডের মিমি/সাইজ তালিকা ---- */
  const q = stockSearch.trim().toLowerCase();
  let rows = '';
  Object.keys(inventory[stockBrand] || {}).sort((a,b)=>a-b).forEach(mm => {
@@ -1003,7 +1099,7 @@ function saveNewStock(){
 }
  
 /* ============================================================
- বাকির খাতা — সিরিয়াল/পজিশন অপরিবর্তিত (টগল হবে না), নাম/মোবাইল দিয়ে সার্চযোগ্য
+ বাকির খাতা
  ============================================================ */
 function renderLedger(){
  const q = ledgerSearch.trim().toLowerCase();
@@ -1054,16 +1150,27 @@ function ledgerSearchInputFn(val){
 function viewCustomerInvoices(custId){
  const cust = ledger.find(l => l.id === custId);
  const custInvoices = invoices.filter(inv => inv.custId === custId);
- const rows = custInvoices.length === 0 ? `<div class="no-match">এখনো কোনো ইনভয়েস নেই</div>` :
- custInvoices.slice().reverse().map(inv => `
+ const custPayments = payments.filter(p => p.custId === custId);
+ const combined = [
+ ...custInvoices.map(inv => ({ t: new Date(inv.date).getTime(), html: `
  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--steel-100);font-size:13px;">
  <div>
- <div style="font-weight:600;">ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString('bn-BD')}</div>
+ <div style="font-weight:600;"><span class="tx-tag sale">বিক্রয়</span>ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString('bn-BD')}</div>
  <div style="color:var(--steel-500);font-size:12px;">সর্বমোট ${fmt(inv.total)} · বাকি ${fmt(inv.due)}</div>
  </div>
  <button class="btn btn-outline" onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">প্রিন্ট/ডাউনলোড</button>
- </div>`).join('');
- openModal(`ইনভয়েস — ${esc(cust.name)}`, rows, `<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>`);
+ </div>` })),
+ ...custPayments.map(p => ({ t: new Date(p.date).getTime(), html: `
+ <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--steel-100);font-size:13px;">
+ <div>
+ <div style="font-weight:600;"><span class="tx-tag payment">জমা</span>রশিদ #${p.id} · ${new Date(p.date).toLocaleDateString('bn-BD')}</div>
+ <div style="color:var(--steel-500);font-size:12px;">জমা ${fmt(p.amount)}${p.discount>0 ? ' · ছাড় '+fmt(p.discount) : ''}</div>
+ </div>
+ <button class="btn btn-outline" onclick="openReceiptModal('payment', ${p.id})">প্রিন্ট/ডাউনলোড</button>
+ </div>` })),
+ ].sort((a,b)=>b.t-a.t);
+ const rows = combined.length === 0 ? `<div class="no-match">এখনো কোনো লেনদেন নেই</div>` : combined.map(x=>x.html).join('');
+ openModal(`লেনদেন — ${esc(cust.name)}`, rows, `<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>`);
 }
 function addCustomerPrompt(){
  openModal('নতুন গ্রাহক যুক্ত করুন', `
@@ -1079,13 +1186,13 @@ function addCustomerPrompt(){
 function saveNewCustomer(){
  const name = document.getElementById('custName').value.trim();
  if(!name){ showToast('নাম আবশ্যক'); return; }
- // নতুন গ্রাহক সবসময় তালিকার শেষে যুক্ত হবে — বিদ্যমান কারো সিরিয়াল পরিবর্তন হবে না
  ledger.push({
  id: ledgerNextId++, name,
  address: document.getElementById('custAddr').value.trim(),
  phone: document.getElementById('custPhone').value.trim(),
  due: parseInt(document.getElementById('custDue').value) || 0,
  paidTotal: 0,
+ discountTotal: 0,
  });
  closeModal(); render(); showToast('গ্রাহক যুক্ত হয়েছে');
 }
@@ -1095,46 +1202,74 @@ function paymentPrompt(id){
  <div style="background:var(--steel-100);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13.5px;display:flex;justify-content:space-between;">
  <span>বর্তমান বাকি</span><b class="mono">${fmt(cust.due)}</b>
  </div>
- <div class="field"><label>পরিশোধের পরিমাণ (৳)</label><input type="number" id="payAmt" value="${cust.due}" min="0" max="${cust.due}"></div>
- <div style="font-size:11.5px;color:var(--steel-500);">পরিশোধ করার পরও এই গ্রাহক তালিকার একই সিরিয়ালে (${ledger.indexOf(cust)+1} নং) থাকবে — উপরে-নিচে যাবে না। পেমেন্ট নেওয়ার পর একটি রশিদ স্বয়ংক্রিয়ভাবে প্রিন্ট/ডাউনলোডের জন্য দেখানো হবে।</div>
+ <div class="field"><label>জমার তারিখ</label><input type="date" id="payDate" value="${toDateInputValue(new Date())}"></div>
+ <div class="field"><label>ছাড়/ডিসকাউন্ট (৳) — থাকলে লিখুন</label><input type="number" id="payDiscount" value="0" min="0" max="${cust.due}" oninput="paymentRecalc(${cust.due})"></div>
+ <div class="field"><label>পরিশোধের পরিমাণ (৳)</label><input type="number" id="payAmt" value="${cust.due}" min="0" max="${cust.due}" oninput="paymentRecalc(${cust.due})"></div>
+ <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; font-size:13px; display:flex; justify-content:space-between;">
+ <span>জমার পর বাকি থাকবে</span><b class="mono" id="payRemainVal">${fmt(0)}</b>
+ </div>
+ <div style="font-size:11.5px;color:var(--steel-500);margin-top:8px;">পরিশোধ করার পরও এই গ্রাহক তালিকার একই সিরিয়ালে (${ledger.indexOf(cust)+1} নং) থাকবে — উপরে-নিচে যাবে না। ছাড় দিলে সেই পরিমাণ বাকি থেকে বাদ যাবে এবং রশিদে আলাদাভাবে দেখানো হবে।</div>
  `, `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
  <button class="btn btn-primary" onclick="applyPayment(${id})">জমা করুন ও রশিদ দিন</button>
  `);
+ paymentRecalc(cust.due);
+}
+function paymentRecalc(due){
+ const amtEl = document.getElementById('payAmt');
+ const discEl = document.getElementById('payDiscount');
+ if(!amtEl || !discEl) return;
+ const amt = Math.max(0, parseInt(amtEl.value) || 0);
+ const disc = Math.max(0, parseInt(discEl.value) || 0);
+ const remain = Math.max(0, due - amt - disc);
+ const remainEl = document.getElementById('payRemainVal');
+ if(remainEl) remainEl.textContent = fmt(remain);
 }
 function applyPayment(id){
  const cust = ledger.find(l => l.id === id);
  const dueBefore = cust.due;
- const amt = Math.min(cust.due, Math.max(0, parseInt(document.getElementById('payAmt').value) || 0));
- cust.due -= amt;
+ let amt = Math.max(0, parseInt(document.getElementById('payAmt').value) || 0);
+ let disc = Math.max(0, parseInt(document.getElementById('payDiscount').value) || 0);
+ if(amt + disc > dueBefore){
+ // বাকির বেশি জমা/ছাড় নেওয়া যাবে না — পরিশোধের পরিমাণ অগ্রাধিকার পাবে, ছাড় সমন্বয় হবে
+ disc = Math.max(0, dueBefore - amt);
+ if(amt > dueBefore) amt = dueBefore;
+ }
+ const payDate = dateFromInput(document.getElementById('payDate').value);
+ cust.due -= (amt + disc);
  cust.paidTotal += amt;
- // লক্ষ্য করুনঃ ledger অ্যারের ক্রম/ইনডেক্স স্পর্শ করা হয়নি — সিরিয়াল অপরিবর্তিত থাকে
- closeModal(); render(); showToast(`${fmt(amt)} জমা হয়েছে`);
- printPaymentReceipt(cust, amt, dueBefore);
+ cust.discountTotal = (cust.discountTotal || 0) + disc;
+ 
+ const payment = { id: paymentCounter++, custId: id, custName: cust.name, custPhone: cust.phone, amount: amt, discount: disc, dueBefore, dueAfter: cust.due, date: payDate };
+ payments.push(payment);
+ 
+ closeModal(); render(); showToast(`${fmt(amt)} জমা হয়েছে${disc>0?' · ছাড় '+fmt(disc):''}`);
+ openReceiptModal('payment', payment.id);
 }
-function printPaymentReceipt(cust, amt, dueBefore){
- document.getElementById('printArea').innerHTML = `
+function buildPaymentReceiptHtml(p){
+ return `
  <div class="invoice-box">
  <div class="ihead">
  <h2>করিম টিন হাউস</h2>
  <p>বাজার রোড, সাভার, ঢাকা · ফোনঃ ০১৭xx-xxxxxx</p>
- <p>পেমেন্ট রশিদ · ${new Date().toLocaleDateString('bn-BD')} · গ্রাহক: ${esc(cust.name)}${cust.phone ? ' · '+esc(cust.phone) : ''}</p>
+ <p>পেমেন্ট রশিদ #${p.id} · ${new Date(p.date).toLocaleDateString('bn-BD')} · গ্রাহক: ${esc(p.custName)}${p.custPhone ? ' · '+esc(p.custPhone) : ''}</p>
  </div>
  <table class="itbl">
  <thead><tr><th>বিবরণ</th><th class="r">পরিমাণ</th></tr></thead>
  <tbody>
- <tr><td>পূর্বের বকেয়া</td><td class="r">${fmt(dueBefore)}</td></tr>
- <tr><td>জমাকৃত পরিমাণ</td><td class="r">${fmt(amt)}</td></tr>
- <tr><td>বর্তমান বকেয়া</td><td class="r">${fmt(cust.due)}</td></tr>
+ <tr><td>পূর্বের বকেয়া</td><td class="r">${fmt(p.dueBefore)}</td></tr>
+ <tr><td>জমাকৃত পরিমাণ</td><td class="r">${fmt(p.amount)}</td></tr>
+ ${p.discount>0 ? `<tr><td>ছাড় প্রদত্ত</td><td class="r">${fmt(p.discount)}</td></tr>` : ''}
+ <tr><td>বর্তমান বকেয়া</td><td class="r">${fmt(p.dueAfter)}</td></tr>
  </tbody>
  </table>
- <div class="itotal"><span>জমাকৃত</span><span>${fmt(amt)}</span></div>
+ <div class="itotal"><span>জমাকৃত</span><span>${fmt(p.amount)}</span></div>
+ ${p.discount>0 ? `<div class="idiscount"><span>ছাড় দেওয়া হয়েছে</span><span>${fmt(p.discount)}</span></div>` : ''}
  </div>`;
- window.print();
 }
  
 /* ============================================================
- নগদ ক্রেতা — যারা পুরো টাকা একবারেই পরিশোধ করে দিয়েছেন (বাকির খাতা থেকে সম্পূর্ণ আলাদা পেজ), নাম/মোবাইল দিয়ে সার্চযোগ্য
+ নগদ ক্রেতা
  ============================================================ */
 function renderCashCustomers(){
  const q = cashSearch.trim().toLowerCase();
@@ -1188,7 +1323,7 @@ function viewCashInvoices(ccId){
 }
  
 /* ============================================================
- ইনভয়েস হিস্ট্রি — নাম, নাম্বার বা তারিখ দিয়ে সার্চ করা যাবে
+ ইনভয়েস হিস্ট্রি
  ============================================================ */
 function renderInvoices(){
  const q = invoiceSearch.trim().toLowerCase();
@@ -1232,6 +1367,93 @@ function invoiceSearchInputFn(val){
 }
  
 /* ============================================================
+ দৈনিক হিসাব — যেকোনো তারিখে কে নগদ/বাকি নিয়েছে ও কে পেমেন্ট করেছে তার সম্পূর্ণ ইতিহাস
+ ============================================================ */
+function renderDaily(){
+ // সব লেনদেনকে দিনভিত্তিক গ্রুপ করা
+ const days = {}; // key -> {sales, collected, discount, dueGiven, txCount}
+ invoices.forEach(inv => {
+ const k = dayKey(inv.date);
+ if(!days[k]) days[k] = { sales:0, collected:0, discount:0, dueGiven:0, txCount:0 };
+ days[k].sales += inv.total;
+ days[k].collected += inv.paid;
+ days[k].dueGiven += inv.due;
+ days[k].txCount++;
+ });
+ payments.forEach(p => {
+ const k = dayKey(p.date);
+ if(!days[k]) days[k] = { sales:0, collected:0, discount:0, dueGiven:0, txCount:0 };
+ days[k].collected += p.amount;
+ days[k].discount += p.discount;
+ days[k].txCount++;
+ });
+ 
+ const sortedKeys = Object.keys(days).sort((a,b)=> b.localeCompare(a));
+ 
+ if(sortedKeys.length === 0){
+ return `<div class="empty-state"><div class="ic">📅</div>এখনো কোনো লেনদেন হয়নি<br><span style="font-size:12px;">বিক্রয় বা পেমেন্ট নিলে সেই তারিখ এখানে দেখা যাবে</span></div>`;
+ }
+ 
+ if(!dailySelectedDate){
+ // ---- তারিখের তালিকা ----
+ return `
+ <div style="font-size:13px;color:var(--steel-500);margin-bottom:14px;">যেকোনো দিনে ক্লিক করে সেদিনের সব নগদ, বাকি ও জমার বিস্তারিত ইতিহাস দেখুন</div>
+ ${sortedKeys.map(k => {
+ const d = days[k];
+ return `<div class="day-card" onclick="openDailyDetail('${k}')">
+ <div>
+ <div class="dname">${dayLabel(k)}</div>
+ <div class="dmeta">${d.txCount} টি লেনদেন</div>
+ </div>
+ <div class="day-stats">
+ <div><div class="dv" style="color:var(--rust);">${fmt(d.sales)}</div><div class="dl">মোট বিক্রয়</div></div>
+ <div><div class="dv" style="color:var(--green);">${fmt(d.collected)}</div><div class="dl">মোট আদায়</div></div>
+ <div><div class="dv" style="color:var(--red);">${fmt(d.dueGiven)}</div><div class="dl">নতুন বাকি</div></div>
+ </div>
+ </div>`;
+ }).join('')}`;
+ }
+ 
+ // ---- নির্দিষ্ট দিনের বিস্তারিত ----
+ const k = dailySelectedDate;
+ const d = days[k] || { sales:0, collected:0, discount:0, dueGiven:0, txCount:0 };
+ const dayInvoices = invoices.filter(inv => dayKey(inv.date) === k);
+ const dayPayments = payments.filter(p => dayKey(p.date) === k);
+ const combined = [
+ ...dayInvoices.map(inv => ({ t: new Date(inv.date).getTime(), html: `
+ <div class="day-tx">
+ <div>
+ <div class="txname"><span class="tx-tag sale">বিক্রয়</span>${esc(inv.customer)}${inv.customerPhone?' · '+esc(inv.customerPhone):''}</div>
+ <div class="txmeta">ইনভয়েস #${inv.id} · ${inv.items.length} টি পণ্য · মোট ${fmt(inv.total)} · পরিশোধিত ${fmt(inv.paid)}${inv.due>0 ? ' · নতুন বাকি '+fmt(inv.due) : ' · সম্পূর্ণ নগদ'}</div>
+ </div>
+ <button class="btn btn-outline" onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">দেখুন</button>
+ </div>` })),
+ ...dayPayments.map(p => ({ t: new Date(p.date).getTime(), html: `
+ <div class="day-tx">
+ <div>
+ <div class="txname"><span class="tx-tag payment">জমা</span>${esc(p.custName)}${p.custPhone?' · '+esc(p.custPhone):''}</div>
+ <div class="txmeta">রশিদ #${p.id} · জমা ${fmt(p.amount)}${p.discount>0 ? ' · ছাড় '+fmt(p.discount) : ''} · বাকি ছিল ${fmt(p.dueBefore)} → এখন ${fmt(p.dueAfter)}</div>
+ </div>
+ <button class="btn btn-outline" onclick="openReceiptModal('payment', ${p.id})">দেখুন</button>
+ </div>` })),
+ ].sort((a,b)=> b.t-a.t);
+ 
+ return `
+ <div class="back-row">
+ <button class="btn btn-outline" onclick="dailySelectedDate=null; render();">← সব তারিখ</button>
+ <div class="cur-brand">${dayLabel(k)}</div>
+ </div>
+ <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);">
+ <div class="stat-card" style="--accent:var(--rust)"><div class="lbl">মোট বিক্রয়</div><div class="val">${fmt(d.sales)}</div></div>
+ <div class="stat-card" style="--accent:var(--green)"><div class="lbl">মোট আদায়</div><div class="val">${fmt(d.collected)}</div></div>
+ <div class="stat-card" style="--accent:var(--red)"><div class="lbl">নতুন বাকি</div><div class="val">${fmt(d.dueGiven)}</div></div>
+ </div>
+ ${combined.length === 0 ? `<div class="no-match">এই দিনে কোনো লেনদেন নেই</div>` : combined.map(x=>x.html).join('')}
+ `;
+}
+function openDailyDetail(k){ dailySelectedDate = k; render(); }
+ 
+/* ============================================================
  MODAL / TOAST HELPERS
  ============================================================ */
 function openModal(title, body, foot){
@@ -1252,4 +1474,3 @@ function showToast(msg){
 </script>
 </body>
 </html>
- 
