@@ -292,6 +292,7 @@ input, select{ font-family:inherit; }
 .itbl td.r, .itbl th.r{ text-align:right; font-family:'JetBrains Mono'; }
 .itotal{ display:flex; justify-content:space-between; padding-top:8px; border-top:2px solid var(--ink); font-size:16px; font-weight:700; font-family:'JetBrains Mono'; }
 .idiscount{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--green); margin-top:4px; }
+.isubrow{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--steel-700); margin-top:4px; }
  
 .toast{
  position:fixed; bottom:26px; left:50%; transform:translateX(-50%);
@@ -622,6 +623,7 @@ function downloadPrintArea(filename){
  .itbl td.r, .itbl th.r{text-align:right;font-family:monospace;}
  .itotal{display:flex;justify-content:space-between;padding-top:8px;border-top:2px solid #161B1F;font-size:16px;font-weight:700;font-family:monospace;}
  .idiscount{display:flex;justify-content:space-between;font-size:12.5px;color:#3C7A54;margin-top:4px;}
+ .isubrow{display:flex;justify-content:space-between;font-size:12.5px;color:#3A464E;margin-top:4px;}
  `;
  const doc = `<!DOCTYPE html><html lang="bn"><head><meta charset="UTF-8"><title>${filename}</title><style>${styles}</style></head><body>${inner}</body></html>`;
  const blob = new Blob([doc], {type:'text/html'});
@@ -826,9 +828,22 @@ function updateCartQty(idx, val){
 }
 function updateCartPrice(idx, val){ cart[idx].sellPrice = Math.max(0, parseInt(val)||0); render(); }
  
-/* ---- চেকআউট / ইনভয়েস ---- */
+/* ============================================================
+ চেকআউট / ইনভয়েস তৈরি
+ ------------------------------------------------------------
+ এই সেকশনে ইনভয়েস তৈরির পুরো হিসাব হয়:
+ itemsSubtotal = কার্টের পণ্যের সমষ্টি (qty × sellPrice)
+ + deliveryCharge = ডেলিভারি চার্জ (মালিক নিজে বসাবে, ডিফল্ট ০)
+ + otherExpenseAmt = অন্যান্য খরচ (মালিক নিজে লেবেল+পরিমাণ বসাবে)
+ − discount = ছাড়/ডিসকাউন্ট
+ = total = সর্বমোট বিল (এই total অনুযায়ী পরিশোধ/বাকি হিসাব হয়)
+ নগদ ও বাকি — উভয় ক্রেতার ক্ষেত্রেই এই একই হিসাব প্রযোজ্য।
+ openCheckout() → মোডাল বানায় (ঠিকানা, ডেলিভারি, খরচ, ছাড়, পরিশোধ ইনপুট)
+ checkoutRecalc() → ইনপুট পরিবর্তনের সাথে সাথে সর্বমোট/বাকি রিক্যালকুলেট করে
+ confirmInvoice() → ইনভয়েস অবজেক্ট বানিয়ে সংরক্ষণ করে, স্টক কমায়, ঝুলিয়ে/বাকি খাতায় যোগ করে
+ ============================================================ */
 function openCheckout(){
- const total = cart.reduce((s,i)=>s+i.qty*i.sellPrice,0);
+ const itemsSubtotal = cart.reduce((s,i)=>s+i.qty*i.sellPrice,0);
  const customerOptions = ledger.map(l => `<option value="${l.id}">${esc(l.name)}${l.phone ? ' · '+esc(l.phone) : ''}</option>`).join('');
  openModal('ইনভয়েস নিশ্চিত করুন', `
  <div class="field">
@@ -836,78 +851,108 @@ function openCheckout(){
  <select id="invCustomer" onchange="invCustomerChange(this.value)"><option value="">— নতুন / নগদ ক্রেতা —</option>${customerOptions}</select>
  </div>
  <div class="field"><label>ক্রেতার নাম</label><input type="text" id="invCustName" placeholder="যেমনঃ নগদ ক্রেতা"></div>
+ <div class="field"><label>ক্রেতার ঠিকানা</label><input type="text" id="invCustAddress" placeholder="যেমনঃ বাজার রোড, সাভার"></div>
  <div class="field"><label>মোবাইল নাম্বার (ঐচ্ছিক)</label><input type="text" id="invCustPhone" placeholder="01xxx-xxxxxx"></div>
  <div class="field"><label>বিক্রয়ের তারিখ</label><input type="date" id="invDate" value="${toDateInputValue(new Date())}"></div>
+ <div class="field"><label>পণ্যের সাবটোটাল</label><input type="text" value="${fmt(itemsSubtotal)}" disabled style="background:var(--steel-100);color:var(--steel-700);"></div>
+ <div class="field"><label>ডেলিভারি চার্জ (৳) — না থাকলে ০ রাখুন</label><input type="number" id="invDelivery" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
+ <div class="field"><label>অন্যান্য খরচের বিবরণ (ঐচ্ছিক)</label><input type="text" id="invExpenseLabel" placeholder="যেমনঃ লেবার খরচ, লোড-আনলোড"></div>
+ <div class="field"><label>অন্যান্য খরচের পরিমাণ (৳)</label><input type="number" id="invExpenseAmt" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
+ <div class="field"><label>ছাড়/ডিসকাউন্ট (৳)</label><input type="number" id="invDiscount" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
  <div class="field">
  <label>পরিশোধিত পরিমাণ</label>
- <input type="number" id="invPaid" value="${total}" min="0" oninput="checkoutRecalc(${total})">
+ <input type="number" id="invPaid" value="${itemsSubtotal}" min="0" oninput="checkoutRecalc(${itemsSubtotal})">
  </div>
  <div style="background:var(--steel-100); border-radius:8px; padding:12px 14px; font-size:13.5px;">
- <div style="display:flex;justify-content:space-between;"><span>সর্বমোট বিল</span><b class="mono">${fmt(total)}</b></div>
- <div style="display:flex;justify-content:space-between;margin-top:4px;" id="invDueRow"><span>বাকি থাকবে</span><b class="mono" id="invDueVal">${fmt(0)}</b></div>
+ <div style="display:flex;justify-content:space-between;"><span>সর্বমোট বিল</span><b class="mono" id="invGrandVal">${fmt(itemsSubtotal)}</b></div>
+ <div style="display:flex;justify-content:space-between;margin-top:4px;"><span>বাকি থাকবে</span><b class="mono" id="invDueVal">${fmt(0)}</b></div>
  </div>
  <div style="font-size:11.5px;color:var(--steel-500);margin-top:8px;">পুরো টাকা পরিশোধ হলে এই গ্রাহক "নগদ ক্রেতা" পেজে (সার্চযোগ্য) যুক্ত হবে। বাকি বা আংশিক বাকি থাকলে ক্রেতা স্বয়ংক্রিয়ভাবে বাকির খাতায় যুক্ত হয়ে যাবেন।</div>
  `, `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
- <button class="btn btn-primary" onclick="confirmInvoice(${total})">ইনভয়েস তৈরি করুন</button>
+ <button class="btn btn-primary" onclick="confirmInvoice(${itemsSubtotal})">ইনভয়েস তৈরি করুন</button>
  `);
- checkoutRecalc(total);
+ checkoutRecalc(itemsSubtotal);
 }
-function checkoutRecalc(total){
+// itemsSubtotal + ডেলিভারি + অন্যান্য খরচ − ছাড় = সর্বমোট; সর্বমোট − পরিশোধিত = বাকি
+function checkoutRecalc(itemsSubtotal){
  const paidEl = document.getElementById('invPaid');
  if(!paidEl) return;
- const paid = Math.min(total, Math.max(0, parseInt(paidEl.value) || 0));
+ const delivery = Math.max(0, parseInt(document.getElementById('invDelivery').value) || 0);
+ const expense = Math.max(0, parseInt(document.getElementById('invExpenseAmt').value) || 0);
+ const discount = Math.max(0, parseInt(document.getElementById('invDiscount').value) || 0);
+ const grandTotal = Math.max(0, itemsSubtotal + delivery + expense - discount);
+ const paid = Math.min(grandTotal, Math.max(0, parseInt(paidEl.value) || 0));
+ const grandEl = document.getElementById('invGrandVal');
  const dueVal = document.getElementById('invDueVal');
- if(dueVal) dueVal.textContent = fmt(total - paid);
+ if(grandEl) grandEl.textContent = fmt(grandTotal);
+ if(dueVal) dueVal.textContent = fmt(grandTotal - paid);
 }
 function invCustomerChange(id){
  const nameEl = document.getElementById('invCustName');
  const phoneEl = document.getElementById('invCustPhone');
- if(!id){ nameEl.value = ''; phoneEl.value = ''; return; }
+ const addrEl = document.getElementById('invCustAddress');
+ if(!id){ nameEl.value = ''; phoneEl.value = ''; addrEl.value = ''; return; }
  const cust = ledger.find(l => l.id == id);
  nameEl.value = cust.name;
  phoneEl.value = cust.phone || '';
+ addrEl.value = cust.address || '';
 }
-function confirmInvoice(total){
+function confirmInvoice(itemsSubtotal){
  const custId = document.getElementById('invCustomer').value;
  const typedName = document.getElementById('invCustName').value.trim();
+ const typedAddress = document.getElementById('invCustAddress').value.trim();
  const typedPhone = document.getElementById('invCustPhone').value.trim();
- const paid = Math.min(total, Math.max(0, parseInt(document.getElementById('invPaid').value) || 0));
- const due = total - paid;
+ const delivery = Math.max(0, parseInt(document.getElementById('invDelivery').value) || 0);
+ const expenseLabel = document.getElementById('invExpenseLabel').value.trim();
+ const expenseAmt = Math.max(0, parseInt(document.getElementById('invExpenseAmt').value) || 0);
+ const discount = Math.max(0, parseInt(document.getElementById('invDiscount').value) || 0);
+ const grandTotal = Math.max(0, itemsSubtotal + delivery + expenseAmt - discount);
+ const paid = Math.min(grandTotal, Math.max(0, parseInt(document.getElementById('invPaid').value) || 0));
+ const due = grandTotal - paid;
  const invDate = dateFromInput(document.getElementById('invDate').value);
  
  cart.forEach(item => { inventory[item.brand][item.mm][item.size].stock -= item.qty; });
  
- let customerName, customerPhone, custIdFinal = null, isCash = false;
+ let customerName, customerPhone, customerAddress, custIdFinal = null, isCash = false;
  if(custId){
  const cust = ledger.find(l => l.id == custId);
  customerName = cust.name;
  customerPhone = cust.phone;
+ customerAddress = typedAddress || cust.address;
  custIdFinal = cust.id;
  if(due > 0) cust.due += due;
  } else {
  customerName = typedName || 'নগদ ক্রেতা';
  customerPhone = typedPhone;
+ customerAddress = typedAddress;
  if(due > 0){
- const newCust = { id: ledgerNextId++, name: customerName, address:'', phone: customerPhone, due: due, paidTotal: paid, discountTotal: 0 };
+ const newCust = { id: ledgerNextId++, name: customerName, address: customerAddress, phone: customerPhone, due: due, paidTotal: paid, discountTotal: 0 };
  ledger.push(newCust);
  custIdFinal = newCust.id;
  } else {
  isCash = true;
  let cc = cashCustomers.find(c => (customerPhone && c.phone === customerPhone) || (!customerPhone && c.name === customerName));
  if(!cc){
- cc = { id: cashNextId++, name: customerName, phone: customerPhone, invoiceIds: [], totalSpent: 0, lastDate: null };
+ cc = { id: cashNextId++, name: customerName, phone: customerPhone, address: customerAddress, invoiceIds: [], totalSpent: 0, lastDate: null };
  cashCustomers.push(cc);
  }
  cc.invoiceIds.push(invoiceCounter);
- cc.totalSpent += total;
+ cc.totalSpent += grandTotal;
  cc.lastDate = invDate;
  if(customerPhone && !cc.phone) cc.phone = customerPhone;
+ if(customerAddress && !cc.address) cc.address = customerAddress;
  custIdFinal = cc.id;
  }
  }
  
- const invoice = { id: invoiceCounter++, items:[...cart], total, paid, due, customer: customerName, customerPhone, date: invDate, custId: custIdFinal, isCash };
+ const invoice = {
+ id: invoiceCounter++, items:[...cart],
+ itemsSubtotal, delivery, expenseLabel, expenseAmt, discount,
+ total: grandTotal, paid, due,
+ customer: customerName, customerPhone, customerAddress,
+ date: invDate, custId: custIdFinal, isCash
+ };
  invoices.push(invoice);
  
  closeModal();
@@ -918,6 +963,7 @@ function confirmInvoice(total){
  switchView(currentView === 'sales' ? 'sales' : currentView);
 }
  
+// ইনভয়েস প্রিন্ট/ডাউনলোডের জন্য HTML বানায় — সাবটোটাল, ডেলিভারি, অন্যান্য খরচ, ছাড় সবগুলো লাইন আইটেম হিসেবে দেখায়
 function buildInvoiceHtml(inv){
  const rows = inv.items.map(it => `
  <tr>
@@ -926,17 +972,26 @@ function buildInvoiceHtml(inv){
  <td class="r">${fmt(it.sellPrice)}</td>
  <td class="r">${fmt(it.qty*it.sellPrice)}</td>
  </tr>`).join('');
+ const delivery = inv.delivery || 0;
+ const expenseAmt = inv.expenseAmt || 0;
+ const discount = inv.discount || 0;
+ const itemsSubtotal = inv.itemsSubtotal != null ? inv.itemsSubtotal : inv.total;
  return `
  <div class="invoice-box">
  <div class="ihead">
- <h2>করিম টিন হাউস</h2>
+ <h2>টিন হাউস</h2>
  <p>বাজার রোড, সাভার, ঢাকা · ফোনঃ ০১৭xx-xxxxxx</p>
  <p>ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString('bn-BD')} · ক্রেতা: ${esc(inv.customer)}${inv.customerPhone ? ' · '+esc(inv.customerPhone) : ''}</p>
+ ${inv.customerAddress ? `<p>ঠিকানাঃ ${esc(inv.customerAddress)}</p>` : ''}
  </div>
  <table class="itbl">
  <thead><tr><th>পণ্য</th><th class="r">পরিমাণ</th><th class="r">দর</th><th class="r">মোট</th></tr></thead>
  <tbody>${rows}</tbody>
  </table>
+ <div class="isubrow"><span>পণ্যের সাবটোটাল</span><span>${fmt(itemsSubtotal)}</span></div>
+ ${delivery > 0 ? `<div class="isubrow"><span>ডেলিভারি চার্জ</span><span>${fmt(delivery)}</span></div>` : ''}
+ ${expenseAmt > 0 ? `<div class="isubrow"><span>${esc(inv.expenseLabel) || 'অন্যান্য খরচ'}</span><span>${fmt(expenseAmt)}</span></div>` : ''}
+ ${discount > 0 ? `<div class="idiscount"><span>ছাড়</span><span>−${fmt(discount)}</span></div>` : ''}
  <div class="itotal"><span>সর্বমোট</span><span>${fmt(inv.total)}</span></div>
  <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:6px;color:var(--steel-700);">
  <span>পরিশোধিত: ${fmt(inv.paid)}</span><span>বাকি: ${fmt(inv.due)}</span>
@@ -1250,7 +1305,7 @@ function buildPaymentReceiptHtml(p){
  return `
  <div class="invoice-box">
  <div class="ihead">
- <h2>করিম টিন হাউস</h2>
+ <h2>টিন হাউস</h2>
  <p>বাজার রোড, সাভার, ঢাকা · ফোনঃ ০১৭xx-xxxxxx</p>
  <p>পেমেন্ট রশিদ #${p.id} · ${new Date(p.date).toLocaleDateString('bn-BD')} · গ্রাহক: ${esc(p.custName)}${p.custPhone ? ' · '+esc(p.custPhone) : ''}</p>
  </div>
@@ -1292,7 +1347,7 @@ function renderCashCustomers(){
  <div class="ledger-serial">${idx+1}</div>
  <div class="ledger-info">
  <div class="lname">${esc(c.name)}</div>
- <div class="lmeta">${esc(c.phone) || 'মোবাইল নাম্বার নেই'} · সর্বমোট ক্রয় ${fmt(c.totalSpent)} · সর্বশেষ ${c.lastDate ? new Date(c.lastDate).toLocaleDateString('bn-BD') : '—'}</div>
+ <div class="lmeta">${[esc(c.address), esc(c.phone)].filter(Boolean).join(' · ') || 'কোনো তথ্য নেই'} · সর্বমোট ক্রয় ${fmt(c.totalSpent)} · সর্বশেষ ${c.lastDate ? new Date(c.lastDate).toLocaleDateString('bn-BD') : '—'}</div>
  </div>
  <div class="ledger-due"><div class="amt clear">নগদ</div><div class="lbl">সম্পূর্ণ পরিশোধিত</div></div>
  <button class="btn btn-outline" onclick="viewCashInvoices(${c.id})">ইনভয়েস</button>
