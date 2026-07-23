@@ -420,6 +420,7 @@ input, select{ font-family:inherit; }
 let BRANDS = ['আকিজ','পিএইচপি','কেওয়াই স্টিল','নাহার','গ্যালকো'];
 const MM_LIST = [12,13,14,15,16,17,18,19,20];
 const SIZE_LIST = [6,7,8,9,10,11,12];
+const FEET_PER_BAN = 72; // ৭২ ফুটে এক বান
  
 function seededRand(seed){ let x = Math.sin(seed)*10000; return x - Math.floor(x); }
  
@@ -437,7 +438,8 @@ BRANDS.forEach((brand, bi) => {
  const buy = Math.round(baseBuy/5)*5;
  const sell = Math.round((buy * 1.14)/5)*5;
  const stock = Math.floor(seededRand(seed++)*40) + (seededRand(seed++) > 0.85 ? 0 : 3);
- inventory[brand][mm][sz] = { buy, sell, stock };
+ const banPrice = Math.round((buy * FEET_PER_BAN) / sz);
+ inventory[brand][mm][sz] = { buy, sell, stock, banPrice };
  }
  });
  });
@@ -755,7 +757,7 @@ function renderSales(){
  
  const mobileCartBar = cart.length > 0 ? `
  <div class="mobile-cart-bar">
- <div class="mcb-info">🧾 <b>${cart.reduce((s,i)=>s+Number(i.qty),0)}</b> পিস · <b>${fmt(cart.reduce((s,i)=>s+i.qty*i.sellPrice,0))}</b> — কার্টে আছে</div>
+ <div class="mcb-info">🧾 <b>${cart.reduce((s,i)=>s+cartEffectiveQty(i),0)}</b> পিস · <b>${fmt(cart.reduce((s,i)=>s+cartEffectiveQty(i)*i.sellPrice,0))}</b> — কার্টে আছে</div>
  <button class="mcb-btn" onclick="openCheckout()">ইনভয়েস করুন</button>
  </div>` : '';
  
@@ -768,24 +770,33 @@ function renderSales(){
  <div class="cart-head"><h3>🧾 বর্তমান বিক্রয়</h3><span class="mono" style="font-size:12px;">${cart.length} আইটেম</span></div>
  <div class="cart-items">
  ${cart.length === 0 ? `<div class="cart-empty">কার্ট খালি — একটি পণ্য যোগ করুন</div>` :
- cart.map((item, idx) => `
+ cart.map((item, idx) => {
+ const eff = cartEffectiveQty(item);
+ const ppb = piecesPerBan(item.size);
+ return `
  <div class="cart-item">
  <div class="cart-item-top">
  <span>${esc(item.brand)} · ${item.mm}মিমি · ${item.size}ফুট</span>
  <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
  </div>
+ <div style="font-size:10.5px;color:var(--steel-500);margin-top:2px;">এক বানে (৭২ ফুট) প্রায় ${ppb.toFixed(1)} পিস — বান বা পিস, যেকোনো একটিতে মান দিন</div>
  <div class="cart-item-row">
- <label>পরিমাণ</label>
- <input type="number" min="1" value="${item.qty}" onchange="updateCartQty(${idx}, this.value)">
- <label style="width:auto;margin-left:4px;">দর</label>
+ <label>বান</label>
+ <input type="number" min="0" step="0.5" placeholder="—" value="${item.qtyBan !== null && item.qtyBan !== undefined ? item.qtyBan : ''}" onchange="updateCartBan(${idx}, this.value)">
+ <label style="width:auto;margin-left:4px;">পিস</label>
+ <input type="number" min="0" placeholder="—" value="${item.qtyPieces !== null && item.qtyPieces !== undefined ? item.qtyPieces : ''}" onchange="updateCartPieces(${idx}, this.value)">
+ </div>
+ <div class="cart-item-row">
+ <label>দর</label>
  <input type="number" min="0" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)">
  </div>
- <div class="cart-sub">উপমোট: ${fmt(item.qty * item.sellPrice)}</div>
- </div>`).join('')}
+ <div class="cart-sub">মোট পিস: ${eff} · উপমোট: ${fmt(eff * item.sellPrice)}</div>
+ </div>`;
+ }).join('')}
  </div>
  <div class="cart-foot">
- <div class="cart-total-row"><span>মোট পিস</span><span class="mono">${cart.reduce((s,i)=>s+Number(i.qty),0)}</span></div>
- <div class="cart-total-row grand"><span>সর্বমোট</span><span>${fmt(cart.reduce((s,i)=>s+i.qty*i.sellPrice,0))}</span></div>
+ <div class="cart-total-row"><span>মোট পিস</span><span class="mono">${cart.reduce((s,i)=>s+cartEffectiveQty(i),0)}</span></div>
+ <div class="cart-total-row grand"><span>সর্বমোট</span><span>${fmt(cart.reduce((s,i)=>s+cartEffectiveQty(i)*i.sellPrice,0))}</span></div>
  <button class="checkout-btn" ${cart.length===0?'disabled':''} onclick="openCheckout()">ইনভয়েস তৈরি করুন</button>
  </div>
  </div>
@@ -810,20 +821,50 @@ function posItemSearchInput(val){
 function addToCart(brand, mm, size){
  const item = inventory[brand][mm][size];
  const existing = cart.find(c => c.brand===brand && c.mm===mm && c.size===size);
- const inCart = existing ? existing.qty : 0;
+ const inCart = existing ? cartEffectiveQty(existing) : 0;
  if(inCart >= item.stock){ showToast('এই পণ্যের স্টকে যতটুকু আছে তার বেশি যোগ করা যাবে না'); return; }
- if(existing){ existing.qty++; }
- else cart.push({ brand, mm, size, qty:1, sellPrice:item.sell, buyPrice:item.buy });
+ if(existing){
+ // যদি আগে বান দিয়ে ধরা থাকে, পিস মোডে রূপান্তর করে ১ পিস যোগ করা হয়
+ const eff = cartEffectiveQty(existing);
+ existing.qtyPieces = eff + 1;
+ existing.qtyBan = null;
+ }
+ else cart.push({ brand, mm, size, qtyPieces:1, qtyBan:null, sellPrice:item.sell, buyPrice:item.buy });
  showToast(`${brand} ${mm}মিমি ${size}ফুট কার্টে যোগ হয়েছে`);
  render();
 }
 function removeFromCart(idx){ cart.splice(idx,1); render(); }
-function updateCartQty(idx, val){
+// এক বানে কয় পিস হয় (৭২ ফুট = ১ বান হিসেবে)
+function piecesPerBan(sizeFeet){ return sizeFeet > 0 ? (FEET_PER_BAN / sizeFeet) : 0; }
+// কার্ট আইটেমের প্রকৃত পিস সংখ্যা বের করে — বান বসানো থাকলে বান থেকে, নাহলে সরাসরি পিস থেকে
+function cartEffectiveQty(item){
+ if(item.qtyBan !== null && item.qtyBan !== undefined && item.qtyBan !== ''){
+ return Math.round(piecesPerBan(item.size) * Number(item.qtyBan));
+ }
+ return Number(item.qtyPieces) || 0;
+}
+// কার্টে বান সংখ্যা বসালে পিস ঘর খালি হয়ে যায় এবং বান অনুযায়ী হিসাব হয়
+function updateCartBan(idx, val){
  const item = cart[idx];
  const maxStock = inventory[item.brand][item.mm][item.size].stock;
- let qty = Math.max(1, parseInt(val)||1);
+ if(val === ''){ item.qtyBan = null; render(); return; }
+ let ban = Math.max(0, parseFloat(val) || 0);
+ item.qtyBan = ban; item.qtyPieces = null;
+ let eff = cartEffectiveQty(item);
+ if(eff > maxStock){
+ showToast('স্টকে যতটুকু আছে তার বেশি বিক্রি করা যাবে না');
+ item.qtyPieces = maxStock; item.qtyBan = null;
+ }
+ render();
+}
+// কার্টে পিস সংখ্যা বসালে বান ঘর খালি হয়ে যায় এবং পিস অনুযায়ী হিসাব হয়
+function updateCartPieces(idx, val){
+ const item = cart[idx];
+ const maxStock = inventory[item.brand][item.mm][item.size].stock;
+ if(val === ''){ item.qtyPieces = null; render(); return; }
+ let qty = Math.max(0, parseInt(val) || 0);
  if(qty > maxStock){ qty = maxStock; showToast('স্টকে যতটুকু আছে তার বেশি বিক্রি করা যাবে না'); }
- item.qty = qty;
+ item.qtyPieces = qty; item.qtyBan = null;
  render();
 }
 function updateCartPrice(idx, val){ cart[idx].sellPrice = Math.max(0, parseInt(val)||0); render(); }
@@ -843,7 +884,7 @@ function updateCartPrice(idx, val){ cart[idx].sellPrice = Math.max(0, parseInt(v
  confirmInvoice() → ইনভয়েস অবজেক্ট বানিয়ে সংরক্ষণ করে, স্টক কমায়, ঝুলিয়ে/বাকি খাতায় যোগ করে
  ============================================================ */
 function openCheckout(){
- const itemsSubtotal = cart.reduce((s,i)=>s+i.qty*i.sellPrice,0);
+ const itemsSubtotal = cart.reduce((s,i)=>s+cartEffectiveQty(i)*i.sellPrice,0);
  const customerOptions = ledger.map(l => `<option value="${l.id}">${esc(l.name)}${l.phone ? ' · '+esc(l.phone) : ''}</option>`).join('');
  openModal('ইনভয়েস নিশ্চিত করুন', `
  <div class="field">
@@ -912,7 +953,12 @@ function confirmInvoice(itemsSubtotal){
  const due = grandTotal - paid;
  const invDate = dateFromInput(document.getElementById('invDate').value);
  
- cart.forEach(item => { inventory[item.brand][item.mm][item.size].stock -= item.qty; });
+ cart.forEach(item => { inventory[item.brand][item.mm][item.size].stock -= cartEffectiveQty(item); });
+ const finalCartItems = cart.map(item => ({
+ brand: item.brand, mm: item.mm, size: item.size,
+ qty: cartEffectiveQty(item), sellPrice: item.sellPrice, buyPrice: item.buyPrice,
+ banQty: (item.qtyBan !== null && item.qtyBan !== undefined && item.qtyBan !== '') ? item.qtyBan : null,
+ }));
  
  let customerName, customerPhone, customerAddress, custIdFinal = null, isCash = false;
  if(custId){
@@ -947,7 +993,7 @@ function confirmInvoice(itemsSubtotal){
  }
  
  const invoice = {
- id: invoiceCounter++, items:[...cart],
+ id: invoiceCounter++, items: finalCartItems,
  itemsSubtotal, delivery, expenseLabel, expenseAmt, discount,
  total: grandTotal, paid, due,
  customer: customerName, customerPhone, customerAddress,
@@ -967,7 +1013,7 @@ function confirmInvoice(itemsSubtotal){
 function buildInvoiceHtml(inv){
  const rows = inv.items.map(it => `
  <tr>
- <td>${esc(it.brand)} · ${it.mm}মিমি · ${it.size}ফুট</td>
+ <td>${esc(it.brand)} · ${it.mm}মিমি · ${it.size}ফুট${it.banQty ? ' · '+it.banQty+' বান' : ''}</td>
  <td class="r">${it.qty}</td>
  <td class="r">${fmt(it.sellPrice)}</td>
  <td class="r">${fmt(it.qty*it.sellPrice)}</td>
@@ -1052,8 +1098,10 @@ function renderStock(){
  Object.keys(inventory[stockBrand][mm]).sort((a,b)=>a-b).forEach(sz => {
  if(q !== '' && !(String(mm).includes(q) || String(sz).includes(q))) return;
  const v = inventory[stockBrand][mm][sz];
+ const banVal = v.banPrice != null ? v.banPrice : Math.round((v.buy*FEET_PER_BAN)/sz);
  rows += `<tr>
  <td class="num">${mm} মিমি</td><td class="num">${sz} ফুট</td>
+ <td class="num">${fmt(banVal)}</td>
  <td class="num">${fmt(v.buy)}</td><td class="num">${fmt(v.sell)}</td>
  <td class="num">${v.stock}</td>
  <td>${v.stock <= 3 ? `<span class="pill low">কম স্টক</span>` : `<span class="pill ok">স্বাভাবিক</span>`}</td>
@@ -1063,15 +1111,15 @@ function renderStock(){
  });
  const isBrandEmpty = Object.keys(inventory[stockBrand] || {}).length === 0;
  const emptyMsg = isBrandEmpty
- ? `<tr><td colspan="7" class="no-match">📦 ${esc(stockBrand)}-এ এখনো কোনো মাল যোগ করা হয়নি — উপরের "+ নতুন মাল যোগ করুন" চেপে শুরু করুন</td></tr>`
- : `<tr><td colspan="7" class="no-match">🔍 কোনো ফলাফল পাওয়া যায়নি</td></tr>`;
+ ? `<tr><td colspan="8" class="no-match">📦 ${esc(stockBrand)}-এ এখনো কোনো মাল যোগ করা হয়নি — উপরের "+ নতুন মাল যোগ করুন" চেপে শুরু করুন</td></tr>`
+ : `<tr><td colspan="8" class="no-match">🔍 কোনো ফলাফল পাওয়া যায়নি</td></tr>`;
  return `
  <div class="back-row">
  <button class="btn btn-outline" onclick="stockGoStep(1)">← পেছনে যান</button>
  <div class="cur-brand">${esc(stockBrand)}</div>
  </div>
  <div class="mgmt-toolbar">
- <div style="font-size:13px;color:var(--steel-500);">${esc(stockBrand)}-এর মিলিমিটার ও সাইজ অনুযায়ী স্টক ও মূল্য তালিকা</div>
+ <div style="font-size:13px;color:var(--steel-500);">${esc(stockBrand)}-এর মিলিমিটার ও সাইজ অনুযায়ী স্টক ও মূল্য তালিকা (৭২ ফুট = ১ বান হিসেবে)</div>
  <button class="btn btn-primary" onclick="addStockPrompt()">+ নতুন মাল যোগ করুন</button>
  </div>
  <div class="search-bar ${q ? 'has-val' : ''}">
@@ -1081,7 +1129,7 @@ function renderStock(){
  <span class="sclear" onclick="stockSearchInputFn('')">✕</span>
  </div>
  <table class="tbl">
- <thead><tr><th>মিমি</th><th>সাইজ</th><th>ক্রয়মূল্য</th><th>বিক্রয়মূল্য</th><th>স্টক</th><th>অবস্থা</th><th></th></tr></thead>
+ <thead><tr><th>মিমি</th><th>সাইজ</th><th>বানের দাম</th><th>ক্রয়মূল্য/পিস</th><th>বিক্রয়মূল্য</th><th>স্টক</th><th>অবস্থা</th><th></th></tr></thead>
  <tbody>${rows || emptyMsg}</tbody>
  </table>`;
 }
@@ -1109,12 +1157,119 @@ function stockSearchInputFn(val){
  const el = document.getElementById('stockSearchInput');
  if(el){ el.focus(); const p = el.value.length; el.setSelectionRange(p,p); }
 }
+// বানের দাম ও সাইজ (ফুট) থেকে প্রতি পিসের ক্রয়মূল্য বের করে — ৭২ ফুটে ১ বান হিসেবে
+function calcBuyFromBan(banPrice, sizeFeet){
+ if(!sizeFeet) return 0;
+ return Math.round((banPrice * sizeFeet) / FEET_PER_BAN);
+}
+function addStockRecalc(){
+ const szEl = document.getElementById('newSize');
+ const banEl = document.getElementById('newBanPrice');
+ const banQtyEl = document.getElementById('newBanQty');
+ if(!szEl || !banEl) return;
+ const sz = parseFloat(szEl.value) || 0;
+ const banPrice = parseFloat(banEl.value) || 0;
+ const banQty = banQtyEl ? (parseFloat(banQtyEl.value) || 0) : 0;
+ const piecesPerBan = sz > 0 ? (FEET_PER_BAN / sz) : 0;
+ const totalPieces = Math.round(piecesPerBan * banQty);
+ const buyPerPiece = calcBuyFromBan(banPrice, sz);
+ const infoEl = document.getElementById('newPiecesInfo');
+ const buyEl = document.getElementById('newBuyComputed');
+ const totalPiecesEl = document.getElementById('newTotalPiecesInfo');
+ const stockEl = document.getElementById('newStock');
+ if(infoEl) infoEl.textContent = `এক বানে (৭২ ফুট) প্রায় ${piecesPerBan ? piecesPerBan.toFixed(1) : '০'} পিস আসে`;
+ if(buyEl) buyEl.textContent = fmt(buyPerPiece);
+ if(totalPiecesEl) totalPiecesEl.textContent = `${banQty || 0} বানে মোট প্রায় ${totalPieces} পিস আসবে`;
+ if(stockEl) stockEl.value = totalPieces;
+}
+function editStockRecalc(sz){
+ const banEl = document.getElementById('editBanPrice');
+ if(!banEl) return;
+ const banPrice = parseFloat(banEl.value) || 0;
+ const buyPerPiece = calcBuyFromBan(banPrice, sz);
+ const el = document.getElementById('editBuyComputed');
+ if(el) el.textContent = fmt(buyPerPiece);
+}
+// এডিট মোডালে নতুন কেনা বান থেকে কত পিস হয় তা দেখায় (স্টকে এখনো যোগ হয়নি, শুধু প্রিভিউ)
+function editNewBanRecalc(sz){
+ const qtyEl = document.getElementById('editNewBanQty');
+ const infoEl = document.getElementById('editNewBanInfo');
+ if(!qtyEl || !infoEl) return;
+ const banQty = parseFloat(qtyEl.value) || 0;
+ const piecesPerBan = sz > 0 ? (FEET_PER_BAN / sz) : 0;
+ const totalPieces = Math.round(piecesPerBan * banQty);
+ infoEl.textContent = `${banQty || 0} বানে প্রায় ${totalPieces} পিস আসবে`;
+}
+// নতুন কেনা বান থেকে পাওয়া পিস বর্তমান স্টক ইনপুটের সাথে যোগ করে দেয়
+function editAddBanToStock(sz){
+ const qtyEl = document.getElementById('editNewBanQty');
+ const stockEl = document.getElementById('editStock');
+ if(!qtyEl || !stockEl) return;
+ const banQty = parseFloat(qtyEl.value) || 0;
+ if(banQty <= 0){ showToast('কয় বান যোগ হয়েছে তা লিখুন'); return; }
+ const piecesPerBan = sz > 0 ? (FEET_PER_BAN / sz) : 0;
+ const addPieces = Math.round(piecesPerBan * banQty);
+ const currentStock = parseInt(stockEl.value) || 0;
+ stockEl.value = currentStock + addPieces;
+ qtyEl.value = '';
+ document.getElementById('editNewBanInfo').textContent = `০ বানে প্রায় ০ পিস আসবে`;
+ showToast(`${addPieces} পিস স্টকে যোগ হয়েছে — সংরক্ষণ করতে "সংরক্ষণ করুন" চাপুন`);
+}
+function addStockPrompt(){
+ const mmOptions = MM_LIST.map(m=>`<option value="${m}">${m} মিমি</option>`).join('');
+ const szOptions = SIZE_LIST.map(s=>`<option value="${s}">${s} ফুট</option>`).join('');
+ openModal(`নতুন মাল যোগ করুন — ${esc(stockBrand)}`, `
+ <div class="field"><label>মিলিমিটার</label><select id="newMM">${mmOptions}</select></div>
+ <div class="field"><label>সাইজ</label><select id="newSize" onchange="addStockRecalc()">${szOptions}</select></div>
+ <div class="field"><label>বানের দাম (৳) — ৭২ ফুট = ১ বান</label><input type="number" id="newBanPrice" value="4000" min="0" oninput="addStockRecalc()"></div>
+ <div class="field"><label>কয় বান কিনলেন</label><input type="number" id="newBanQty" value="1" min="0" step="0.5" oninput="addStockRecalc()"></div>
+ <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;">
+ <div id="newPiecesInfo">এক বানে (৭২ ফুট) প্রায় — পিস আসে</div>
+ <div id="newTotalPiecesInfo" style="margin-top:4px;font-weight:600;">০ বানে মোট প্রায় ০ পিস আসবে</div>
+ <div style="display:flex;justify-content:space-between;margin-top:6px;"><span>প্রতি পিস ক্রয়মূল্য (স্বয়ংক্রিয়)</span><b class="mono" id="newBuyComputed">৳০</b></div>
+ </div>
+ <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="newSell" value="570" min="0"></div>
+ <div class="field"><label>স্টক (পিস) — বান সংখ্যা অনুযায়ী স্বয়ংক্রিয়ভাবে বসেছে, চাইলে হাতে ঠিক করে নিন</label><input type="number" id="newStock" value="0" min="0"></div>
+ `, `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveNewStock()">যোগ করুন</button>
+ `);
+ addStockRecalc();
+}
+function saveNewStock(){
+ const mm = document.getElementById('newMM').value;
+ const sz = document.getElementById('newSize').value;
+ const banPrice = parseInt(document.getElementById('newBanPrice').value)||0;
+ const buyPerPiece = calcBuyFromBan(banPrice, parseFloat(sz));
+ if(!inventory[stockBrand][mm]) inventory[stockBrand][mm] = {};
+ inventory[stockBrand][mm][sz] = {
+ buy: buyPerPiece,
+ banPrice: banPrice,
+ sell: parseInt(document.getElementById('newSell').value)||0,
+ stock: parseInt(document.getElementById('newStock').value)||0,
+ };
+ closeModal(); render(); showToast('নতুন মাল যোগ হয়েছে');
+}
 function editStockPrompt(brand, mm, sz){
  const v = inventory[brand][mm][sz];
+ const initBan = v.banPrice != null ? v.banPrice : calcBuyFromBan(v.buy*FEET_PER_BAN/sz, 1); // fallback (unlikely needed)
+ const banStart = v.banPrice != null ? v.banPrice : Math.round((v.buy*FEET_PER_BAN)/sz);
  openModal(`এডিট — ${esc(brand)} · ${mm}মিমি · ${sz}ফুট`, `
- <div class="field"><label>ক্রয়মূল্য (৳)</label><input type="number" id="editBuy" value="${v.buy}" min="0"></div>
+ <div class="field"><label>বানের দাম (৳) — ৭২ ফুট = ১ বান</label><input type="number" id="editBanPrice" value="${banStart}" min="0" oninput="editStockRecalc(${sz})"></div>
+ <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;">
+ <div style="display:flex;justify-content:space-between;"><span>এক বানে (৭২ ফুট) প্রায়</span><b class="mono">${(FEET_PER_BAN/sz).toFixed(1)} পিস</b></div>
+ <div style="display:flex;justify-content:space-between;margin-top:6px;"><span>প্রতি পিস ক্রয়মূল্য (স্বয়ংক্রিয়)</span><b class="mono" id="editBuyComputed">${fmt(v.buy)}</b></div>
+ </div>
  <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="editSell" value="${v.sell}" min="0"></div>
  <div class="field"><label>স্টক (পিস)</label><input type="number" id="editStock" value="${v.stock}" min="0"></div>
+ <div style="border-top:1px dashed var(--steel-300); padding-top:12px; margin-top:4px;">
+ <div style="font-size:12.5px;font-weight:600;color:var(--steel-700);margin-bottom:8px;">নতুন করে বান কিনলে এখানে যোগ করুন</div>
+ <div class="field"><label>নতুন কেনা বান সংখ্যা</label><input type="number" id="editNewBanQty" value="" min="0" step="0.5" placeholder="যেমনঃ ২" oninput="editNewBanRecalc(${sz})"></div>
+ <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:10px; font-size:13px;">
+ <div id="editNewBanInfo">০ বানে প্রায় ০ পিস আসবে</div>
+ </div>
+ <button type="button" class="btn btn-outline" style="width:100%; justify-content:center;" onclick="editAddBanToStock(${sz})">+ উপরের স্টকে যোগ করুন</button>
+ </div>
  `, `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
  <button class="btn btn-primary" onclick="saveStockEdit('${jsq(brand)}',${mm},${sz})">সংরক্ষণ করুন</button>
@@ -1122,35 +1277,12 @@ function editStockPrompt(brand, mm, sz){
 }
 function saveStockEdit(brand, mm, sz){
  const v = inventory[brand][mm][sz];
- v.buy = parseInt(document.getElementById('editBuy').value) || v.buy;
+ const banPrice = parseInt(document.getElementById('editBanPrice').value) || 0;
+ v.banPrice = banPrice;
+ v.buy = calcBuyFromBan(banPrice, sz) || v.buy;
  v.sell = parseInt(document.getElementById('editSell').value) || v.sell;
  v.stock = parseInt(document.getElementById('editStock').value) ?? v.stock;
  closeModal(); render(); showToast('আপডেট হয়েছে');
-}
-function addStockPrompt(){
- const mmOptions = MM_LIST.map(m=>`<option value="${m}">${m} মিমি</option>`).join('');
- const szOptions = SIZE_LIST.map(s=>`<option value="${s}">${s} ফুট</option>`).join('');
- openModal(`নতুন মাল যোগ করুন — ${esc(stockBrand)}`, `
- <div class="field"><label>মিলিমিটার</label><select id="newMM">${mmOptions}</select></div>
- <div class="field"><label>সাইজ</label><select id="newSize">${szOptions}</select></div>
- <div class="field"><label>ক্রয়মূল্য (৳)</label><input type="number" id="newBuy" value="500" min="0"></div>
- <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="newSell" value="570" min="0"></div>
- <div class="field"><label>স্টক (পিস)</label><input type="number" id="newStock" value="10" min="0"></div>
- `, `
- <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
- <button class="btn btn-primary" onclick="saveNewStock()">যোগ করুন</button>
- `);
-}
-function saveNewStock(){
- const mm = document.getElementById('newMM').value;
- const sz = document.getElementById('newSize').value;
- if(!inventory[stockBrand][mm]) inventory[stockBrand][mm] = {};
- inventory[stockBrand][mm][sz] = {
- buy: parseInt(document.getElementById('newBuy').value)||0,
- sell: parseInt(document.getElementById('newSell').value)||0,
- stock: parseInt(document.getElementById('newStock').value)||0,
- };
- closeModal(); render(); showToast('নতুন মাল যোগ হয়েছে');
 }
  
 /* ============================================================
@@ -1445,14 +1577,24 @@ function renderDaily(){
  
  const sortedKeys = Object.keys(days).sort((a,b)=> b.localeCompare(a));
  
+ if(!dailySelectedDate){
+ // ---- তারিখের তালিকা + নির্দিষ্ট তারিখ সরাসরি দেখার অপশন ----
+ const todayStr = toDateInputValue(new Date());
+ const datePicker = `
+ <div class="panel" style="margin-bottom:16px; display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap;">
+ <div class="field" style="margin-bottom:0; flex:1; min-width:180px;">
+ <label>যেকোনো তারিখ সরাসরি দেখুন (সেদিন লেনদেন না থাকলেও)</label>
+ <input type="date" id="dailyDatePicker" value="${todayStr}" max="${todayStr}">
+ </div>
+ <button class="btn btn-primary" onclick="openDailyDetail(document.getElementById('dailyDatePicker').value)">দেখুন</button>
+ </div>`;
+ 
  if(sortedKeys.length === 0){
- return `<div class="empty-state"><div class="ic">📅</div>এখনো কোনো লেনদেন হয়নি<br><span style="font-size:12px;">বিক্রয় বা পেমেন্ট নিলে সেই তারিখ এখানে দেখা যাবে</span></div>`;
+ return datePicker + `<div class="empty-state"><div class="ic">📅</div>এখনো কোনো লেনদেন হয়নি<br><span style="font-size:12px;">উপরে তারিখ বেছে "দেখুন" চাপুন, অথবা বিক্রয়/পেমেন্ট নিলে সেই তারিখ এখানে তালিকায় দেখা যাবে</span></div>`;
  }
  
- if(!dailySelectedDate){
- // ---- তারিখের তালিকা ----
- return `
- <div style="font-size:13px;color:var(--steel-500);margin-bottom:14px;">যেকোনো দিনে ক্লিক করে সেদিনের সব নগদ, বাকি ও জমার বিস্তারিত ইতিহাস দেখুন</div>
+ return datePicker + `
+ <div style="font-size:13px;color:var(--steel-500);margin-bottom:14px;">লেনদেন হয়েছে এমন দিনগুলোর তালিকা — যেকোনোটিতে ক্লিক করে বিস্তারিত দেখুন</div>
  ${sortedKeys.map(k => {
  const d = days[k];
  return `<div class="day-card" onclick="openDailyDetail('${k}')">
@@ -1506,7 +1648,10 @@ function renderDaily(){
  ${combined.length === 0 ? `<div class="no-match">এই দিনে কোনো লেনদেন নেই</div>` : combined.map(x=>x.html).join('')}
  `;
 }
-function openDailyDetail(k){ dailySelectedDate = k; render(); }
+function openDailyDetail(k){
+ if(!k) return;
+ dailySelectedDate = k; render();
+}
  
 /* ============================================================
  MODAL / TOAST HELPERS
@@ -1529,3 +1674,4 @@ function showToast(msg){
 </script>
 </body>
 </html>
+ 
