@@ -389,7 +389,7 @@ input, select{ font-family:inherit; }
  <div class="sub">STOCK · SALES · খাতা</div>
  </div>
  <ul class="nav-list" id="navList"></ul>
- <div class="sidebar-foot">সংস্করণ: ডেমো ১.১</div>
+ <div class="sidebar-foot">সংস্করণ: ডেমো ১.২</div>
  </aside>
  
  <div class="main">
@@ -478,6 +478,10 @@ let ledgerSearch = '';
 let cashSearch = '';
 let dailySelectedDate = null; // YYYY-MM-DD, null মানে তারিখের তালিকা দেখানো হচ্ছে
  
+// লাভ-ক্ষতি পেজের স্টেট
+let profitTab = 'monthly'; // 'daily' | 'monthly' | 'yearly' — কোন দানায় তালিকা শুরু হবে
+let profitDrillPath = []; // [{type:'year'|'month'|'day', key}] — ক্লিক করে করে যত ভেতরে গেছে
+ 
 const nav = [
  { id:'dashboard', label:'ড্যাশবোর্ড', icon:'📊' },
  { id:'sales', label:'বিক্রয়', icon:'🧾' },
@@ -486,6 +490,7 @@ const nav = [
  { id:'cash', label:'নগদ ক্রেতা', icon:'💵' },
  { id:'invoices', label:'ইনভয়েস হিস্ট্রি', icon:'🗂️' },
  { id:'daily', label:'দৈনিক হিসাব', icon:'📅' },
+ { id:'profit', label:'লাভ-ক্ষতি', icon:'📈' },
 ];
  
 /* ============================================================
@@ -552,8 +557,9 @@ function switchView(id){
  if(id === 'ledger'){ ledgerSearch = ''; }
  if(id === 'cash'){ cashSearch = ''; }
  if(id === 'daily'){ dailySelectedDate = null; }
+ if(id === 'profit'){ profitTab = 'monthly'; profitDrillPath = []; }
  renderNav();
- const titles = {dashboard:'ড্যাশবোর্ড', sales:'বিক্রয়', stock:'স্টক তালিকা', ledger:'বাকির খাতা', cash:'নগদ ক্রেতা', invoices:'ইনভয়েস হিস্ট্রি', daily:'দৈনিক হিসাব'};
+ const titles = {dashboard:'ড্যাশবোর্ড', sales:'বিক্রয়', stock:'স্টক তালিকা', ledger:'বাকির খাতা', cash:'নগদ ক্রেতা', invoices:'ইনভয়েস হিস্ট্রি', daily:'দৈনিক হিসাব', profit:'লাভ-ক্ষতি'};
  document.getElementById('pageTitle').textContent = titles[id];
  document.getElementById('pageMeta').textContent = new Date().toLocaleDateString('bn-BD', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
  render();
@@ -568,6 +574,7 @@ function render(){
  else if(currentView === 'cash') c.innerHTML = renderCashCustomers();
  else if(currentView === 'invoices') c.innerHTML = renderInvoices();
  else if(currentView === 'daily') c.innerHTML = renderDaily();
+ else if(currentView === 'profit') c.innerHTML = renderProfit();
 }
  
 /* ============================================================
@@ -1651,6 +1658,208 @@ function renderDaily(){
 function openDailyDetail(k){
  if(!k) return;
  dailySelectedDate = k; render();
+}
+ 
+/* ============================================================
+ লাভ-ক্ষতি (PROFIT & LOSS)
+ ------------------------------------------------------------
+ প্রতিটি ইনভয়েসের পণ্যভিত্তিক ক্রয়মূল্য (buyPrice) ও বিক্রয়মূল্য (sellPrice)
+ থেকে গ্রস মুনাফা বের করা হয়, তারপর ছাড় বাদ দিয়ে নিট মুনাফা বের করা হয়।
+ ডেলিভারি চার্জ ও "অন্যান্য খরচ" কে নিরপেক্ষ (pass-through) হিসেবে ধরা
+ হয়েছে — অর্থাৎ গ্রাহকের কাছ থেকে যা নেওয়া হয়, ধরে নেওয়া হচ্ছে ঠিক
+ ততটুকুই খরচ হয়ে গেছে (মুনাফায় যোগ/বিয়োগ হয় না), শুধু আলাদাভাবে
+ তথ্যের জন্য দেখানো হয়।
+ দৈনিক/মাসিক/বার্ষিক — তিনটি ট্যাব দিয়ে শুরু হয়, ক্লিক করে করে
+ বছর → মাস → দিন → ইনভয়েস পর্যন্ত ভেতরে যাওয়া যায়।
+ ============================================================ */
+function yearKey(d){ return String(new Date(d).getFullYear()); }
+function monthKey(d){ return toDateInputValue(d).slice(0,7); } // YYYY-MM
+function monthLabel(key){
+ const [y,m] = key.split('-').map(Number);
+ return new Date(y, m-1, 1).toLocaleDateString('bn-BD', { year:'numeric', month:'long' });
+}
+function bnDigits(str){
+ const map = {'0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯'};
+ return String(str).replace(/[0-9]/g, d => map[d]);
+}
+function yearLabel(key){ return bnDigits(key) + ' সাল'; }
+function profitLevelLabel(type, key){
+ if(type === 'year') return yearLabel(key);
+ if(type === 'month') return monthLabel(key);
+ return dayLabel(key);
+}
+// ইনভয়েসের গ্রুপিং কী বের করে (year/month/day অনুযায়ী)
+function profitGroupKey(inv, type){
+ if(type === 'year') return yearKey(inv.date);
+ if(type === 'month') return monthKey(inv.date);
+ return dayKey(inv.date);
+}
+// একগুচ্ছ ইনভয়েস থেকে বিক্রয়/ক্রয়মূল্য/গ্রস-নিট মুনাফার সারাংশ বের করে
+function profitComputeMetrics(list){
+ let sales = 0, cogs = 0, discount = 0, deliveryExpense = 0;
+ list.forEach(inv => {
+ const itemsRevenue = inv.itemsSubtotal != null ? inv.itemsSubtotal : inv.items.reduce((s,it)=>s+it.qty*it.sellPrice,0);
+ const itemCogs = inv.items.reduce((s,it)=>s+it.qty*(it.buyPrice||0),0);
+ sales += itemsRevenue;
+ cogs += itemCogs;
+ discount += inv.discount || 0;
+ deliveryExpense += (inv.delivery||0) + (inv.expenseAmt||0);
+ });
+ const grossProfit = sales - cogs;
+ const netProfit = grossProfit - discount;
+ const margin = sales > 0 ? (netProfit / sales) * 100 : 0;
+ return { sales, cogs, discount, deliveryExpense, grossProfit, netProfit, margin, invCount: list.length };
+}
+// path অনুযায়ী ইনভয়েস তালিকা ফিল্টার করে
+function profitFilteredInvoices(){
+ let list = invoices;
+ profitDrillPath.forEach(step => {
+ list = list.filter(inv => profitGroupKey(inv, step.type) === step.key);
+ });
+ return list;
+}
+function profitSwitchTab(tab){ profitTab = tab; profitDrillPath = []; render(); }
+function profitDrillInto(type, key){ profitDrillPath.push({ type, key }); render(); }
+// index = -1 মানে একদম শুরুতে (root); নাহলে সেই ইনডেক্স পর্যন্ত পথ রেখে বাকিটা কাটা হয়
+function profitDrillTo(index){ profitDrillPath = profitDrillPath.slice(0, index+1); render(); }
+ 
+function metricCardsHtml(m){
+ return `
+ <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);">
+ <div class="stat-card" style="--accent:var(--steel-700)"><div class="lbl">পণ্য বিক্রয়</div><div class="val">${fmt(m.sales)}</div></div>
+ <div class="stat-card" style="--accent:var(--amber)"><div class="lbl">ক্রয়মূল্য (COGS)</div><div class="val">${fmt(m.cogs)}</div></div>
+ <div class="stat-card" style="--accent:${m.grossProfit>=0?'var(--green)':'var(--red)'}"><div class="lbl">গ্রস মুনাফা</div><div class="val">${fmt(m.grossProfit)}</div></div>
+ <div class="stat-card" style="--accent:var(--red)"><div class="lbl">ছাড় (বাদ)</div><div class="val">${fmt(m.discount)}</div></div>
+ <div class="stat-card" style="--accent:${m.netProfit>=0?'var(--green)':'var(--red)'}"><div class="lbl">নিট মুনাফা</div><div class="val" style="color:${m.netProfit>=0?'var(--green)':'var(--red)'}">${fmt(m.netProfit)}</div></div>
+ </div>
+ <div class="panel" style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+ <div style="font-size:13px;color:var(--steel-500);">
+ ${m.invCount} টি ইনভয়েস · মুনাফার হার (মার্জিন) <b class="mono" style="color:${m.netProfit>=0?'var(--green)':'var(--red)'}">${m.margin.toFixed(1)}%</b>
+ ${m.deliveryExpense>0 ? ` · ডেলিভারি/অন্যান্য চার্জ ${fmt(m.deliveryExpense)} (নিরপেক্ষ, মুনাফায় ধরা হয়নি)` : ''}
+ </div>
+ </div>`;
+}
+function profitBreadcrumbHtml(){
+ let html = `<span class="crumb-btn" onclick="profitDrillTo(-1)">সব ${profitTab==='yearly'?'বছর':profitTab==='monthly'?'মাস':'দিন'}</span>`;
+ profitDrillPath.forEach((d,i) => {
+ html += ` <span>›</span> <span class="crumb-btn" onclick="profitDrillTo(${i})">${profitLevelLabel(d.type, d.key)}</span>`;
+ });
+ return `<div class="breadcrumb">${html}</div>`;
+}
+function renderProfit(){
+ const LEVEL_SETS = { daily:['day'], monthly:['month','day'], yearly:['year','month','day'] };
+ const levels = LEVEL_SETS[profitTab];
+ const depth = profitDrillPath.length;
+ 
+ const tabsHtml = `
+ <div style="display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;">
+ <button class="btn ${profitTab==='daily'?'btn-primary':'btn-outline'}" onclick="profitSwitchTab('daily')">📅 দৈনিক</button>
+ <button class="btn ${profitTab==='monthly'?'btn-primary':'btn-outline'}" onclick="profitSwitchTab('monthly')">🗓️ মাসিক</button>
+ <button class="btn ${profitTab==='yearly'?'btn-primary':'btn-outline'}" onclick="profitSwitchTab('yearly')">📈 বার্ষিক</button>
+ </div>`;
+ 
+ if(invoices.length === 0){
+ return tabsHtml + `<div class="empty-state"><div class="ic">📈</div>এখনো কোনো বিক্রয় হয়নি<br><span style="font-size:12px;">"বিক্রয়" থেকে ইনভয়েস তৈরি হলে এখানে লাভ-ক্ষতির হিসাব দেখা যাবে</span></div>`;
+ }
+ 
+ const filteredSoFar = profitFilteredInvoices();
+ const overallMetrics = profitComputeMetrics(filteredSoFar);
+ const breadcrumb = depth > 0 ? profitBreadcrumbHtml() : '';
+ 
+ // ---- সবচেয়ে ভেতরের স্তরে পৌঁছে গেলে: ইনভয়েস-ভিত্তিক বিস্তারিত তালিকা ----
+ if(depth >= levels.length){
+ const rows = filteredSoFar.length === 0 ? `<tr><td colspan="7" class="no-match">এই সময়ে কোনো ইনভয়েস নেই</td></tr>` :
+ filteredSoFar.slice().sort((a,b)=> new Date(b.date)-new Date(a.date)).map(inv => {
+ const itemsRevenue = inv.itemsSubtotal != null ? inv.itemsSubtotal : inv.items.reduce((s,it)=>s+it.qty*it.sellPrice,0);
+ const itemCogs = inv.items.reduce((s,it)=>s+it.qty*(it.buyPrice||0),0);
+ const gross = itemsRevenue - itemCogs;
+ const net = gross - (inv.discount||0);
+ return `<tr>
+ <td class="num">#${inv.id}</td>
+ <td>${esc(inv.customer)}</td>
+ <td>${new Date(inv.date).toLocaleDateString('bn-BD')}</td>
+ <td class="num">${fmt(itemsRevenue)}</td>
+ <td class="num">${fmt(itemCogs)}</td>
+ <td class="num" style="color:${net>=0?'var(--green)':'var(--red)'}">${fmt(net)}</td>
+ <td class="tbl-actions"><button onclick="profitInvoiceDetail(${inv.id})">বিস্তারিত</button></td>
+ </tr>`;
+ }).join('');
+ return tabsHtml + breadcrumb + metricCardsHtml(overallMetrics) + `
+ <table class="tbl">
+ <thead><tr><th>ইনভয়েস</th><th>ক্রেতা</th><th>তারিখ</th><th>বিক্রয়</th><th>ক্রয়মূল্য</th><th>নিট মুনাফা</th><th></th></tr></thead>
+ <tbody>${rows}</tbody>
+ </table>`;
+ }
+ 
+ // ---- তালিকা স্তর: বছর/মাস/দিন অনুযায়ী গ্রুপ করে কার্ড আকারে দেখানো ----
+ const showLevel = levels[depth];
+ const groups = {};
+ filteredSoFar.forEach(inv => {
+ const k = profitGroupKey(inv, showLevel);
+ if(!groups[k]) groups[k] = [];
+ groups[k].push(inv);
+ });
+ const sortedKeys = Object.keys(groups).sort((a,b)=> b.localeCompare(a));
+ 
+ if(sortedKeys.length === 0){
+ return tabsHtml + breadcrumb + `<div class="no-match">এই পরিসরে কোনো বিক্রয় নেই</div>`;
+ }
+ 
+ const cards = sortedKeys.map(k => {
+ const m = profitComputeMetrics(groups[k]);
+ return `<div class="day-card" onclick="profitDrillInto('${showLevel}','${k}')">
+ <div>
+ <div class="dname">${profitLevelLabel(showLevel, k)}</div>
+ <div class="dmeta">${m.invCount} টি ইনভয়েস · মার্জিন ${m.margin.toFixed(1)}%</div>
+ </div>
+ <div class="day-stats">
+ <div><div class="dv" style="color:var(--steel-700);">${fmt(m.sales)}</div><div class="dl">বিক্রয়</div></div>
+ <div><div class="dv" style="color:var(--amber);">${fmt(m.cogs)}</div><div class="dl">ক্রয়মূল্য</div></div>
+ <div><div class="dv" style="color:${m.netProfit>=0?'var(--green)':'var(--red)'};">${fmt(m.netProfit)}</div><div class="dl">নিট মুনাফা</div></div>
+ </div>
+ </div>`;
+ }).join('');
+ 
+ return tabsHtml + breadcrumb + metricCardsHtml(overallMetrics) + `
+ <div style="font-size:13px;color:var(--steel-500);margin-bottom:14px;">যেকোনো ${showLevel==='year'?'বছরে':showLevel==='month'?'মাসে':'দিনে'} ক্লিক করে আরও ভেতরে গিয়ে বিস্তারিত দেখুন</div>
+ ${cards}`;
+}
+// একটি নির্দিষ্ট ইনভয়েসের পণ্য-ভিত্তিক মুনাফা বিস্তারিত মোডালে দেখায়
+function profitInvoiceDetail(invId){
+ const inv = invoices.find(x => x.id === invId);
+ if(!inv) return;
+ const rows = inv.items.map(it => {
+ const rev = it.qty * it.sellPrice;
+ const cost = it.qty * (it.buyPrice||0);
+ const profit = rev - cost;
+ return `<tr>
+ <td>${esc(inv_item_label_(it))}</td>
+ <td class="r">${it.qty}</td>
+ <td class="r">${fmt(it.buyPrice||0)}</td>
+ <td class="r">${fmt(it.sellPrice)}</td>
+ <td class="r" style="color:${profit>=0?'var(--green)':'var(--red)'}">${fmt(profit)}</td>
+ </tr>`;
+ }).join('');
+ const itemsRevenue = inv.itemsSubtotal != null ? inv.itemsSubtotal : inv.items.reduce((s,it)=>s+it.qty*it.sellPrice,0);
+ const itemCogs = inv.items.reduce((s,it)=>s+it.qty*(it.buyPrice||0),0);
+ const gross = itemsRevenue - itemCogs;
+ const net = gross - (inv.discount||0);
+ openModal(`মুনাফা বিস্তারিত — ইনভয়েস #${inv.id}`, `
+ <div style="font-size:12.5px;color:var(--steel-500);margin-bottom:10px;">ক্রেতা: ${esc(inv.customer)} · ${new Date(inv.date).toLocaleDateString('bn-BD')}</div>
+ <table class="itbl">
+ <thead><tr><th>পণ্য</th><th class="r">পরিমাণ</th><th class="r">ক্রয়মূল্য</th><th class="r">বিক্রয়মূল্য</th><th class="r">মুনাফা</th></tr></thead>
+ <tbody>${rows}</tbody>
+ </table>
+ <div class="isubrow"><span>পণ্যের সাবটোটাল (বিক্রয়)</span><span>${fmt(itemsRevenue)}</span></div>
+ <div class="isubrow"><span>মোট ক্রয়মূল্য</span><span>${fmt(itemCogs)}</span></div>
+ <div class="isubrow"><span>গ্রস মুনাফা</span><span>${fmt(gross)}</span></div>
+ ${inv.discount>0 ? `<div class="idiscount"><span>ছাড়</span><span>−${fmt(inv.discount)}</span></div>` : ''}
+ <div class="itotal"><span>নিট মুনাফা</span><span style="color:${net>=0?'var(--green)':'var(--red)'}">${fmt(net)}</span></div>
+ ${(inv.delivery||inv.expenseAmt) ? `<div style="font-size:11.5px;color:var(--steel-500);margin-top:10px;">ডেলিভারি/অন্যান্য চার্জ ${fmt((inv.delivery||0)+(inv.expenseAmt||0))} গ্রাহকের কাছ থেকে নেওয়া হয়েছে কিন্তু এখানে নিরপেক্ষ (pass-through) ধরা হয়েছে বলে মুনাফায় যোগ করা হয়নি।</div>` : ''}
+ `, `<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>`);
+}
+function inv_item_label_(it){
+ return `${it.brand} · ${it.mm}মিমি · ${it.size}ফুট`;
 }
  
 /* ============================================================
