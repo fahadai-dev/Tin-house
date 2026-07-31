@@ -1,0 +1,22 @@
+{
+  "name": "টিন হাউস ম্যানেজমেন্ট",
+  "short_name": "টিন হাউস",
+  "description": "দোকানের স্টক, বিক্রয় ও খাতা ম্যানেজমেন্ট",
+  "start_url": "/login.html",
+  "display": "standalone",
+  "background_color": "#F1EFE9",
+  "theme_color": "#1E262C",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

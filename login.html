@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>টিন হাউস — লগইন</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700&family=Hind+Siliguri:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+ :root {
+ --ink: #161B1F;
+ --steel-900: #1E262C;
+ --steel-700: #3A464E;
+ --steel-500: #6B7A82;
+ --steel-300: #AEB9BD;
+ --steel-100: #E9ECED;
+ --paper: #F1EFE9;
+ --rust: #BE4A22;
+ --rust-dark: #9A3A19;
+ --danger: #B23B2E;
+ --radius: 10px;
+ }
+ * { box-sizing: border-box; }
+ body {
+ margin: 0;
+ min-height: 100vh;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ background: var(--steel-900);
+ background-image: radial-gradient(circle at 20% 20%, var(--steel-700), var(--steel-900) 60%);
+ font-family: 'Hind Siliguri', sans-serif;
+ color: var(--ink);
+ }
+ .card {
+ width: 100%;
+ max-width: 380px;
+ margin: 20px;
+ background: var(--paper);
+ border-radius: var(--radius);
+ padding: 34px 30px;
+ box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+ }
+ .brand-icon { font-size: 38px; text-align: center; display: block; margin-bottom: 6px; }
+ .brand {
+ font-family: 'Baloo Da 2', sans-serif;
+ font-weight: 700;
+ font-size: 24px;
+ color: var(--steel-900);
+ text-align: center;
+ margin: 0 0 4px;
+ }
+ .tagline { text-align: center; color: var(--steel-500); font-size: 13.5px; margin: 0 0 26px; }
+ label { display: block; font-size: 13.5px; font-weight: 600; margin: 14px 0 6px; color: var(--steel-900); }
+ input {
+ width: 100%;
+ padding: 11px 13px;
+ border-radius: 8px;
+ border: 1px solid var(--steel-300);
+ background: #fff;
+ font-family: inherit;
+ font-size: 15px;
+ }
+ input:focus {
+ outline: none;
+ border-color: var(--rust);
+ box-shadow: 0 0 0 3px rgba(190,74,34,0.15);
+ }
+ button.submit {
+ width: 100%;
+ margin-top: 22px;
+ padding: 12px;
+ border: none;
+ border-radius: 8px;
+ background: var(--rust);
+ color: #fff;
+ font-family: 'Baloo Da 2', sans-serif;
+ font-weight: 600;
+ font-size: 16px;
+ cursor: pointer;
+ transition: background 0.15s;
+ }
+ button.submit:hover { background: var(--rust-dark); }
+ button.submit:disabled { opacity: 0.6; cursor: not-allowed; }
+ .msgbox {
+ margin-top: 14px;
+ border-radius: 8px;
+ padding: 10px 12px;
+ font-size: 13.5px;
+ display: none;
+ background: #fbe4de;
+ color: var(--danger);
+ border: 1px solid #f0bdae;
+ }
+ .msgbox.show { display: block; }
+</style>
+</head>
+<body>
+ <div class="card">
+ <span class="brand-icon">🔩</span>
+ <p class="brand">টিন হাউস</p>
+ <p class="tagline">দোকান ম্যানেজমেন্ট সিস্টেম</p>
+ 
+ <form id="loginForm">
+ <label for="loginEmail">ইমেইল</label>
+ <input type="email" id="loginEmail" required autocomplete="username">
+ <label for="loginPassword">পাসওয়ার্ড</label>
+ <input type="password" id="loginPassword" required autocomplete="current-password">
+ <div class="msgbox" id="errorBox"></div>
+ <button type="submit" class="submit" id="loginBtn">লগইন করুন</button>
+ </form>
+ </div>
+ 
+ <script src="config.js"></script>
+ <script>
+ if ('serviceWorker' in navigator) {
+ window.addEventListener('load', () => {
+ navigator.serviceWorker.register('sw.js').catch((err) => console.warn('Service worker রেজিস্টার হয়নি:', err));
+ });
+ }
+ 
+ const errorBox = document.getElementById('errorBox');
+ function showError(msg){ errorBox.textContent = msg; errorBox.classList.add('show'); }
+ function hideError(){ errorBox.classList.remove('show'); }
+ 
+ // ইতিমধ্যে লগইন করা থাকলে সরাসরি অ্যাপে পাঠিয়ে দাও
+ (async () => {
+ const { data } = await supabaseClient.auth.getSession();
+ if (data.session) window.location.href = 'index.html';
+ })();
+ 
+ const loginForm = document.getElementById('loginForm');
+ const loginBtn = document.getElementById('loginBtn');
+ loginForm.addEventListener('submit', async (e) => {
+ e.preventDefault();
+ hideError();
+ loginBtn.disabled = true;
+ loginBtn.textContent = 'লগইন হচ্ছে...';
+ const email = document.getElementById('loginEmail').value.trim();
+ const password = document.getElementById('loginPassword').value;
+ try {
+ const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+ if (error) throw error;
+ window.location.href = 'index.html';
+ } catch (err) {
+ showError('ইমেইল অথবা পাসওয়ার্ড ভুল হয়েছে। আবার চেষ্টা করো।');
+ loginBtn.disabled = false;
+ loginBtn.textContent = 'লগইন করুন';
+ }
+ });
+ </script>
+</body>
+</html>
+ 
