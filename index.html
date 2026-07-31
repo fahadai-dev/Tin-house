@@ -832,6 +832,7 @@ function switchView(id){
  return;
  }
  currentView = id;
+ closeMobileMenu();
  if(id === 'sales'){ posStep = 1; posBrand = null; posBrandSearch = ''; posItemSearch = ''; }
  if(id === 'stock'){ stockStep = 1; stockBrand = null; stockSearch = ''; }
  if(id === 'purchaseLedger'){ purchaseSearch = ''; }
