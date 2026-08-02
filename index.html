@@ -425,7 +425,7 @@ input, select{ font-family:inherit; }
  <div class="sub">STOCK · SALES · খাতা</div>
  </div>
  <ul class="nav-list" id="navList"></ul>
- <div class="sidebar-foot">সংস্করণ: ১.৪ · Supabase</div>
+ <div class="sidebar-foot">সংস্করণ: ১.৫ · Supabase</div>
  </aside>
  
  <div class="main">
@@ -573,7 +573,7 @@ let reportSelectedDay = null;
 let profitTab = 'monthly';
 let profitDrillPath = [];
  
-const OWNER_ONLY_VIEWS = ['report','profit','staff'];
+const OWNER_ONLY_VIEWS = ['report','profit','staff','settings'];
  
 const nav = [
  { id:'dashboard', label:'ড্যাশবোর্ড', icon:'📊' },
@@ -590,6 +590,7 @@ const nav = [
  { id:'profit', label:'লাভ-ক্ষতি', icon:'📈' },
  { id:'report', label:'ব্যবসার রিপোর্ট', icon:'📋' },
  { id:'staff', label:'স্টাফ ও লগ', icon:'👥' },
+ { id:'settings', label:'দোকানের তথ্য', icon:'⚙️' },
 ];
  
 /* ============================================================
@@ -601,6 +602,9 @@ const nav = [
 let currentUser = null; // { id, full_name, role, shop_id }
 let SHOP_ID = null;
 let SHOP_NAME = 'আমার দোকান';
+let SHOP_PHONE = '';
+let SHOP_ADDRESS = '';
+let SHOP_EMAIL = '';
 let staffList = []; // এই দোকানের স্টাফদের তালিকা (owner এর জন্য)
  
 // owner-only সার্ভারলেস API কল করার হেল্পার (/api/create-staff, /api/delete-staff, /api/reset-password)
@@ -673,7 +677,7 @@ function addStaffPrompt(){
  <div class="field"><label>নাম</label><input type="text" id="staffName" placeholder="যেমনঃ মোঃ রহিম"></div>
  <div class="field"><label>ইমেইল</label><input type="email" id="staffEmail" placeholder="যেমনঃ rahim@example.com"></div>
  <div class="field"><label>পাসওয়ার্ড</label><input type="password" id="staffPassword" placeholder="কমপক্ষে ৬ ক্যারেক্টার"></div>
- <div style="font-size:11.5px;color:var(--steel-500);">স্টাফরা বিক্রয়, স্টক, খাতা ইত্যাদি পরিচালনা করতে পারবেন, কিন্তু "ব্যবসার রিপোর্ট", "লাভ-ক্ষতি" ও "স্টাফ ও লগ" পেজ শুধু আপনি (মালিক) দেখতে পারবেন।</div>
+ <div style="font-size:11.5px;color:var(--steel-500);">স্টাফরা বিক্রয়, স্টক, খাতা ইত্যাদি পরিচালনা করতে পারবেন, কিন্তু "ব্যবসার রিপোর্ট", "লাভ-ক্ষতি", "স্টাফ ও লগ" ও "দোকানের তথ্য" পেজ শুধু আপনি (মালিক) দেখতে পারবেন।</div>
  `, `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
  <button class="btn btn-primary" id="saveStaffBtn" onclick="saveNewStaff()">যুক্ত করুন</button>
@@ -768,6 +772,7 @@ function collectState(isNewShop){
  purchases, purchaseCounter,
  expenseCategories, expenseCatNextId, expensePeople, expensePersonNextId, expenses, expenseNextId,
  activityLog, activityLogNextId, LOW_STOCK_THRESHOLD, returns, returnNextId,
+ shopPhone: SHOP_PHONE, shopAddress: SHOP_ADDRESS, shopEmail: SHOP_EMAIL,
  };
 }
 function applyState(s){
@@ -794,6 +799,9 @@ function applyState(s){
  LOW_STOCK_THRESHOLD = s.LOW_STOCK_THRESHOLD || 5;
  returns = s.returns || [];
  returnNextId = s.returnNextId || 1;
+ SHOP_PHONE = s.shopPhone || '';
+ SHOP_ADDRESS = s.shopAddress || '';
+ SHOP_EMAIL = s.shopEmail || '';
 }
 let persistTimer = null;
 function persistShopData(){
@@ -846,7 +854,7 @@ function switchView(id){
  if(id === 'report'){ reportPreset = 'month'; reportFrom = null; reportTo = null; }
  if(id === 'staff'){ loadStaffList().then(render); }
  renderNav();
- const titles = {dashboard:'ড্যাশবোর্ড', sales:'বিক্রয়', stock:'স্টক তালিকা', purchaseLedger:'কেনার খাতা', salesLedger:'বেচার খাতা', ledger:'বাকির খাতা', cash:'নগদ ক্রেতা', expenses:'খরচ', invoices:'ইনভয়েস হিস্ট্রি', returns:'রিটার্ন/এক্সচেঞ্জ', daily:'দৈনিক হিসাব', profit:'লাভ-ক্ষতি', report:'ব্যবসার রিপোর্ট', staff:'স্টাফ ও লগ'};
+ const titles = {dashboard:'ড্যাশবোর্ড', sales:'বিক্রয়', stock:'স্টক তালিকা', purchaseLedger:'কেনার খাতা', salesLedger:'বেচার খাতা', ledger:'বাকির খাতা', cash:'নগদ ক্রেতা', expenses:'খরচ', invoices:'ইনভয়েস হিস্ট্রি', returns:'রিটার্ন/এক্সচেঞ্জ', daily:'দৈনিক হিসাব', profit:'লাভ-ক্ষতি', report:'ব্যবসার রিপোর্ট', staff:'স্টাফ ও লগ', settings:'দোকানের তথ্য'};
  document.getElementById('pageTitle').textContent = titles[id];
  document.getElementById('pageMeta').textContent = new Date().toLocaleDateString('bn-BD', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
  const staffLabelEl = document.getElementById('currentStaffLabel');
@@ -870,6 +878,7 @@ function render(){
  else if(currentView === 'profit') c.innerHTML = renderProfit();
  else if(currentView === 'report') c.innerHTML = renderBusinessReport();
  else if(currentView === 'staff') c.innerHTML = renderStaff();
+ else if(currentView === 'settings') c.innerHTML = renderSettings();
 }
  
 /* ============================================================
@@ -941,6 +950,35 @@ function downloadPrintArea(filename){
  } catch(e){
  showToast('ডাউনলোড ব্যর্থ হয়েছে, আবার চেষ্টা করুন');
  }
+}
+ 
+/* ============================================================
+ দোকানের তথ্য (SETTINGS)
+ ============================================================ */
+function renderSettings(){
+ return `
+ <div class="panel" style="max-width:480px;">
+ <h3>দোকানের তথ্য (ইনভয়েস ও রশিদে দেখাবে)</h3>
+ <div style="font-size:12px;color:var(--steel-500);margin-bottom:16px;">যে তথ্য নাই বা দিতে চান না, সেই ঘর ফাঁকা রাখুন — ইনভয়েসে সেটা দেখাবে না।</div>
+ <div class="field"><label>দোকানের নাম</label><input type="text" id="setShopName" value="${esc(SHOP_NAME)}" placeholder="যেমনঃ টিন হাউস"></div>
+ <div class="field"><label>ফোন নাম্বার (না থাকলে ফাঁকা রাখুন)</label><input type="text" id="setShopPhone" value="${esc(SHOP_PHONE)}" placeholder="01xxx-xxxxxx"></div>
+ <div class="field"><label>ঠিকানা</label><input type="text" id="setShopAddress" value="${esc(SHOP_ADDRESS)}" placeholder="যেমনঃ বাজার রোড, সাভার, ঢাকা"></div>
+ <div class="field"><label>ইমেইল (ঐচ্ছিক)</label><input type="text" id="setShopEmail" value="${esc(SHOP_EMAIL)}" placeholder="shop@example.com"></div>
+ <button class="btn btn-primary" onclick="saveShopSettings()">সংরক্ষণ করুন</button>
+ </div>`;
+}
+async function saveShopSettings(){
+ const name = document.getElementById('setShopName').value.trim();
+ SHOP_PHONE = document.getElementById('setShopPhone').value.trim();
+ SHOP_ADDRESS = document.getElementById('setShopAddress').value.trim();
+ SHOP_EMAIL = document.getElementById('setShopEmail').value.trim();
+ if(name && name !== SHOP_NAME){
+ SHOP_NAME = name;
+ document.getElementById('sidebarShopName').textContent = SHOP_NAME;
+ try{ await supabaseClient.from('shops').update({ name: SHOP_NAME }).eq('id', SHOP_ID); } catch(e){ /* সাইলেন্টলি ব্যর্থ */ }
+ }
+ persistShopData();
+ showToast('দোকানের তথ্য সংরক্ষণ হয়েছে');
 }
  
 /* ============================================================
@@ -1344,11 +1382,12 @@ function buildInvoiceHtml(inv){
  const expenseAmt = inv.expenseAmt || 0;
  const discount = inv.discount || 0;
  const itemsSubtotal = inv.itemsSubtotal != null ? inv.itemsSubtotal : inv.total;
+ const shopContactLine = [esc(SHOP_ADDRESS), SHOP_PHONE ? 'ফোনঃ '+esc(SHOP_PHONE) : ''].filter(Boolean).join(' · ');
  return `
  <div class="invoice-box">
  <div class="ihead">
- <h2>টিন হাউস</h2>
- <p>বাজার রোড, সাভার, ঢাকা · ফোনঃ ০১৭xx-xxxxxx</p>
+ <h2>${esc(SHOP_NAME)}</h2>
+ ${shopContactLine ? `<p>${shopContactLine}</p>` : ''}
  <p>ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString('bn-BD')} · ক্রেতা: ${esc(inv.customer)}${inv.customerPhone ? ' · '+telHtml(inv.customerPhone) : ''}</p>
  ${inv.customerAddress ? `<p>ঠিকানাঃ ${esc(inv.customerAddress)}</p>` : ''}
  </div>
@@ -1543,11 +1582,17 @@ function editAddBanToStock(brand, mm, sz){
  showToast(`${addPieces} পিস স্টকে যোগ হয়েছে ও কেনার খাতায় লেখা হয়েছে — সংরক্ষণ করতে "সংরক্ষণ করুন" চাপুন`);
 }
 function addStockPrompt(){
- const mmOptions = MM_LIST.map(m=>`<option value="${m}">${m} মিমি</option>`).join('');
- const szOptions = SIZE_LIST.map(s=>`<option value="${s}">${s} ফুট</option>`).join('');
+ const mmOptions = MM_LIST.map(m=>`<option value="${m}">`).join('');
+ const szOptions = SIZE_LIST.map(s=>`<option value="${s}">`).join('');
  openModal(`নতুন মাল যোগ করুন — ${esc(stockBrand)}`, `
- <div class="field"><label>মিলিমিটার</label><select id="newMM">${mmOptions}</select></div>
- <div class="field"><label>সাইজ</label><select id="newSize" onchange="addStockRecalc()">${szOptions}</select></div>
+ <div class="field"><label>মিলিমিটার (তালিকা থেকে বাছুন বা নিজে লিখুন)</label>
+ <input type="number" id="newMM" list="mmSuggestList" value="${MM_LIST[0]}" step="0.5" min="1" placeholder="যেমনঃ 14">
+ <datalist id="mmSuggestList">${mmOptions}</datalist>
+ </div>
+ <div class="field"><label>সাইজ / ফুট (তালিকা থেকে বাছুন বা নিজে লিখুন)</label>
+ <input type="number" id="newSize" list="sizeSuggestList" value="${SIZE_LIST[0]}" step="0.5" min="1" placeholder="যেমনঃ 8" oninput="addStockRecalc()">
+ <datalist id="sizeSuggestList">${szOptions}</datalist>
+ </div>
  <div class="field"><label>বানের দাম (৳) — ৭২ ফুট = ১ বান</label><input type="number" id="newBanPrice" value="4000" min="0" oninput="addStockRecalc()"></div>
  <div class="field"><label>কয় বান কিনলেন</label><input type="number" id="newBanQty" value="1" min="0" step="0.5" oninput="addStockRecalc()"></div>
  <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;">
@@ -1566,6 +1611,7 @@ function addStockPrompt(){
 function saveNewStock(){
  const mm = document.getElementById('newMM').value;
  const sz = document.getElementById('newSize').value;
+ if(!mm || !sz){ showToast('মিলিমিটার ও সাইজ লিখুন'); return; }
  const banPrice = parseInt(document.getElementById('newBanPrice').value)||0;
  const banQty = parseFloat(document.getElementById('newBanQty').value) || 0;
  const buyPerPiece = calcBuyFromBan(banPrice, parseFloat(sz));
@@ -1914,11 +1960,12 @@ function reduceCustomerInvoiceDues(custId, amountToClear){
  }
 }
 function buildPaymentReceiptHtml(p){
+ const shopContactLine = [esc(SHOP_ADDRESS), SHOP_PHONE ? 'ফোনঃ '+esc(SHOP_PHONE) : ''].filter(Boolean).join(' · ');
  return `
  <div class="invoice-box">
  <div class="ihead">
- <h2>টিন হাউস</h2>
- <p>বাজার রোড, সাভার, ঢাকা · ফোনঃ ০১৭xx-xxxxxx</p>
+ <h2>${esc(SHOP_NAME)}</h2>
+ ${shopContactLine ? `<p>${shopContactLine}</p>` : ''}
  <p>পেমেন্ট রশিদ #${p.id} · ${new Date(p.date).toLocaleDateString('bn-BD')} · গ্রাহক: ${esc(p.custName)}${p.custPhone ? ' · '+telHtml(p.custPhone) : ''}</p>
  </div>
  <table class="itbl">
@@ -1957,7 +2004,7 @@ function sendDueReminder(custId){
  if(!cust) return;
  if(!cust.phone){ showToast('এই গ্রাহকের ফোন নাম্বার সংরক্ষিত নেই'); return; }
  const waPhone = cleanPhoneForWa(cust.phone);
- const msg = encodeURIComponent(`প্রিয় ${cust.name}, আসসালামু আলাইকুম। টিন হাউস থেকে জানানো হচ্ছে, আপনার কাছে বর্তমানে ${fmt(cust.due)} টাকা বাকি আছে। সুবিধামতো সময়ে পরিশোধ করার জন্য অনুরোধ করা হলো। ধন্যবাদ।`);
+ const msg = encodeURIComponent(`প্রিয় ${cust.name}, আসসালামু আলাইকুম। ${SHOP_NAME} থেকে জানানো হচ্ছে, আপনার কাছে বর্তমানে ${fmt(cust.due)} টাকা বাকি আছে। সুবিধামতো সময়ে পরিশোধ করার জন্য অনুরোধ করা হলো। ধন্যবাদ।`);
  window.open(`https://wa.me/${waPhone}?text=${msg}`, '_blank');
  logActivity('বাকি রিমাইন্ডার পাঠানো হয়েছে (WhatsApp)', `${cust.name} · ${fmt(cust.due)} টাকা`);
 }
@@ -2361,11 +2408,12 @@ function viewPersonExpenses(personId){
 }
  
 function buildExpenseReceiptHtml(e){
+ const shopContactLine = [esc(SHOP_ADDRESS), SHOP_PHONE ? 'ফোনঃ '+esc(SHOP_PHONE) : ''].filter(Boolean).join(' · ');
  return `
  <div class="invoice-box">
  <div class="ihead">
- <h2>টিন হাউস</h2>
- <p>বাজার রোড, সাভার, ঢাকা · ফোনঃ ০১৭xx-xxxxxx</p>
+ <h2>${esc(SHOP_NAME)}</h2>
+ ${shopContactLine ? `<p>${shopContactLine}</p>` : ''}
  <p>খরচের রশিদ #${e.id} · ${new Date(e.date).toLocaleDateString('bn-BD')}</p>
  </div>
  <table class="itbl">
@@ -3105,3 +3153,4 @@ function showToast(msg){
 </script>
 </body>
 </html>
+ 
