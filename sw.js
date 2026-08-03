@@ -1,34 +1,7 @@
-// ============================================================
-// টিন হাউস — Service Worker
-// শুধু static shell cache করে; Supabase API কল সবসময় নেটওয়ার্ক
-// থেকেই যাবে (ডেটা যেন পুরনো/ভুল না দেখায়)।
-// ============================================================
+// টিন হাউস — সার্ভিস ওয়ার্কার (network-first, সবসময় সর্বশেষ ভার্সন দেখাবে)
+const CACHE_NAME = "tinhouse-cache-v2";
 
-const CACHE_NAME = "tinhouse-manager-v1";
-const SHELL_FILES = [
-  "/",
-  "/index.html",
-  "/login.html",
-  "/config.js",
-  "/manifest.json",
-  "/assets/icon-192.png",
-  "/assets/icon-512.png",
-];
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
-      // addAll() ব্যবহার করলে একটা ফাইল 404 দিলেও পুরো ইনস্টল ফেল করে।
-      // তাই এক এক করে cache করছি, একটা fail করলেও বাকিগুলো ঠিকমতো cache হবে।
-      Promise.allSettled(
-        SHELL_FILES.map((file) =>
-          cache
-            .add(file)
-            .catch((err) => console.warn("Cache করা যায়নি:", file, err)),
-        ),
-      ),
-    ),
-  );
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
@@ -38,28 +11,24 @@ self.addEventListener("activate", (event) => {
       .keys()
       .then((keys) =>
         Promise.all(
-          keys
-            .filter((key) => key !== CACHE_NAME)
-            .map((key) => caches.delete(key)),
+          keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)),
         ),
       ),
   );
   self.clients.claim();
 });
 
+// নেটওয়ার্ক-ফার্স্ট: সবসময় আগে নতুন ভার্সন আনার চেষ্টা করবে,
+// শুধু ইন্টারনেট না থাকলে ক্যাশ থেকে দেখাবে (অফলাইন ব্যাকআপ হিসেবে)
 self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
-
-  // Supabase API কল, /api/* সার্ভারলেস ফাংশন, বা অন্য কোনো external কল ক্যাশ করব না
-  if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/api/")) return;
-
+  if (event.request.method !== "GET") return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).catch(() => {
-        return caches.match("/login.html");
-      });
-    }),
+    fetch(event.request)
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        return response;
+      })
+      .catch(() => caches.match(event.request)),
   );
 });
