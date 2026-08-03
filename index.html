@@ -306,39 +306,38 @@ input, select{ font-family:inherit; }
 .isubrow{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--steel-700); margin-top:4px; }
  
 /* ---- সেলস ইনভয়েস (সুন্দর কালারফুল ভার্সন) ---- */
-.si-box{ background:white; border:1px solid var(--steel-100); border-radius:14px; padding:26px 28px; max-width:640px; margin:0 auto; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-.si-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:14px; padding-bottom:16px; border-bottom:3px solid var(--rust); flex-wrap:wrap; }
+.si-box{ background:white; border:1px solid var(--steel-100); border-radius:16px; padding:30px 32px; max-width:640px; margin:0 auto; -webkit-print-color-adjust:exact; print-color-adjust:exact; box-shadow:0 4px 24px rgba(0,0,0,0.06); }
+.si-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:14px; padding-bottom:18px; border-bottom:3px solid var(--rust); flex-wrap:wrap; }
 .si-top-left{ display:flex; gap:12px; align-items:flex-start; }
-.si-logo{ width:50px; height:50px; border-radius:12px; background:linear-gradient(135deg,var(--rust),var(--amber)); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; color:white; }
-.si-shop-name{ font-family:'Baloo Da 2'; font-weight:700; font-size:18px; color:var(--rust-dark); line-height:1.3; }
-.si-shop-meta{ font-size:11px; color:var(--steel-500); margin-top:5px; line-height:1.6; }
+.si-logo{ width:52px; height:52px; border-radius:14px; background:linear-gradient(135deg,var(--rust),var(--amber)); display:flex; align-items:center; justify-content:center; font-size:25px; flex-shrink:0; color:white; box-shadow:0 4px 10px rgba(190,74,34,0.3); }
+.si-shop-name{ font-family:'Baloo Da 2'; font-weight:700; font-size:19px; color:var(--rust-dark); line-height:1.3; }
+.si-shop-meta{ font-size:11px; color:var(--steel-500); margin-top:5px; line-height:1.7; }
 .si-top-right{ text-align:right; }
-.si-title{ font-family:'Baloo Da 2'; font-size:28px; font-weight:800; color:var(--rust); letter-spacing:.02em; }
+.si-title{ font-family:'Baloo Da 2'; font-size:30px; font-weight:800; color:var(--rust); letter-spacing:.03em; }
 .si-top-right .si-date{ font-size:11px; color:var(--steel-500); margin-top:4px; }
-.si-bar{ display:flex; background:var(--rust); color:white; border-radius:8px; overflow:hidden; margin:16px 0; font-size:12.5px; font-weight:700; }
-.si-bar > div{ flex:1; padding:9px 16px; }
+.si-bar{ display:flex; background:linear-gradient(90deg,var(--rust),var(--rust-dark)); color:white; border-radius:10px; overflow:hidden; margin:18px 0; font-size:12.5px; font-weight:700; box-shadow:0 3px 10px rgba(190,74,34,0.22); }
+.si-bar > div{ flex:1; padding:10px 18px; }
 .si-bar > div:first-child{ border-right:1px solid rgba(255,255,255,0.28); }
 .si-bar > div:last-child{ text-align:right; }
-.si-cust{ margin-bottom:14px; font-size:13px; }
+.si-cust{ margin-bottom:16px; font-size:13px; background:var(--paper); border-radius:10px; padding:12px 16px; }
 .si-cust-row{ display:flex; gap:10px; padding:2.5px 0; }
-.si-cust-row .si-lbl{ width:66px; flex-shrink:0; color:var(--steel-500); }
-.si-tbl{ width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:2px; }
-.si-tbl th{ background:var(--steel-100); text-align:left; padding:8px 8px; font-size:10.5px; color:var(--steel-700); font-weight:700; text-transform:uppercase; letter-spacing:.02em; }
+.si-cust-row .si-lbl{ width:80px; flex-shrink:0; color:var(--steel-500); font-weight:600; }
+.si-tbl{ width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:6px; border-radius:8px; overflow:hidden; }
+.si-tbl th{ background:var(--steel-900); color:white; text-align:left; padding:10px 10px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
 .si-tbl th.r, .si-tbl td.r{ text-align:right; }
-.si-tbl td{ padding:7px 8px; border-bottom:1px solid var(--steel-100); font-family:'JetBrains Mono'; }
+.si-tbl td{ padding:9px 10px; border-bottom:1px solid var(--steel-100); font-family:'JetBrains Mono'; }
 .si-tbl td:nth-child(2){ font-family:'Hind Siliguri'; }
-.si-bottom{ display:flex; gap:20px; margin-top:16px; flex-wrap:wrap; }
-.si-terms{ flex:1; min-width:190px; font-size:11px; color:var(--steel-700); }
-.si-terms h4{ font-size:12px; margin-bottom:6px; color:var(--rust-dark); font-family:'Baloo Da 2'; }
-.si-terms p{ line-height:1.6; margin-bottom:2px; }
-.si-summary{ width:230px; flex-shrink:0; font-size:12.5px; }
+.si-tbl tbody tr:nth-child(even){ background:#FAF9F6; }
+.si-serial{ display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--rust); color:white; font-size:11px; font-weight:700; }
+.si-summary-wrap{ display:flex; justify-content:flex-end; margin-top:14px; }
+.si-summary{ width:260px; font-size:12.5px; background:var(--paper); border-radius:10px; padding:14px 16px; }
 .si-srow{ display:flex; justify-content:space-between; padding:4.5px 0; }
-.si-srow.total{ border-top:2px solid var(--ink); font-weight:700; font-size:14.5px; padding-top:8px; margin-top:4px; }
+.si-srow.total{ border-top:1.5px dashed var(--steel-300); font-weight:700; font-size:14.5px; padding-top:9px; margin-top:5px; color:var(--rust-dark); }
 .si-srow.hl{ background:var(--rust); color:white; border-radius:7px; padding:9px 11px; margin-top:8px; font-weight:700; }
-.si-words{ font-size:11.5px; margin-top:16px; color:var(--steel-700); }
-.si-sign{ display:flex; justify-content:space-between; margin-top:46px; }
+.si-words{ font-size:12px; margin-top:18px; color:var(--steel-700); text-align:center; font-style:italic; }
+.si-sign{ display:flex; justify-content:space-between; margin-top:48px; }
 .si-sign div{ text-align:center; font-size:12px; border-top:1px solid var(--steel-500); padding-top:6px; width:170px; }
-@media print{ .si-box{ border:none; max-width:100%; padding:0 14px; } }
+@media print{ .si-box{ border:none; max-width:100%; padding:0 14px; box-shadow:none; } }
  
 .toast{
  position:fixed; bottom:26px; left:50%; transform:translateX(-50%);
@@ -1011,37 +1010,36 @@ function downloadPrintArea(filename){
  .idiscount{display:flex;justify-content:space-between;font-size:12.5px;color:#3C7A54;margin-top:4px;}
  .isubrow{display:flex;justify-content:space-between;font-size:12.5px;color:#3A464E;margin-top:4px;}
  .mono{font-family:'JetBrains Mono',monospace;}
- .si-box{background:#fff;border:1px solid #E9ECED;border-radius:14px;padding:26px 28px;max-width:640px;margin:0 auto;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
- .si-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding-bottom:16px;border-bottom:3px solid #BE4A22;flex-wrap:wrap;}
+ .si-box{background:#fff;border:1px solid #E9ECED;border-radius:16px;padding:30px 32px;max-width:640px;margin:0 auto;-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:0 4px 24px rgba(0,0,0,0.06);}
+ .si-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding-bottom:18px;border-bottom:3px solid #BE4A22;flex-wrap:wrap;}
  .si-top-left{display:flex;gap:12px;align-items:flex-start;}
- .si-logo{width:50px;height:50px;border-radius:12px;background:linear-gradient(135deg,#BE4A22,#E0A030);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;color:#fff;}
- .si-shop-name{font-family:'Baloo Da 2',sans-serif;font-weight:700;font-size:18px;color:#9A3A19;line-height:1.3;}
- .si-shop-meta{font-size:11px;color:#6B7A82;margin-top:5px;line-height:1.6;}
+ .si-logo{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#BE4A22,#E0A030);display:flex;align-items:center;justify-content:center;font-size:25px;flex-shrink:0;color:#fff;box-shadow:0 4px 10px rgba(190,74,34,0.3);}
+ .si-shop-name{font-family:'Baloo Da 2',sans-serif;font-weight:700;font-size:19px;color:#9A3A19;line-height:1.3;}
+ .si-shop-meta{font-size:11px;color:#6B7A82;margin-top:5px;line-height:1.7;}
  .si-top-right{text-align:right;}
- .si-title{font-family:'Baloo Da 2',sans-serif;font-size:28px;font-weight:800;color:#BE4A22;letter-spacing:.02em;}
+ .si-title{font-family:'Baloo Da 2',sans-serif;font-size:30px;font-weight:800;color:#BE4A22;letter-spacing:.03em;}
  .si-top-right .si-date{font-size:11px;color:#6B7A82;margin-top:4px;}
- .si-bar{display:flex;background:#BE4A22;color:#fff;border-radius:8px;overflow:hidden;margin:16px 0;font-size:12.5px;font-weight:700;}
- .si-bar > div{flex:1;padding:9px 16px;}
+ .si-bar{display:flex;background:linear-gradient(90deg,#BE4A22,#9A3A19);color:#fff;border-radius:10px;overflow:hidden;margin:18px 0;font-size:12.5px;font-weight:700;box-shadow:0 3px 10px rgba(190,74,34,0.22);}
+ .si-bar > div{flex:1;padding:10px 18px;}
  .si-bar > div:first-child{border-right:1px solid rgba(255,255,255,0.28);}
  .si-bar > div:last-child{text-align:right;}
- .si-cust{margin-bottom:14px;font-size:13px;}
+ .si-cust{margin-bottom:16px;font-size:13px;background:#F1EFE9;border-radius:10px;padding:12px 16px;}
  .si-cust-row{display:flex;gap:10px;padding:2.5px 0;}
- .si-cust-row .si-lbl{width:66px;flex-shrink:0;color:#6B7A82;}
- .si-tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:2px;}
- .si-tbl th{background:#E9ECED;text-align:left;padding:8px 8px;font-size:10.5px;color:#3A464E;font-weight:700;text-transform:uppercase;letter-spacing:.02em;}
+ .si-cust-row .si-lbl{width:80px;flex-shrink:0;color:#6B7A82;font-weight:600;}
+ .si-tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:6px;border-radius:8px;overflow:hidden;}
+ .si-tbl th{background:#1E262C;color:#fff;text-align:left;padding:10px 10px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
  .si-tbl th.r, .si-tbl td.r{text-align:right;}
- .si-tbl td{padding:7px 8px;border-bottom:1px solid #E9ECED;font-family:'JetBrains Mono',monospace;}
+ .si-tbl td{padding:9px 10px;border-bottom:1px solid #E9ECED;font-family:'JetBrains Mono',monospace;}
  .si-tbl td:nth-child(2){font-family:'Hind Siliguri',sans-serif;}
- .si-bottom{display:flex;gap:20px;margin-top:16px;flex-wrap:wrap;}
- .si-terms{flex:1;min-width:190px;font-size:11px;color:#3A464E;}
- .si-terms h4{font-size:12px;margin-bottom:6px;color:#9A3A19;font-family:'Baloo Da 2',sans-serif;}
- .si-terms p{line-height:1.6;margin-bottom:2px;}
- .si-summary{width:230px;flex-shrink:0;font-size:12.5px;}
+ .si-tbl tbody tr:nth-child(even){background:#FAF9F6;}
+ .si-serial{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#BE4A22;color:#fff;font-size:11px;font-weight:700;}
+ .si-summary-wrap{display:flex;justify-content:flex-end;margin-top:14px;}
+ .si-summary{width:260px;font-size:12.5px;background:#F1EFE9;border-radius:10px;padding:14px 16px;}
  .si-srow{display:flex;justify-content:space-between;padding:4.5px 0;}
- .si-srow.total{border-top:2px solid #161B1F;font-weight:700;font-size:14.5px;padding-top:8px;margin-top:4px;}
+ .si-srow.total{border-top:1.5px dashed #AEB9BD;font-weight:700;font-size:14.5px;padding-top:9px;margin-top:5px;color:#9A3A19;}
  .si-srow.hl{background:#BE4A22;color:#fff;border-radius:7px;padding:9px 11px;margin-top:8px;font-weight:700;}
- .si-words{font-size:11.5px;margin-top:16px;color:#3A464E;}
- .si-sign{display:flex;justify-content:space-between;margin-top:46px;}
+ .si-words{font-size:12px;margin-top:18px;color:#3A464E;text-align:center;font-style:italic;}
+ .si-sign{display:flex;justify-content:space-between;margin-top:48px;}
  .si-sign div{text-align:center;font-size:12px;border-top:1px solid #6B7A82;padding-top:6px;width:170px;}
  `;
  const doc = `<!DOCTYPE html><html lang="bn"><head><meta charset="UTF-8"><title>${filename}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@600;700;800&family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet"><style>${styles}</style></head><body>${inner}</body></html>`;
@@ -1203,15 +1201,13 @@ function renderSales(){
  : `<div class="no-match">🔍 এই ব্র্যান্ডে মিল খুঁজে পাওয়া যায়নি</div>`) :
  `<div class="search-results">` + results.map((r, i) => {
  const out = r.v.stock === 0;
- const inCart = cart.find(c => c.brand===posBrand && c.mm===r.mm && c.size===r.sz);
- const btnLabel = out ? 'স্টক নেই' : (inCart ? `✓ কার্টে ${cartEffectiveQty(inCart)} পিস — এডিট` : '+ যোগ করুন');
  return `<div class="result-row ${out?'out':''}">
  <div class="result-serial">${i+1}</div>
  <div class="result-info">
  <div class="rname">${esc(posBrand)} <span class="rdim">· ${r.mm} মিমি · ${r.sz} ফুট</span></div>
  <div class="rmeta">ক্রয়ঃ <b>${fmt(r.v.buy)}</b> &nbsp;বিক্রয়ঃ <b>${fmt(r.v.sell)}</b> &nbsp;স্টকঃ <b class="${r.v.stock<=3?'stock-low':''}">${r.v.stock} পিস</b></div>
  </div>
- <button class="result-add" ${out?'disabled':''} onclick="openProductQtyModal('${jsq(posBrand)}', ${r.mm}, ${r.sz})">${btnLabel}</button>
+ <button class="result-add" ${out?'disabled':''} onclick="addToCart('${jsq(posBrand)}', ${r.mm}, ${r.sz})">${out?'স্টক নেই':'+ যোগ করুন'}</button>
  </div>`;
  }).join('') + `</div>`;
  
@@ -1235,15 +1231,25 @@ function renderSales(){
  ${cart.length === 0 ? `<div class="cart-empty">কার্ট খালি — একটি পণ্য যোগ করুন</div>` :
  cart.map((item, idx) => {
  const eff = cartEffectiveQty(item);
+ const ppb = piecesPerBan(item.size);
  return `
  <div class="cart-item">
  <div class="cart-item-top">
  <span>${esc(item.brand)} · ${item.mm}মিমি · ${item.size}ফুট</span>
  <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
  </div>
- <div class="cart-sub" style="text-align:left;margin-top:4px;">পরিমাণ: <b>${eff} পিস</b> · দর: <b>${fmt(item.sellPrice)}</b></div>
- <div class="cart-sub" style="text-align:left;">উপমোট: <b>${fmt(eff * item.sellPrice)}</b></div>
- <button class="btn btn-outline" style="margin-top:6px;padding:5px 10px;font-size:11.5px;" onclick="openProductQtyModal('${jsq(item.brand)}', ${item.mm}, ${item.size})">✏️ পরিমাণ/দাম বদলান</button>
+ <div style="font-size:10.5px;color:var(--steel-500);margin-top:2px;">এক বানে (৭২ ফুট) প্রায় ${ppb.toFixed(1)} পিস — বান বা পিস, যেকোনো একটিতে মান দিন</div>
+ <div class="cart-item-row">
+ <label>বান</label>
+ <input type="number" min="0" step="0.5" placeholder="—" value="${item.qtyBan !== null && item.qtyBan !== undefined ? item.qtyBan : ''}" onchange="updateCartBan(${idx}, this.value)">
+ <label style="width:auto;margin-left:4px;">পিস</label>
+ <input type="number" min="0" placeholder="—" value="${item.qtyPieces !== null && item.qtyPieces !== undefined ? item.qtyPieces : ''}" onchange="updateCartPieces(${idx}, this.value)">
+ </div>
+ <div class="cart-item-row">
+ <label>দর</label>
+ <input type="number" min="0" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)">
+ </div>
+ <div class="cart-sub">মোট পিস: ${eff} · উপমোট: ${fmt(eff * item.sellPrice)}</div>
  </div>`;
  }).join('')}
  </div>
@@ -1271,70 +1277,19 @@ function posItemSearchInput(val){
  if(el){ el.focus(); const p = el.value.length; el.setSelectionRange(p,p); }
 }
  
-function openProductQtyModal(brand, mm, size){
+function addToCart(brand, mm, size){
  const item = inventory[brand][mm][size];
  const existing = cart.find(c => c.brand===brand && c.mm===mm && c.size===size);
- const qtyBanVal = existing && existing.qtyBan !== null && existing.qtyBan !== undefined ? existing.qtyBan : '';
- const qtyPiecesVal = existing ? (existing.qtyBan !== null && existing.qtyBan !== undefined ? '' : (existing.qtyPieces !== null && existing.qtyPieces !== undefined ? existing.qtyPieces : 1)) : 1;
- const priceVal = existing ? existing.sellPrice : item.sell;
- const ppb = piecesPerBan(size);
- const startEff = qtyBanVal !== '' ? Math.round(ppb * Number(qtyBanVal)) : (Number(qtyPiecesVal) || 0);
- openModal(`পরিমাণ ও দাম — ${esc(brand)} · ${mm}মিমি · ${size}ফুট`, `
- <div style="background:var(--steel-100);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;">
- স্টকে আছে: <b>${item.stock} পিস</b> · এক বানে (৭২ ফুট) প্রায় ${ppb.toFixed(1)} পিস
- </div>
- <div class="field"><label>বান (ঐচ্ছিক)</label><input type="number" min="0" step="0.5" id="pqmBan" value="${qtyBanVal}" placeholder="—" oninput="pqmRecalc(${size})"></div>
- <div class="field"><label>অথবা পিস</label><input type="number" min="0" id="pqmPieces" value="${qtyPiecesVal}" placeholder="—" oninput="pqmRecalc(${size})"></div>
- <div class="field"><label>দর (৳)</label><input type="number" min="0" id="pqmPrice" value="${priceVal}" oninput="pqmRecalc(${size})"></div>
- <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; font-size:13.5px; display:flex; justify-content:space-between;">
- <span>মোট পিস: <b id="pqmQtyOut" class="mono">${startEff}</b></span>
- <span>উপমোট: <b id="pqmSubOut" class="mono">${fmt(startEff*priceVal)}</b></span>
- </div>
- `, `
- <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
- ${existing ? `<button class="btn btn-outline" style="color:var(--red);" onclick="removeFromCartByKey('${jsq(brand)}',${mm},${size})">বাদ দিন</button>` : ''}
- <button class="btn btn-primary" onclick="confirmProductQty('${jsq(brand)}',${mm},${size})">কার্টে যোগ করুন</button>
- `);
-}
-function pqmRecalc(sizeFeet){
- const banEl = document.getElementById('pqmBan');
- const pcsEl = document.getElementById('pqmPieces');
- const priceEl = document.getElementById('pqmPrice');
- if(!banEl) return;
- const ban = banEl.value.trim();
- const pieces = pcsEl.value.trim();
- const price = Math.max(0, parseInt(priceEl.value)||0);
- let eff = 0;
- if(ban !== ''){ eff = Math.round(piecesPerBan(sizeFeet) * (parseFloat(ban)||0)); }
- else { eff = parseInt(pieces)||0; }
- const qtyOut = document.getElementById('pqmQtyOut');
- const subOut = document.getElementById('pqmSubOut');
- if(qtyOut) qtyOut.textContent = eff;
- if(subOut) subOut.textContent = fmt(eff*price);
-}
-function confirmProductQty(brand, mm, size){
- const item = inventory[brand][mm][size];
- const banVal = document.getElementById('pqmBan').value.trim();
- const pcsVal = document.getElementById('pqmPieces').value.trim();
- const price = Math.max(0, parseInt(document.getElementById('pqmPrice').value)||0);
- let qtyBan = null, qtyPieces = null;
- if(banVal !== ''){ qtyBan = Math.max(0, parseFloat(banVal)||0); }
- else { qtyPieces = Math.max(0, parseInt(pcsVal)||0); }
- const eff = qtyBan !== null ? Math.round(piecesPerBan(size) * qtyBan) : (qtyPieces || 0);
- if(eff <= 0){ showToast('সঠিক পরিমাণ দিন'); return; }
- if(eff > item.stock){ showToast('স্টকে যতটুকু আছে তার বেশি যোগ করা যাবে না'); return; }
- let existing = cart.find(c => c.brand===brand && c.mm===mm && c.size===size);
- if(existing){ existing.qtyBan = qtyBan; existing.qtyPieces = qtyPieces; existing.sellPrice = price; }
- else cart.push({ brand, mm, size, qtyBan, qtyPieces, sellPrice: price, buyPrice: item.buy });
- closeModal();
+ const inCart = existing ? cartEffectiveQty(existing) : 0;
+ if(inCart >= item.stock){ showToast('এই পণ্যের স্টকে যতটুকু আছে তার বেশি যোগ করা যাবে না'); return; }
+ if(existing){
+ const eff = cartEffectiveQty(existing);
+ existing.qtyPieces = eff + 1;
+ existing.qtyBan = null;
+ }
+ else cart.push({ brand, mm, size, qtyPieces:1, qtyBan:null, sellPrice:item.sell, buyPrice:item.buy });
+ showToast(`${brand} ${mm}মিমি ${size}ফুট কার্টে যোগ হয়েছে`);
  render();
- showToast('কার্টে যোগ হয়েছে');
-}
-function removeFromCartByKey(brand, mm, size){
- cart = cart.filter(c => !(c.brand===brand && c.mm===mm && c.size===size));
- closeModal();
- render();
- showToast('কার্ট থেকে বাদ দেওয়া হয়েছে');
 }
 function removeFromCart(idx){ cart.splice(idx,1); render(); }
 function piecesPerBan(sizeFeet){ return sizeFeet > 0 ? (FEET_PER_BAN / sizeFeet) : 0; }
@@ -1344,6 +1299,29 @@ function cartEffectiveQty(item){
  }
  return Number(item.qtyPieces) || 0;
 }
+function updateCartBan(idx, val){
+ const item = cart[idx];
+ const maxStock = inventory[item.brand][item.mm][item.size].stock;
+ if(val === ''){ item.qtyBan = null; render(); return; }
+ let ban = Math.max(0, parseFloat(val) || 0);
+ item.qtyBan = ban; item.qtyPieces = null;
+ let eff = cartEffectiveQty(item);
+ if(eff > maxStock){
+ showToast('স্টকে যতটুকু আছে তার বেশি বিক্রি করা যাবে না');
+ item.qtyPieces = maxStock; item.qtyBan = null;
+ }
+ render();
+}
+function updateCartPieces(idx, val){
+ const item = cart[idx];
+ const maxStock = inventory[item.brand][item.mm][item.size].stock;
+ if(val === ''){ item.qtyPieces = null; render(); return; }
+ let qty = Math.max(0, parseInt(val) || 0);
+ if(qty > maxStock){ qty = maxStock; showToast('স্টকে যতটুকু আছে তার বেশি বিক্রি করা যাবে না'); }
+ item.qtyPieces = qty; item.qtyBan = null;
+ render();
+}
+function updateCartPrice(idx, val){ cart[idx].sellPrice = Math.max(0, parseInt(val)||0); render(); }
  
 /* ============================================================
  চেকআউট / ইনভয়েস তৈরি
@@ -1521,7 +1499,7 @@ function amountToBengaliWords(num){
 function buildInvoiceHtml(inv){
  const rows = inv.items.map((it,idx) => `
  <tr>
- <td class="num">${idx+1}</td>
+ <td><span class="si-serial">${idx+1}</span></td>
  <td>${esc(it.brand)} · ${it.mm}মিমি · ${it.size}ফুট${it.banQty ? ' · '+it.banQty+' বান' : ''}</td>
  <td class="r num">${it.qty}</td>
  <td class="r num">${fmt(it.sellPrice)}</td>
@@ -1565,13 +1543,7 @@ function buildInvoiceHtml(inv){
  <thead><tr><th>ক্রম</th><th>আইটেম নাম</th><th class="r">পরিমাণ</th><th class="r">মূল্য</th><th class="r">মোট মূল্য</th></tr></thead>
  <tbody>${rows}</tbody>
  </table>
- <div class="si-bottom">
- <div class="si-terms">
- <h4>শর্তাবলী</h4>
- <p>অঙ্গীকার করিলাম…</p>
- <p>আমি সততার সাথে সমস্ত পাওনা বকেয়া টাকা পরিশোধ করিব।</p>
- <div class="si-words"><b>কথায়:</b> ${amountToBengaliWords(inv.total)}</div>
- </div>
+ <div class="si-summary-wrap">
  <div class="si-summary">
  <div class="si-srow"><span>সাব-টোটাল:</span><span class="mono">${fmt(itemsSubtotal)}</span></div>
  ${discount > 0 ? `<div class="si-srow"><span>মোট আইটেম ডিসকাউন্ট:</span><span class="mono">${fmt(discount)}</span></div>` : ''}
@@ -1584,6 +1556,7 @@ function buildInvoiceHtml(inv){
  ${inv.dueTotalAfter != null ? `<div class="si-srow hl"><span>বর্তমান পাওনা:</span><span class="mono">${fmt(inv.dueTotalAfter)}</span></div>` : ''}
  </div>
  </div>
+ <div class="si-words">কথায়: ${amountToBengaliWords(inv.total)}</div>
  <div class="si-sign">
  <div>ক্রেতার স্বাক্ষর</div>
  <div>অনুমোদনকারীর স্বাক্ষর</div>
