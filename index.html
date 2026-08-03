@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -1128,11 +1130,12 @@ async function saveShopSettings(){
  DASHBOARD
  ============================================================ */
 function renderDashboard(){
- let totalStock = 0, totalDue = 0, todaySales = 0;
+ let totalStock = 0, totalDue = 0, todaySales = 0, todayCollected = 0;
  Object.values(inventory).forEach(mmObj => Object.values(mmObj).forEach(szObj => Object.values(szObj).forEach(v => totalStock += v.stock)));
  ledger.forEach(l => totalDue += l.due);
  const todayKey = dayKey(new Date());
  invoices.forEach(inv => { if(dayKey(inv.date) === todayKey) todaySales += inv.total; });
+ payments.forEach(p => { if(dayKey(p.date) === todayKey) todayCollected += p.amount; });
  
  return `
  <div class="dash-hero">
@@ -1150,25 +1153,17 @@ function renderDashboard(){
  <div class="dash-icon-tile" onclick="switchView('ledger')">
  <div class="dic">📒</div><div class="dilbl">বাকির খাতা</div><div class="dival">${fmt(totalDue)}</div>
  </div>
- <div class="dash-icon-tile" onclick="switchView('invoices')">
- <div class="dic">🗂️</div><div class="dilbl">ইনভয়েস</div><div class="dival">${invoices.length} টি</div>
+ <div class="dash-icon-tile" onclick="switchView('ledger')">
+ <div class="dic">📥</div><div class="dilbl">আজকের বাকি আদায়</div><div class="dival">${fmt(todayCollected)}</div>
  </div>
  </div>
  <div class="dash-actions">
  <button class="dash-action-btn buy" onclick="switchView('stock')">📥 ক্রয় করুন</button>
  <button class="dash-action-btn sell" onclick="switchView('sales')">🧾 বিক্রি করুন</button>
  </div>
- <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:16px;">
- <div class="panel">
- <h3>সাম্প্রতিক ইনভয়েস</h3>
- ${invoices.length === 0 ? `<div class="empty-state"><div class="ic">🧾</div>এখনো কোনো বিক্রয় হয়নি</div>` :
- `<table class="tbl"><thead><tr><th>নং</th><th>আইটেম</th><th class="r">মোট</th></tr></thead><tbody>
- ${invoices.slice(-5).reverse().map(inv => `<tr><td>#${inv.id}</td><td>${inv.items.length} টি পণ্য</td><td class="num r">${fmt(inv.total)}</td></tr>`).join('')}
- </tbody></table>`}
- </div>
  <div class="panel">
  <h3>সবচেয়ে বেশি বাকি</h3>
- ${[...ledger].sort((a,b)=>b.due-a.due).filter(l=>l.due>0).slice(0,4).map(l => `
+ ${[...ledger].sort((a,b)=>b.due-a.due).filter(l=>l.due>0).slice(0,6).map(l => `
  <div style="padding:9px 0;border-bottom:1px solid var(--steel-100);font-size:13.5px;">
  <div style="display:flex;justify-content:space-between;">
  <span>${esc(l.name)}</span><span class="mono" style="color:var(--red);font-weight:700;">${fmt(l.due)}</span>
@@ -1178,7 +1173,6 @@ function renderDashboard(){
  <button class="btn btn-outline" style="padding:4px 9px;font-size:11.5px;" onclick="callCustomer(${l.id})">📞 কল</button>
  </div>
  </div>`).join('') || `<div class="empty-state" style="padding:20px;"><div class="ic">✅</div>কোনো বাকি নেই</div>`}
- </div>
  </div>`;
 }
  
