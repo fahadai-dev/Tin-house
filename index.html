@@ -305,6 +305,41 @@ input, select{ font-family:inherit; }
 .idiscount{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--green); margin-top:4px; }
 .isubrow{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--steel-700); margin-top:4px; }
  
+/* ---- সেলস ইনভয়েস (সুন্দর কালারফুল ভার্সন) ---- */
+.si-box{ background:white; border:1px solid var(--steel-100); border-radius:14px; padding:26px 28px; max-width:640px; margin:0 auto; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.si-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:14px; padding-bottom:16px; border-bottom:3px solid var(--rust); flex-wrap:wrap; }
+.si-top-left{ display:flex; gap:12px; align-items:flex-start; }
+.si-logo{ width:50px; height:50px; border-radius:12px; background:linear-gradient(135deg,var(--rust),var(--amber)); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; color:white; }
+.si-shop-name{ font-family:'Baloo Da 2'; font-weight:700; font-size:18px; color:var(--rust-dark); line-height:1.3; }
+.si-shop-meta{ font-size:11px; color:var(--steel-500); margin-top:5px; line-height:1.6; }
+.si-top-right{ text-align:right; }
+.si-title{ font-family:'Baloo Da 2'; font-size:28px; font-weight:800; color:var(--rust); letter-spacing:.02em; }
+.si-top-right .si-date{ font-size:11px; color:var(--steel-500); margin-top:4px; }
+.si-bar{ display:flex; background:var(--rust); color:white; border-radius:8px; overflow:hidden; margin:16px 0; font-size:12.5px; font-weight:700; }
+.si-bar > div{ flex:1; padding:9px 16px; }
+.si-bar > div:first-child{ border-right:1px solid rgba(255,255,255,0.28); }
+.si-bar > div:last-child{ text-align:right; }
+.si-cust{ margin-bottom:14px; font-size:13px; }
+.si-cust-row{ display:flex; gap:10px; padding:2.5px 0; }
+.si-cust-row .si-lbl{ width:66px; flex-shrink:0; color:var(--steel-500); }
+.si-tbl{ width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:2px; }
+.si-tbl th{ background:var(--steel-100); text-align:left; padding:8px 8px; font-size:10.5px; color:var(--steel-700); font-weight:700; text-transform:uppercase; letter-spacing:.02em; }
+.si-tbl th.r, .si-tbl td.r{ text-align:right; }
+.si-tbl td{ padding:7px 8px; border-bottom:1px solid var(--steel-100); font-family:'JetBrains Mono'; }
+.si-tbl td:nth-child(2){ font-family:'Hind Siliguri'; }
+.si-bottom{ display:flex; gap:20px; margin-top:16px; flex-wrap:wrap; }
+.si-terms{ flex:1; min-width:190px; font-size:11px; color:var(--steel-700); }
+.si-terms h4{ font-size:12px; margin-bottom:6px; color:var(--rust-dark); font-family:'Baloo Da 2'; }
+.si-terms p{ line-height:1.6; margin-bottom:2px; }
+.si-summary{ width:230px; flex-shrink:0; font-size:12.5px; }
+.si-srow{ display:flex; justify-content:space-between; padding:4.5px 0; }
+.si-srow.total{ border-top:2px solid var(--ink); font-weight:700; font-size:14.5px; padding-top:8px; margin-top:4px; }
+.si-srow.hl{ background:var(--rust); color:white; border-radius:7px; padding:9px 11px; margin-top:8px; font-weight:700; }
+.si-words{ font-size:11.5px; margin-top:16px; color:var(--steel-700); }
+.si-sign{ display:flex; justify-content:space-between; margin-top:46px; }
+.si-sign div{ text-align:center; font-size:12px; border-top:1px solid var(--steel-500); padding-top:6px; width:170px; }
+@media print{ .si-box{ border:none; max-width:100%; padding:0 14px; } }
+ 
 .toast{
  position:fixed; bottom:26px; left:50%; transform:translateX(-50%);
  background:var(--ink); color:white; padding:12px 22px; border-radius:8px; font-size:13.5px;
@@ -969,8 +1004,41 @@ function downloadPrintArea(filename){
  .itotal{display:flex;justify-content:space-between;padding-top:8px;border-top:2px solid #161B1F;font-size:16px;font-weight:700;font-family:monospace;}
  .idiscount{display:flex;justify-content:space-between;font-size:12.5px;color:#3C7A54;margin-top:4px;}
  .isubrow{display:flex;justify-content:space-between;font-size:12.5px;color:#3A464E;margin-top:4px;}
+ .mono{font-family:'JetBrains Mono',monospace;}
+ .si-box{background:#fff;border:1px solid #E9ECED;border-radius:14px;padding:26px 28px;max-width:640px;margin:0 auto;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+ .si-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding-bottom:16px;border-bottom:3px solid #BE4A22;flex-wrap:wrap;}
+ .si-top-left{display:flex;gap:12px;align-items:flex-start;}
+ .si-logo{width:50px;height:50px;border-radius:12px;background:linear-gradient(135deg,#BE4A22,#E0A030);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;color:#fff;}
+ .si-shop-name{font-family:'Baloo Da 2',sans-serif;font-weight:700;font-size:18px;color:#9A3A19;line-height:1.3;}
+ .si-shop-meta{font-size:11px;color:#6B7A82;margin-top:5px;line-height:1.6;}
+ .si-top-right{text-align:right;}
+ .si-title{font-family:'Baloo Da 2',sans-serif;font-size:28px;font-weight:800;color:#BE4A22;letter-spacing:.02em;}
+ .si-top-right .si-date{font-size:11px;color:#6B7A82;margin-top:4px;}
+ .si-bar{display:flex;background:#BE4A22;color:#fff;border-radius:8px;overflow:hidden;margin:16px 0;font-size:12.5px;font-weight:700;}
+ .si-bar > div{flex:1;padding:9px 16px;}
+ .si-bar > div:first-child{border-right:1px solid rgba(255,255,255,0.28);}
+ .si-bar > div:last-child{text-align:right;}
+ .si-cust{margin-bottom:14px;font-size:13px;}
+ .si-cust-row{display:flex;gap:10px;padding:2.5px 0;}
+ .si-cust-row .si-lbl{width:66px;flex-shrink:0;color:#6B7A82;}
+ .si-tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:2px;}
+ .si-tbl th{background:#E9ECED;text-align:left;padding:8px 8px;font-size:10.5px;color:#3A464E;font-weight:700;text-transform:uppercase;letter-spacing:.02em;}
+ .si-tbl th.r, .si-tbl td.r{text-align:right;}
+ .si-tbl td{padding:7px 8px;border-bottom:1px solid #E9ECED;font-family:'JetBrains Mono',monospace;}
+ .si-tbl td:nth-child(2){font-family:'Hind Siliguri',sans-serif;}
+ .si-bottom{display:flex;gap:20px;margin-top:16px;flex-wrap:wrap;}
+ .si-terms{flex:1;min-width:190px;font-size:11px;color:#3A464E;}
+ .si-terms h4{font-size:12px;margin-bottom:6px;color:#9A3A19;font-family:'Baloo Da 2',sans-serif;}
+ .si-terms p{line-height:1.6;margin-bottom:2px;}
+ .si-summary{width:230px;flex-shrink:0;font-size:12.5px;}
+ .si-srow{display:flex;justify-content:space-between;padding:4.5px 0;}
+ .si-srow.total{border-top:2px solid #161B1F;font-weight:700;font-size:14.5px;padding-top:8px;margin-top:4px;}
+ .si-srow.hl{background:#BE4A22;color:#fff;border-radius:7px;padding:9px 11px;margin-top:8px;font-weight:700;}
+ .si-words{font-size:11.5px;margin-top:16px;color:#3A464E;}
+ .si-sign{display:flex;justify-content:space-between;margin-top:46px;}
+ .si-sign div{text-align:center;font-size:12px;border-top:1px solid #6B7A82;padding-top:6px;width:170px;}
  `;
- const doc = `<!DOCTYPE html><html lang="bn"><head><meta charset="UTF-8"><title>${filename}</title><style>${styles}</style></head><body>${inner}</body></html>`;
+ const doc = `<!DOCTYPE html><html lang="bn"><head><meta charset="UTF-8"><title>${filename}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@600;700;800&family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet"><style>${styles}</style></head><body>${inner}</body></html>`;
  const blob = new Blob([doc], {type:'text/html'});
  const url = URL.createObjectURL(blob);
  const a = document.createElement('a');
@@ -1331,21 +1399,26 @@ function confirmInvoice(itemsSubtotal){
  }));
  
  let customerName, customerPhone, customerAddress, custIdFinal = null, isCash = false;
+ let duePrevVal = null, dueTotalAfterVal = null;
  if(custId){
  const cust = ledger.find(l => l.id == custId);
  customerName = cust.name;
  customerPhone = cust.phone;
  customerAddress = typedAddress || cust.address;
  custIdFinal = cust.id;
+ duePrevVal = cust.due;
  if(due > 0) cust.due += due;
+ dueTotalAfterVal = cust.due;
  } else {
  customerName = typedName || 'নগদ ক্রেতা';
  customerPhone = typedPhone;
  customerAddress = typedAddress;
  if(due > 0){
+ duePrevVal = 0;
  const newCust = { id: ledgerNextId++, name: customerName, address: customerAddress, phone: customerPhone, due: due, paidTotal: paid, discountTotal: 0 };
  ledger.push(newCust);
  custIdFinal = newCust.id;
+ dueTotalAfterVal = newCust.due;
  } else {
  isCash = true;
  let cc = cashCustomers.find(c => (customerPhone && c.phone === customerPhone) || (!customerPhone && c.name === customerName));
@@ -1367,7 +1440,8 @@ function confirmInvoice(itemsSubtotal){
  itemsSubtotal, delivery, expenseLabel, expenseAmt, discount,
  total: grandTotal, paid, due,
  customer: customerName, customerPhone, customerAddress,
- date: invDate, custId: custIdFinal, isCash
+ date: invDate, custId: custIdFinal, isCash,
+ duePrev: duePrevVal, dueTotalAfter: dueTotalAfterVal
  };
  invoices.push(invoice);
  logActivity('নতুন ইনভয়েস তৈরি', `#${invoice.id} · ${customerName} · ${fmt(grandTotal)}${due>0?' (বাকি '+fmt(due)+')':''}`);
@@ -1381,38 +1455,99 @@ function confirmInvoice(itemsSubtotal){
  switchView(currentView === 'sales' ? 'sales' : currentView);
 }
  
+const BN_ONES = ['','এক','দুই','তিন','চার','পাঁচ','ছয়','সাত','আট','নয়','দশ',
+'এগারো','বারো','তেরো','চৌদ্দ','পনেরো','ষোলো','সতেরো','আঠারো','উনিশ','বিশ',
+'একুশ','বাইশ','তেইশ','চব্বিশ','পঁচিশ','ছাব্বিশ','সাতাশ','আটাশ','উনত্রিশ','ত্রিশ',
+'একত্রিশ','বত্রিশ','তেত্রিশ','চৌত্রিশ','পঁয়ত্রিশ','ছত্রিশ','সাঁইত্রিশ','আটত্রিশ','উনচল্লিশ','চল্লিশ',
+'একচল্লিশ','বিয়াল্লিশ','তেতাল্লিশ','চুয়াল্লিশ','পঁয়তাল্লিশ','ছেচল্লিশ','সাতচল্লিশ','আটচল্লিশ','উনপঞ্চাশ','পঞ্চাশ',
+'একান্ন','বায়ান্ন','তিপ্পান্ন','চুয়ান্ন','পঞ্চান্ন','ছাপ্পান্ন','সাতান্ন','আটান্ন','উনষাট','ষাট',
+'একষট্টি','বাষট্টি','তেষট্টি','চৌষট্টি','পঁয়ষট্টি','ছেষট্টি','সাতষট্টি','আটষট্টি','উনসত্তর','সত্তর',
+'একাত্তর','বাহাত্তর','তিয়াত্তর','চুয়াত্তর','পঁচাত্তর','ছিয়াত্তর','সাতাত্তর','আটাত্তর','উনআশি','আশি',
+'একাশি','বিরাশি','তিরাশি','চুরাশি','পঁচাশি','ছিয়াশি','সাতাশি','আটাশি','উননব্বই','নব্বই',
+'একানব্বই','বিরানব্বই','তিরানব্বই','চুরানব্বই','পঁচানব্বই','ছিয়ানব্বই','সাতানব্বই','আটানব্বই','নিরানব্বই'];
+function amountToBengaliWords(num){
+ num = Math.round(Math.abs(Number(num) || 0));
+ if(num === 0) return 'শূন্য টাকা মাত্র';
+ let crore = Math.floor(num/1e7); let rem = num % 1e7;
+ let lakh = Math.floor(rem/1e5); rem %= 1e5;
+ let thousand = Math.floor(rem/1e3); rem %= 1e3;
+ let hundred = Math.floor(rem/100); let last = rem % 100;
+ let parts = [];
+ if(crore > 0) parts.push(BN_ONES[crore] + ' কোটি');
+ if(lakh > 0) parts.push(BN_ONES[lakh] + ' লক্ষ');
+ if(thousand > 0) parts.push(BN_ONES[thousand] + ' হাজার');
+ if(hundred > 0) parts.push(BN_ONES[hundred] + ' শত');
+ if(last > 0) parts.push(BN_ONES[last]);
+ return parts.join(' ') + ' টাকা মাত্র';
+}
 function buildInvoiceHtml(inv){
- const rows = inv.items.map(it => `
+ const rows = inv.items.map((it,idx) => `
  <tr>
+ <td class="num">${idx+1}</td>
  <td>${esc(it.brand)} · ${it.mm}মিমি · ${it.size}ফুট${it.banQty ? ' · '+it.banQty+' বান' : ''}</td>
- <td class="r">${it.qty}</td>
- <td class="r">${fmt(it.sellPrice)}</td>
- <td class="r">${fmt(it.qty*it.sellPrice)}</td>
+ <td class="r num">${it.qty}</td>
+ <td class="r num">${fmt(it.sellPrice)}</td>
+ <td class="r num">${fmt(it.qty*it.sellPrice)}</td>
  </tr>`).join('');
  const delivery = inv.delivery || 0;
  const expenseAmt = inv.expenseAmt || 0;
  const discount = inv.discount || 0;
  const itemsSubtotal = inv.itemsSubtotal != null ? inv.itemsSubtotal : inv.total;
- const shopContactLine = [esc(SHOP_ADDRESS), SHOP_PHONE ? 'ফোনঃ '+esc(SHOP_PHONE) : ''].filter(Boolean).join(' · ');
+ const shopMetaLines = [
+ SHOP_PHONE ? `ফোন: ${esc(SHOP_PHONE)}` : '',
+ SHOP_EMAIL ? `ইমেইল: ${esc(SHOP_EMAIL)}` : '',
+ ].filter(Boolean).map(l => `<div>${l}</div>`).join('');
  return `
- <div class="invoice-box">
- <div class="ihead">
- <h2>${esc(SHOP_NAME)}</h2>
- ${shopContactLine ? `<p>${shopContactLine}</p>` : ''}
- <p>ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString('bn-BD')} · ক্রেতা: ${esc(inv.customer)}${inv.customerPhone ? ' · '+telHtml(inv.customerPhone) : ''}</p>
- ${inv.customerAddress ? `<p>ঠিকানাঃ ${esc(inv.customerAddress)}</p>` : ''}
+ <div class="si-box">
+ <div class="si-top">
+ <div class="si-top-left">
+ <div class="si-logo">🧾</div>
+ <div>
+ <div class="si-shop-name">${esc(SHOP_NAME)}</div>
+ <div class="si-shop-meta">${shopMetaLines}</div>
  </div>
- <table class="itbl">
- <thead><tr><th>পণ্য</th><th class="r">পরিমাণ</th><th class="r">দর</th><th class="r">মোট</th></tr></thead>
+ </div>
+ <div class="si-top-right">
+ <div class="si-title">ইনভয়েস</div>
+ <div class="si-date">তারিখ: ${new Date(inv.date).toLocaleDateString('bn-BD')}</div>
+ ${SHOP_ADDRESS ? `<div class="si-date">ঠিকানা: ${esc(SHOP_ADDRESS)}</div>` : ''}
+ </div>
+ </div>
+ <div class="si-bar">
+ <div>ইনভয়েস নম্বর: #${inv.id}</div>
+ <div>ইনভয়েস তারিখ: ${new Date(inv.date).toLocaleDateString('bn-BD')}</div>
+ </div>
+ <div class="si-cust">
+ <div class="si-cust-row"><span class="si-lbl">কাস্টমার:</span><span>${esc(inv.customer)}</span></div>
+ ${inv.customerPhone ? `<div class="si-cust-row"><span class="si-lbl">ফোন:</span><span>${telHtml(inv.customerPhone)}</span></div>` : ''}
+ ${inv.customerAddress ? `<div class="si-cust-row"><span class="si-lbl">ঠিকানা:</span><span>${esc(inv.customerAddress)}</span></div>` : ''}
+ </div>
+ <table class="si-tbl">
+ <thead><tr><th>ক্রম</th><th>আইটেম নাম</th><th class="r">পরিমাণ</th><th class="r">মূল্য</th><th class="r">মোট মূল্য</th></tr></thead>
  <tbody>${rows}</tbody>
  </table>
- <div class="isubrow"><span>পণ্যের সাবটোটাল</span><span>${fmt(itemsSubtotal)}</span></div>
- ${delivery > 0 ? `<div class="isubrow"><span>ডেলিভারি চার্জ</span><span>${fmt(delivery)}</span></div>` : ''}
- ${expenseAmt > 0 ? `<div class="isubrow"><span>${esc(inv.expenseLabel) || 'অন্যান্য খরচ'}</span><span>${fmt(expenseAmt)}</span></div>` : ''}
- ${discount > 0 ? `<div class="idiscount"><span>ছাড়</span><span>−${fmt(discount)}</span></div>` : ''}
- <div class="itotal"><span>সর্বমোট</span><span>${fmt(inv.total)}</span></div>
- <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:6px;color:var(--steel-700);">
- <span>পরিশোধিত: ${fmt(inv.paid)}</span><span>বাকি: ${fmt(inv.due)}</span>
+ <div class="si-bottom">
+ <div class="si-terms">
+ <h4>শর্তাবলী</h4>
+ <p>অঙ্গীকার করিলাম…</p>
+ <p>আমি সততার সাথে সমস্ত পাওনা বকেয়া টাকা পরিশোধ করিব।</p>
+ <div class="si-words"><b>কথায়:</b> ${amountToBengaliWords(inv.total)}</div>
+ </div>
+ <div class="si-summary">
+ <div class="si-srow"><span>সাব-টোটাল:</span><span class="mono">${fmt(itemsSubtotal)}</span></div>
+ ${discount > 0 ? `<div class="si-srow"><span>মোট আইটেম ডিসকাউন্ট:</span><span class="mono">${fmt(discount)}</span></div>` : ''}
+ ${delivery > 0 ? `<div class="si-srow"><span>ডেলিভারি চার্জ:</span><span class="mono">${fmt(delivery)}</span></div>` : ''}
+ ${expenseAmt > 0 ? `<div class="si-srow"><span>${esc(inv.expenseLabel) || 'অন্যান্য খরচ'}:</span><span class="mono">${fmt(expenseAmt)}</span></div>` : ''}
+ <div class="si-srow total"><span>মোট মূল্য:</span><span class="mono">${fmt(inv.total)}</span></div>
+ <div class="si-srow"><span>পেলাম:</span><span class="mono">${fmt(inv.paid)}</span></div>
+ <div class="si-srow"><span>মোট বাকি:</span><span class="mono">${fmt(inv.due)}</span></div>
+ ${inv.duePrev != null ? `<div class="si-srow"><span>আগের পাওনা:</span><span class="mono">${fmt(inv.duePrev)}</span></div>` : ''}
+ ${inv.dueTotalAfter != null ? `<div class="si-srow hl"><span>বর্তমান পাওনা:</span><span class="mono">${fmt(inv.dueTotalAfter)}</span></div>` : ''}
+ </div>
+ </div>
+ <div class="si-sign">
+ <div>ক্রেতার স্বাক্ষর</div>
+ <div>অনুমোদনকারীর স্বাক্ষর</div>
  </div>
  </div>`;
 }
@@ -3165,5 +3300,3 @@ function showToast(msg){
 </body>
 </html>
  
-
-
