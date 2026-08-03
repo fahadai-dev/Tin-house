@@ -526,6 +526,12 @@ if ('serviceWorker' in navigator) {
  window.addEventListener('load', () => {
  navigator.serviceWorker.register('sw.js').catch((err) => console.warn('Service worker রেজিস্টার হয়নি:', err));
  });
+ let swRefreshed = false;
+ navigator.serviceWorker.addEventListener('controllerchange', () => {
+ if (swRefreshed) return;
+ swRefreshed = true;
+ window.location.reload();
+ });
 }
 </script>
 <script>
@@ -1197,13 +1203,15 @@ function renderSales(){
  : `<div class="no-match">🔍 এই ব্র্যান্ডে মিল খুঁজে পাওয়া যায়নি</div>`) :
  `<div class="search-results">` + results.map((r, i) => {
  const out = r.v.stock === 0;
+ const inCart = cart.find(c => c.brand===posBrand && c.mm===r.mm && c.size===r.sz);
+ const btnLabel = out ? 'স্টক নেই' : (inCart ? `✓ কার্টে ${cartEffectiveQty(inCart)} পিস — এডিট` : '+ যোগ করুন');
  return `<div class="result-row ${out?'out':''}">
  <div class="result-serial">${i+1}</div>
  <div class="result-info">
  <div class="rname">${esc(posBrand)} <span class="rdim">· ${r.mm} মিমি · ${r.sz} ফুট</span></div>
  <div class="rmeta">ক্রয়ঃ <b>${fmt(r.v.buy)}</b> &nbsp;বিক্রয়ঃ <b>${fmt(r.v.sell)}</b> &nbsp;স্টকঃ <b class="${r.v.stock<=3?'stock-low':''}">${r.v.stock} পিস</b></div>
  </div>
- <button class="result-add" ${out?'disabled':''} onclick="addToCart('${jsq(posBrand)}', ${r.mm}, ${r.sz})">${out?'স্টক নেই':'+ যোগ করুন'}</button>
+ <button class="result-add" ${out?'disabled':''} onclick="openProductQtyModal('${jsq(posBrand)}', ${r.mm}, ${r.sz})">${btnLabel}</button>
  </div>`;
  }).join('') + `</div>`;
  
@@ -1227,25 +1235,15 @@ function renderSales(){
  ${cart.length === 0 ? `<div class="cart-empty">কার্ট খালি — একটি পণ্য যোগ করুন</div>` :
  cart.map((item, idx) => {
  const eff = cartEffectiveQty(item);
- const ppb = piecesPerBan(item.size);
  return `
  <div class="cart-item">
  <div class="cart-item-top">
  <span>${esc(item.brand)} · ${item.mm}মিমি · ${item.size}ফুট</span>
  <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
  </div>
- <div style="font-size:10.5px;color:var(--steel-500);margin-top:2px;">এক বানে (৭২ ফুট) প্রায় ${ppb.toFixed(1)} পিস — বান বা পিস, যেকোনো একটিতে মান দিন</div>
- <div class="cart-item-row">
- <label>বান</label>
- <input type="number" min="0" step="0.5" placeholder="—" value="${item.qtyBan !== null && item.qtyBan !== undefined ? item.qtyBan : ''}" onchange="updateCartBan(${idx}, this.value)">
- <label style="width:auto;margin-left:4px;">পিস</label>
- <input type="number" min="0" placeholder="—" value="${item.qtyPieces !== null && item.qtyPieces !== undefined ? item.qtyPieces : ''}" onchange="updateCartPieces(${idx}, this.value)">
- </div>
- <div class="cart-item-row">
- <label>দর</label>
- <input type="number" min="0" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)">
- </div>
- <div class="cart-sub">মোট পিস: ${eff} · উপমোট: ${fmt(eff * item.sellPrice)}</div>
+ <div class="cart-sub" style="text-align:left;margin-top:4px;">পরিমাণ: <b>${eff} পিস</b> · দর: <b>${fmt(item.sellPrice)}</b></div>
+ <div class="cart-sub" style="text-align:left;">উপমোট: <b>${fmt(eff * item.sellPrice)}</b></div>
+ <button class="btn btn-outline" style="margin-top:6px;padding:5px 10px;font-size:11.5px;" onclick="openProductQtyModal('${jsq(item.brand)}', ${item.mm}, ${item.size})">✏️ পরিমাণ/দাম বদলান</button>
  </div>`;
  }).join('')}
  </div>
@@ -1273,19 +1271,70 @@ function posItemSearchInput(val){
  if(el){ el.focus(); const p = el.value.length; el.setSelectionRange(p,p); }
 }
  
-function addToCart(brand, mm, size){
+function openProductQtyModal(brand, mm, size){
  const item = inventory[brand][mm][size];
  const existing = cart.find(c => c.brand===brand && c.mm===mm && c.size===size);
- const inCart = existing ? cartEffectiveQty(existing) : 0;
- if(inCart >= item.stock){ showToast('এই পণ্যের স্টকে যতটুকু আছে তার বেশি যোগ করা যাবে না'); return; }
- if(existing){
- const eff = cartEffectiveQty(existing);
- existing.qtyPieces = eff + 1;
- existing.qtyBan = null;
- }
- else cart.push({ brand, mm, size, qtyPieces:1, qtyBan:null, sellPrice:item.sell, buyPrice:item.buy });
- showToast(`${brand} ${mm}মিমি ${size}ফুট কার্টে যোগ হয়েছে`);
+ const qtyBanVal = existing && existing.qtyBan !== null && existing.qtyBan !== undefined ? existing.qtyBan : '';
+ const qtyPiecesVal = existing ? (existing.qtyBan !== null && existing.qtyBan !== undefined ? '' : (existing.qtyPieces !== null && existing.qtyPieces !== undefined ? existing.qtyPieces : 1)) : 1;
+ const priceVal = existing ? existing.sellPrice : item.sell;
+ const ppb = piecesPerBan(size);
+ const startEff = qtyBanVal !== '' ? Math.round(ppb * Number(qtyBanVal)) : (Number(qtyPiecesVal) || 0);
+ openModal(`পরিমাণ ও দাম — ${esc(brand)} · ${mm}মিমি · ${size}ফুট`, `
+ <div style="background:var(--steel-100);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;">
+ স্টকে আছে: <b>${item.stock} পিস</b> · এক বানে (৭২ ফুট) প্রায় ${ppb.toFixed(1)} পিস
+ </div>
+ <div class="field"><label>বান (ঐচ্ছিক)</label><input type="number" min="0" step="0.5" id="pqmBan" value="${qtyBanVal}" placeholder="—" oninput="pqmRecalc(${size})"></div>
+ <div class="field"><label>অথবা পিস</label><input type="number" min="0" id="pqmPieces" value="${qtyPiecesVal}" placeholder="—" oninput="pqmRecalc(${size})"></div>
+ <div class="field"><label>দর (৳)</label><input type="number" min="0" id="pqmPrice" value="${priceVal}" oninput="pqmRecalc(${size})"></div>
+ <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; font-size:13.5px; display:flex; justify-content:space-between;">
+ <span>মোট পিস: <b id="pqmQtyOut" class="mono">${startEff}</b></span>
+ <span>উপমোট: <b id="pqmSubOut" class="mono">${fmt(startEff*priceVal)}</b></span>
+ </div>
+ `, `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ ${existing ? `<button class="btn btn-outline" style="color:var(--red);" onclick="removeFromCartByKey('${jsq(brand)}',${mm},${size})">বাদ দিন</button>` : ''}
+ <button class="btn btn-primary" onclick="confirmProductQty('${jsq(brand)}',${mm},${size})">কার্টে যোগ করুন</button>
+ `);
+}
+function pqmRecalc(sizeFeet){
+ const banEl = document.getElementById('pqmBan');
+ const pcsEl = document.getElementById('pqmPieces');
+ const priceEl = document.getElementById('pqmPrice');
+ if(!banEl) return;
+ const ban = banEl.value.trim();
+ const pieces = pcsEl.value.trim();
+ const price = Math.max(0, parseInt(priceEl.value)||0);
+ let eff = 0;
+ if(ban !== ''){ eff = Math.round(piecesPerBan(sizeFeet) * (parseFloat(ban)||0)); }
+ else { eff = parseInt(pieces)||0; }
+ const qtyOut = document.getElementById('pqmQtyOut');
+ const subOut = document.getElementById('pqmSubOut');
+ if(qtyOut) qtyOut.textContent = eff;
+ if(subOut) subOut.textContent = fmt(eff*price);
+}
+function confirmProductQty(brand, mm, size){
+ const item = inventory[brand][mm][size];
+ const banVal = document.getElementById('pqmBan').value.trim();
+ const pcsVal = document.getElementById('pqmPieces').value.trim();
+ const price = Math.max(0, parseInt(document.getElementById('pqmPrice').value)||0);
+ let qtyBan = null, qtyPieces = null;
+ if(banVal !== ''){ qtyBan = Math.max(0, parseFloat(banVal)||0); }
+ else { qtyPieces = Math.max(0, parseInt(pcsVal)||0); }
+ const eff = qtyBan !== null ? Math.round(piecesPerBan(size) * qtyBan) : (qtyPieces || 0);
+ if(eff <= 0){ showToast('সঠিক পরিমাণ দিন'); return; }
+ if(eff > item.stock){ showToast('স্টকে যতটুকু আছে তার বেশি যোগ করা যাবে না'); return; }
+ let existing = cart.find(c => c.brand===brand && c.mm===mm && c.size===size);
+ if(existing){ existing.qtyBan = qtyBan; existing.qtyPieces = qtyPieces; existing.sellPrice = price; }
+ else cart.push({ brand, mm, size, qtyBan, qtyPieces, sellPrice: price, buyPrice: item.buy });
+ closeModal();
  render();
+ showToast('কার্টে যোগ হয়েছে');
+}
+function removeFromCartByKey(brand, mm, size){
+ cart = cart.filter(c => !(c.brand===brand && c.mm===mm && c.size===size));
+ closeModal();
+ render();
+ showToast('কার্ট থেকে বাদ দেওয়া হয়েছে');
 }
 function removeFromCart(idx){ cart.splice(idx,1); render(); }
 function piecesPerBan(sizeFeet){ return sizeFeet > 0 ? (FEET_PER_BAN / sizeFeet) : 0; }
@@ -1295,37 +1344,23 @@ function cartEffectiveQty(item){
  }
  return Number(item.qtyPieces) || 0;
 }
-function updateCartBan(idx, val){
- const item = cart[idx];
- const maxStock = inventory[item.brand][item.mm][item.size].stock;
- if(val === ''){ item.qtyBan = null; render(); return; }
- let ban = Math.max(0, parseFloat(val) || 0);
- item.qtyBan = ban; item.qtyPieces = null;
- let eff = cartEffectiveQty(item);
- if(eff > maxStock){
- showToast('স্টকে যতটুকু আছে তার বেশি বিক্রি করা যাবে না');
- item.qtyPieces = maxStock; item.qtyBan = null;
- }
- render();
-}
-function updateCartPieces(idx, val){
- const item = cart[idx];
- const maxStock = inventory[item.brand][item.mm][item.size].stock;
- if(val === ''){ item.qtyPieces = null; render(); return; }
- let qty = Math.max(0, parseInt(val) || 0);
- if(qty > maxStock){ qty = maxStock; showToast('স্টকে যতটুকু আছে তার বেশি বিক্রি করা যাবে না'); }
- item.qtyPieces = qty; item.qtyBan = null;
- render();
-}
-function updateCartPrice(idx, val){ cart[idx].sellPrice = Math.max(0, parseInt(val)||0); render(); }
  
 /* ============================================================
  চেকআউট / ইনভয়েস তৈরি
  ============================================================ */
-function openCheckout(){
+async function openCheckout(){
+ try{ await loadStaffList(); }catch(e){ /* সাইলেন্টলি ব্যর্থ */ }
  const itemsSubtotal = cart.reduce((s,i)=>s+cartEffectiveQty(i)*i.sellPrice,0);
  const customerOptions = ledger.map(l => `<option value="${l.id}">${esc(l.name)}${l.phone ? ' · '+esc(l.phone) : ''}</option>`).join('');
+ const teamMembers = [];
+ if(currentUser) teamMembers.push({ id: currentUser.id, name: currentUser.full_name, role: currentUser.role });
+ (staffList||[]).forEach(s => { if(!teamMembers.find(t=>t.id===s.id)) teamMembers.push({ id: s.id, name: s.full_name, role: 'staff' }); });
+ const salesByOptions = teamMembers.map(t => `<option value="${esc(t.name)}" ${currentUser && t.id===currentUser.id ? 'selected' : ''}>${esc(t.name)}${t.role==='owner'?' (মালিক)':' (স্টাফ)'}</option>`).join('');
  openModal('ইনভয়েস নিশ্চিত করুন', `
+ <div class="field">
+ <label>বিক্রয়কারী — কে এই ইনভয়েসটি করছেন</label>
+ <select id="invSalesBy">${salesByOptions || '<option value="">— নির্বাচন করুন —</option>'}</select>
+ </div>
  <div class="field">
  <label>বিদ্যমান গ্রাহক হলে বাছাই করুন (নাহলে নিচে নাম লিখুন)</label>
  <select id="invCustomer" onchange="invCustomerChange(this.value)"><option value="">— নতুন / নগদ ক্রেতা —</option>${customerOptions}</select>
@@ -1333,7 +1368,7 @@ function openCheckout(){
  <div class="field"><label>ক্রেতার নাম</label><input type="text" id="invCustName" placeholder="যেমনঃ নগদ ক্রেতা"></div>
  <div class="field"><label>ক্রেতার ঠিকানা</label><input type="text" id="invCustAddress" placeholder="যেমনঃ বাজার রোড, সাভার"></div>
  <div class="field"><label>মোবাইল নাম্বার (ঐচ্ছিক)</label><input type="text" id="invCustPhone" placeholder="01xxx-xxxxxx"></div>
- <div class="field"><label>বিক্রয়ের তারিখ</label><input type="date" id="invDate" value="${toDateInputValue(new Date())}"></div>
+ <div class="field"><label>বিক্রয়ের তারিখ (যেই তারিখের বিক্রয় হিসেবে গণ্য হবে, দরকার হলে আগের তারিখও দিতে পারেন)</label><input type="date" id="invDate" value="${toDateInputValue(new Date())}"></div>
  <div class="field"><label>পণ্যের সাবটোটাল</label><input type="text" value="${fmt(itemsSubtotal)}" disabled style="background:var(--steel-100);color:var(--steel-700);"></div>
  <div class="field"><label>ডেলিভারি চার্জ (৳) — না থাকলে ০ রাখুন</label><input type="number" id="invDelivery" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
  <div class="field"><label>অন্যান্য খরচের বিবরণ (ঐচ্ছিক)</label><input type="text" id="invExpenseLabel" placeholder="যেমনঃ লেবার খরচ, লোড-আনলোড"></div>
@@ -1390,6 +1425,8 @@ function confirmInvoice(itemsSubtotal){
  const paid = Math.min(grandTotal, Math.max(0, parseInt(document.getElementById('invPaid').value) || 0));
  const due = grandTotal - paid;
  const invDate = dateFromInput(document.getElementById('invDate').value);
+ const salesByEl = document.getElementById('invSalesBy');
+ const salesBy = salesByEl && salesByEl.value ? salesByEl.value : (currentUser ? currentUser.full_name : '');
  
  cart.forEach(item => { inventory[item.brand][item.mm][item.size].stock -= cartEffectiveQty(item); });
  const finalCartItems = cart.map(item => ({
@@ -1441,7 +1478,8 @@ function confirmInvoice(itemsSubtotal){
  total: grandTotal, paid, due,
  customer: customerName, customerPhone, customerAddress,
  date: invDate, custId: custIdFinal, isCash,
- duePrev: duePrevVal, dueTotalAfter: dueTotalAfterVal
+ duePrev: duePrevVal, dueTotalAfter: dueTotalAfterVal,
+ salesBy, createdAt: new Date()
  };
  invoices.push(invoice);
  logActivity('নতুন ইনভয়েস তৈরি', `#${invoice.id} · ${customerName} · ${fmt(grandTotal)}${due>0?' (বাকি '+fmt(due)+')':''}`);
@@ -1509,7 +1547,7 @@ function buildInvoiceHtml(inv){
  </div>
  <div class="si-top-right">
  <div class="si-title">ইনভয়েস</div>
- <div class="si-date">তারিখ: ${new Date(inv.date).toLocaleDateString('bn-BD')}</div>
+ <div class="si-date">তারিখ: ${new Date(inv.createdAt || inv.date).toLocaleDateString('bn-BD')}</div>
  ${SHOP_ADDRESS ? `<div class="si-date">ঠিকানা: ${esc(SHOP_ADDRESS)}</div>` : ''}
  </div>
  </div>
@@ -1521,6 +1559,7 @@ function buildInvoiceHtml(inv){
  <div class="si-cust-row"><span class="si-lbl">কাস্টমার:</span><span>${esc(inv.customer)}</span></div>
  ${inv.customerPhone ? `<div class="si-cust-row"><span class="si-lbl">ফোন:</span><span>${telHtml(inv.customerPhone)}</span></div>` : ''}
  ${inv.customerAddress ? `<div class="si-cust-row"><span class="si-lbl">ঠিকানা:</span><span>${esc(inv.customerAddress)}</span></div>` : ''}
+ ${inv.salesBy ? `<div class="si-cust-row"><span class="si-lbl">বিক্রয়কারী:</span><span>${esc(inv.salesBy)}</span></div>` : ''}
  </div>
  <table class="si-tbl">
  <thead><tr><th>ক্রম</th><th>আইটেম নাম</th><th class="r">পরিমাণ</th><th class="r">মূল্য</th><th class="r">মোট মূল্য</th></tr></thead>
@@ -1528,6 +1567,9 @@ function buildInvoiceHtml(inv){
  </table>
  <div class="si-bottom">
  <div class="si-terms">
+ <h4>শর্তাবলী</h4>
+ <p>অঙ্গীকার করিলাম…</p>
+ <p>আমি সততার সাথে সমস্ত পাওনা বকেয়া টাকা পরিশোধ করিব।</p>
  <div class="si-words"><b>কথায়:</b> ${amountToBengaliWords(inv.total)}</div>
  </div>
  <div class="si-summary">
