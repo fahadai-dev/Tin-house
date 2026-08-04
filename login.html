@@ -20,6 +20,7 @@
  --rust: #BE4A22;
  --rust-dark: #9A3A19;
  --danger: #B23B2E;
+ --success: #3C7A54;
  --radius: 10px;
  }
  * { box-sizing: border-box; }
@@ -95,6 +96,42 @@
  border: 1px solid #f0bdae;
  }
  .msgbox.show { display: block; }
+ .msgbox.success {
+ background: #e4f1e8;
+ color: var(--success);
+ border-color: #bcdcc7;
+ }
+ .forgot-link {
+ display: block;
+ text-align: center;
+ margin-top: 16px;
+ font-size: 13px;
+ color: var(--steel-500);
+ text-decoration: underline;
+ cursor: pointer;
+ background: none;
+ border: none;
+ font-family: inherit;
+ width: 100%;
+ }
+ .forgot-link:hover { color: var(--rust); }
+ .back-link {
+ display: block;
+ text-align: center;
+ margin-top: 18px;
+ font-size: 13.5px;
+ color: var(--rust);
+ font-weight: 600;
+ text-decoration: none;
+ cursor: pointer;
+ background: none;
+ border: none;
+ font-family: inherit;
+ width: 100%;
+ }
+ .back-link:hover { color: var(--rust-dark); }
+ .hidden { display: none; }
+ .helper-text { text-align:center; color: var(--steel-500); font-size: 13px; line-height: 1.6; margin: 0 0 18px; }
 </style>
 </head>
 <body>
@@ -103,6 +140,7 @@
  <p class="brand">টিন হাউস</p>
  <p class="tagline">দোকান ম্যানেজমেন্ট সিস্টেম</p>
  
+ <!-- লগইন ফর্ম -->
  <form id="loginForm">
  <label for="loginEmail">ইমেইল</label>
  <input type="email" id="loginEmail" required autocomplete="username">
@@ -110,6 +148,18 @@
  <input type="password" id="loginPassword" required autocomplete="current-password">
  <div class="msgbox" id="errorBox"></div>
  <button type="submit" class="submit" id="loginBtn">লগইন করুন</button>
+ <button type="button" class="forgot-link" id="showForgotBtn">পাসওয়ার্ড ভুলে গেছেন?</button>
+ </form>
+ 
+ <!-- পাসওয়ার্ড ভুলে গেলে (রিসেট লিংক পাঠানোর ফর্ম) -->
+ <form id="forgotForm" class="hidden">
+ <p class="helper-text">আপনার লগইন ইমেইলটি লিখুন — আমরা সেখানে একটি পাসওয়ার্ড রিসেট লিংক পাঠাবো। লিংকে চাপ দিয়ে নতুন পাসওয়ার্ড সেট করতে পারবেন।</p>
+ <label for="forgotEmail">ইমেইল</label>
+ <input type="email" id="forgotEmail" required autocomplete="username">
+ <div class="msgbox" id="forgotErrorBox"></div>
+ <div class="msgbox" id="forgotSuccessBox"></div>
+ <button type="submit" class="submit" id="forgotBtn">রিসেট লিংক পাঠান</button>
+ <button type="button" class="back-link" id="backToLoginBtn">← লগইনে ফিরে যান</button>
  </form>
  </div>
  
@@ -122,7 +172,7 @@
  }
  
  const errorBox = document.getElementById('errorBox');
- function showError(msg){ errorBox.textContent = msg; errorBox.classList.add('show'); }
+ function showError(msg){ errorBox.textContent = msg; errorBox.classList.remove('success'); errorBox.classList.add('show'); }
  function hideError(){ errorBox.classList.remove('show'); }
  
  // ইতিমধ্যে লগইন করা থাকলে সরাসরি অ্যাপে পাঠিয়ে দাও
@@ -148,6 +198,56 @@
  showError('ইমেইল অথবা পাসওয়ার্ড ভুল হয়েছে। আবার চেষ্টা করো।');
  loginBtn.disabled = false;
  loginBtn.textContent = 'লগইন করুন';
+ }
+ });
+ 
+ /* ============================================================
+ পাসওয়ার্ড ভুলে গেলে — রিসেট লিংক পাঠানো
+ ============================================================ */
+ const showForgotBtn = document.getElementById('showForgotBtn');
+ const backToLoginBtn = document.getElementById('backToLoginBtn');
+ const forgotForm = document.getElementById('forgotForm');
+ const forgotErrorBox = document.getElementById('forgotErrorBox');
+ const forgotSuccessBox = document.getElementById('forgotSuccessBox');
+ const forgotBtn = document.getElementById('forgotBtn');
+ 
+ function hideForgotMsgs(){
+ forgotErrorBox.classList.remove('show');
+ forgotSuccessBox.classList.remove('show');
+ }
+ 
+ showForgotBtn.addEventListener('click', () => {
+ loginForm.classList.add('hidden');
+ forgotForm.classList.remove('hidden');
+ hideError();
+ hideForgotMsgs();
+ });
+ backToLoginBtn.addEventListener('click', () => {
+ forgotForm.classList.add('hidden');
+ loginForm.classList.remove('hidden');
+ hideForgotMsgs();
+ });
+ 
+ forgotForm.addEventListener('submit', async (e) => {
+ e.preventDefault();
+ hideForgotMsgs();
+ forgotBtn.disabled = true;
+ forgotBtn.textContent = 'পাঠানো হচ্ছে...';
+ const email = document.getElementById('forgotEmail').value.trim();
+ try {
+ // reset-password.html-এ পাঠাবে, যেখানে গিয়ে নতুন পাসওয়ার্ড সেট করা যাবে
+ const redirectTo = window.location.origin + '/reset-password.html';
+ const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+ if (error) throw error;
+ forgotSuccessBox.textContent = 'রিসেট লিংক পাঠানো হয়েছে — আপনার ইমেইল চেক করুন (স্প্যাম/জাঙ্ক ফোল্ডারও দেখুন)।';
+ forgotSuccessBox.classList.add('show', 'success');
+ forgotBtn.textContent = 'আবার পাঠান';
+ } catch (err) {
+ forgotErrorBox.textContent = 'লিংক পাঠানো যায়নি — ইমেইলটি ঠিক আছে কিনা দেখুন, আবার চেষ্টা করুন।';
+ forgotErrorBox.classList.add('show');
+ forgotBtn.textContent = 'রিসেট লিংক পাঠান';
+ } finally {
+ forgotBtn.disabled = false;
  }
  });
  </script>
