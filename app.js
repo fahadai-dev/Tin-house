@@ -638,7 +638,7 @@ function render() {
  সাধারণ হেল্পার
  ============================================================ */
 function fmt(n) {
-  return "৳" + Number(n).toLocaleString("en-IN");
+  return "৳ " + Number(n).toLocaleString("en-IN");
 }
 function esc(str) {
   return String(str ?? "")
@@ -1679,15 +1679,15 @@ function buildInvoiceHtml(inv) {
  </table>
  <div class="si-summary-wrap">
  <div class="si-summary">
- <div class="si-srow"><span>সাব-টোটাল:</span><span class="mono">${fmt(itemsSubtotal)}</span></div>
- ${discount > 0 ? `<div class="si-srow"><span>মোট আইটেম ডিসকাউন্ট:</span><span class="mono">${fmt(discount)}</span></div>` : ""}
- ${delivery > 0 ? `<div class="si-srow"><span>ডেলিভারি চার্জ:</span><span class="mono">${fmt(delivery)}</span></div>` : ""}
- ${expenseAmt > 0 ? `<div class="si-srow"><span>${esc(inv.expenseLabel) || "অন্যান্য খরচ"}:</span><span class="mono">${fmt(expenseAmt)}</span></div>` : ""}
+ <div class="si-srow"><span>সর্বমোট:</span><span class="mono">${fmt(itemsSubtotal)}</span></div>
+ <div class="si-srow"><span>ডিসকাউন্ট:</span><span class="mono">${fmt(discount)}</span></div>
+ <div class="si-srow"><span>ডেলিভারি চার্জ:</span><span class="mono">${fmt(delivery)}</span></div>
+ <div class="si-srow"><span>${esc(inv.expenseLabel) || "ভাড়া"}:</span><span class="mono">${fmt(expenseAmt)}</span></div>
  <div class="si-srow total"><span>মোট মূল্য:</span><span class="mono">${fmt(inv.total)}</span></div>
  <div class="si-srow"><span>পেলাম:</span><span class="mono">${fmt(inv.paid)}</span></div>
  <div class="si-srow"><span>মোট বাকি:</span><span class="mono">${fmt(inv.due)}</span></div>
- ${inv.duePrev != null ? `<div class="si-srow"><span>আগের পাওনা:</span><span class="mono">${fmt(inv.duePrev)}</span></div>` : ""}
- ${inv.dueTotalAfter != null ? `<div class="si-srow hl"><span>বর্তমান পাওনা:</span><span class="mono">${fmt(inv.dueTotalAfter)}</span></div>` : ""}
+ <div class="si-srow"><span>পূর্বের পাওনা:</span><span class="mono">${fmt(inv.duePrev != null ? inv.duePrev : 0)}</span></div>
+ <div class="si-srow hl"><span>বর্তমান পাওনা:</span><span class="mono">${fmt(inv.dueTotalAfter != null ? inv.dueTotalAfter : 0)}</span></div>
  </div>
  </div>
  <div class="si-words">কথায়: ${amountToBengaliWords(inv.total)}</div>
@@ -2431,6 +2431,15 @@ function paymentPrompt(id) {
  <span>বর্তমান বাকি</span><b class="mono">${fmt(cust.due)}</b>
  </div>
  <div class="field"><label>জমার তারিখ</label><input type="date" id="payDate" value="${toDateInputValue(new Date())}"></div>
+ <div class="field"><label>কিভাবে জমা দিলো</label>
+ <select id="payMethod">
+ <option value="ক্যাশ">💵 ক্যাশ (নগদ টাকা)</option>
+ <option value="বিকাশ">📱 বিকাশ</option>
+ <option value="নগদ">📱 নগদ (Nagad)</option>
+ <option value="ব্যাংক">🏦 ব্যাংক ট্রান্সফার</option>
+ <option value="অন্যান্য">✏️ অন্যান্য</option>
+ </select>
+ </div>
  <div class="field"><label>ছাড়/ডিসকাউন্ট (৳) — থাকলে লিখুন</label><input type="number" id="payDiscount" value="0" min="0" max="${cust.due}" oninput="paymentRecalc(${cust.due})"></div>
  <div class="field"><label>পরিশোধের পরিমাণ (৳)</label><input type="number" id="payAmt" value="${cust.due}" min="0" max="${cust.due}" oninput="paymentRecalc(${cust.due})"></div>
  <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; font-size:13px; display:flex; justify-content:space-between;">
@@ -2468,6 +2477,8 @@ function applyPayment(id) {
     if (amt > dueBefore) amt = dueBefore;
   }
   const payDate = dateFromInput(document.getElementById("payDate").value);
+  const methodEl = document.getElementById("payMethod");
+  const method = methodEl ? methodEl.value : "ক্যাশ";
   cust.due -= amt + disc;
   cust.paidTotal += amt;
   cust.discountTotal = (cust.discountTotal || 0) + disc;
@@ -2478,6 +2489,8 @@ function applyPayment(id) {
     custId: id,
     custName: cust.name,
     custPhone: cust.phone,
+    custAddress: cust.address,
+    method,
     amount: amt,
     discount: disc,
     dueBefore,
@@ -2487,7 +2500,7 @@ function applyPayment(id) {
   payments.push(payment);
   logActivity(
     "পেমেন্ট গ্রহণ",
-    `${cust.name} থেকে ${fmt(amt)}${disc > 0 ? " · ছাড় " + fmt(disc) : ""} (বকেয়া ${fmt(dueBefore)} → ${fmt(cust.due)})`,
+    `${cust.name} থেকে ${fmt(amt)} (${method})${disc > 0 ? " · ছাড় " + fmt(disc) : ""} (বকেয়া ${fmt(dueBefore)} → ${fmt(cust.due)})`,
   );
 
   closeModal();
@@ -2510,30 +2523,50 @@ function reduceCustomerInvoiceDues(custId, amountToClear) {
   }
 }
 function buildPaymentReceiptHtml(p) {
-  const shopContactLine = [
-    esc(SHOP_ADDRESS),
-    SHOP_PHONE ? "ফোনঃ " + esc(SHOP_PHONE) : "",
+  const shopMetaLines = [
+    SHOP_PHONE ? `ফোন: ${esc(SHOP_PHONE)}` : "",
+    SHOP_EMAIL ? `ইমেইল: ${esc(SHOP_EMAIL)}` : "",
   ]
     .filter(Boolean)
-    .join(" · ");
+    .map((l) => `<div>${l}</div>`)
+    .join("");
   return `
- <div class="invoice-box">
- <div class="ihead">
- <h2>${esc(SHOP_NAME)}</h2>
- ${shopContactLine ? `<p>${shopContactLine}</p>` : ""}
- <p>পেমেন্ট রশিদ #${p.id} · ${new Date(p.date).toLocaleDateString("bn-BD")} · গ্রাহক: ${esc(p.custName)}${p.custPhone ? " · " + telHtml(p.custPhone) : ""}</p>
+ <div class="si-box">
+ <div class="si-top">
+ <div class="si-top-left">
+ <div class="si-logo">${SHOP_LOGO ? `<img src="${SHOP_LOGO}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">` : "🧾"}</div>
+ <div>
+ <div class="si-shop-name">${esc(SHOP_NAME)}</div>
+ <div class="si-shop-meta">${shopMetaLines}</div>
  </div>
- <table class="itbl">
- <thead><tr><th>বিবরণ</th><th class="r">পরিমাণ</th></tr></thead>
- <tbody>
- <tr><td>পূর্বের বকেয়া</td><td class="r">${fmt(p.dueBefore)}</td></tr>
- <tr><td>জমাকৃত পরিমাণ</td><td class="r">${fmt(p.amount)}</td></tr>
- ${p.discount > 0 ? `<tr><td>ছাড় প্রদত্ত</td><td class="r">${fmt(p.discount)}</td></tr>` : ""}
- <tr><td>বর্তমান বকেয়া</td><td class="r">${fmt(p.dueAfter)}</td></tr>
- </tbody>
- </table>
- <div class="itotal"><span>জমাকৃত</span><span>${fmt(p.amount)}</span></div>
- ${p.discount > 0 ? `<div class="idiscount"><span>ছাড় দেওয়া হয়েছে</span><span>${fmt(p.discount)}</span></div>` : ""}
+ </div>
+ <div class="si-top-right">
+ <div class="si-title" style="font-size:22px;">প্রাপ্তি রশিদ</div>
+ <div class="si-date">তারিখ: ${new Date(p.date).toLocaleDateString("bn-BD")}</div>
+ ${SHOP_ADDRESS ? `<div class="si-date">ঠিকানা: ${esc(SHOP_ADDRESS)}</div>` : ""}
+ </div>
+ </div>
+ <div class="si-bar">
+ <div>রশিদ নম্বর: #${p.id}</div>
+ <div>পেমেন্ট তারিখ: ${new Date(p.date).toLocaleDateString("bn-BD")}</div>
+ </div>
+ <div class="si-cust">
+ <div class="si-cust-row"><span class="si-lbl">প্রদানকারী:</span><span>${esc(p.custName)}</span></div>
+ ${p.custPhone ? `<div class="si-cust-row"><span class="si-lbl">ফোন:</span><span>${telHtml(p.custPhone)}</span></div>` : ""}
+ ${p.custAddress ? `<div class="si-cust-row"><span class="si-lbl">ঠিকানা:</span><span>${esc(p.custAddress)}</span></div>` : ""}
+ <div class="si-cust-row"><span class="si-lbl">মাধ্যম:</span><span>${esc(p.method || "ক্যাশ")}</span></div>
+ </div>
+ <div class="si-summary-wrap">
+ <div class="si-summary">
+ <div class="si-srow"><span>পূর্বের পাওনা:</span><span class="mono">${fmt(p.dueBefore)}</span></div>
+ <div class="si-srow"><span>নগদ জমা:</span><span class="mono">${fmt(p.amount)}</span></div>
+ <div class="si-srow"><span>ছাড়:</span><span class="mono">${fmt(p.discount || 0)}</span></div>
+ <div class="si-srow hl"><span>অবশিষ্ট পাওনা:</span><span class="mono">${fmt(p.dueAfter)}</span></div>
+ </div>
+ </div>
+ <div class="si-sign" style="justify-content:flex-end;">
+ <div>গ্রহণকারীর স্বাক্ষর</div>
+ </div>
  </div>`;
 }
 
