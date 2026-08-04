@@ -906,6 +906,21 @@ function renderDashboard() {
  <button class="dash-action-btn buy" onclick="switchView('stock')">📥 ক্রয় করুন</button>
  <button class="dash-action-btn sell" onclick="switchView('sales')">🧾 বিক্রি করুন</button>
  </div>
+ <div class="dash-ledger-label">খাতা সমূহ</div>
+ <div class="dash-ledger-grid">
+ <div class="dash-ledger-tile" onclick="switchView('purchaseLedger')">
+ <div class="dlt-ic c-blue">🛒</div><div class="dlt-lbl">কেনার খাতা</div>
+ </div>
+ <div class="dash-ledger-tile" onclick="switchView('salesLedger')">
+ <div class="dlt-ic c-green">📗</div><div class="dlt-lbl">বেচার খাতা</div>
+ </div>
+ <div class="dash-ledger-tile" onclick="switchView('ledger')">
+ <div class="dlt-ic c-red">📒</div><div class="dlt-lbl">বাকির খাতা</div>
+ </div>
+ <div class="dash-ledger-tile" onclick="switchView('expenses')">
+ <div class="dlt-ic c-amber">💸</div><div class="dlt-lbl">খরচের খাতা</div>
+ </div>
+ </div>
  <div class="panel">
  <h3>সবচেয়ে বেশি বাকি</h3>
  ${
