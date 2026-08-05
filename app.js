@@ -249,7 +249,6 @@ async function bootstrapApp() {
 
     document.getElementById("lockScreen").style.display = "none";
     document.getElementById("app").classList.add("active");
-    renderNav();
     switchView("dashboard");
     showToast(`স্বাগতম, ${currentUser.full_name}`);
   } catch (e) {
@@ -507,27 +506,8 @@ function persistShopData() {
 /* ============================================================
  NAV
  ============================================================ */
-function renderNav() {
-  const isOwner = currentUser && currentUser.role === "owner";
-  const visibleNav = nav.filter(
-    (n) => isOwner || !OWNER_ONLY_VIEWS.includes(n.id),
-  );
-  document.getElementById("navList").innerHTML = visibleNav
-    .map(
-      (n) =>
-        `<li class="nav-item ${n.id === currentView ? "active" : ""}" onclick="switchView('${n.id}')">
- <span class="ic">${n.icon}</span><span>${n.label}</span>
- </li>`,
-    )
-    .join("");
-}
-function openMobileMenu() {
-  document.getElementById("sidebarEl").classList.add("mobile-open");
-  document.getElementById("sidebarBackdrop").classList.add("active");
-}
-function closeMobileMenu() {
-  document.getElementById("sidebarEl").classList.remove("mobile-open");
-  document.getElementById("sidebarBackdrop").classList.remove("active");
+function goHome() {
+  switchView("dashboard");
 }
 function switchView(id) {
   const isOwner = currentUser && currentUser.role === "owner";
@@ -536,7 +516,6 @@ function switchView(id) {
     return;
   }
   currentView = id;
-  closeMobileMenu();
   if (id === "sales") {
     posStep = 1;
     posBrand = null;
@@ -583,7 +562,6 @@ function switchView(id) {
   if (id === "staff") {
     loadStaffList().then(render);
   }
-  renderNav();
   const titles = {
     dashboard: "ড্যাশবোর্ড",
     sales: "বিক্রয়",
