@@ -881,6 +881,37 @@ function renderDashboard() {
   payments.forEach((p) => {
     if (dayKey(p.date) === todayKey) todayCollected += p.amount;
   });
+  const isOwner = currentUser && currentUser.role === "owner";
+
+  const tile = (view, colorClass, icon, label) =>
+    `<div class="dash-tile" onclick="switchView('${view}')">
+ <div class="dt-ic ${colorClass}">${icon}</div><div class="dt-lbl">${label}</div>
+ </div>`;
+
+  const ledgerTiles = [
+    tile("purchaseLedger", "c-blue", "📋", "কেনার খাতা"),
+    tile("salesLedger", "c-green", "🧾", "বেচার খাতা"),
+    tile("ledger", "c-red", "📒", "বাকির খাতা"),
+    tile("expenses", "c-amber", "💸", "খরচের খাতা"),
+  ].join("");
+
+  const businessTiles = [
+    tile("stock", "c-teal", "📦", "স্টক তালিকা"),
+    tile("invoices", "c-indigo", "🗂️", "ইনভয়েস হিস্ট্রি"),
+    tile("daily", "c-cyan", "📅", "দৈনিক হিসাব"),
+    tile("returns", "c-pink", "↩️", "রিটার্ন/এক্সচেঞ্জ"),
+    tile("cash", "c-brown", "💵", "নগদ ক্রেতা"),
+  ].join("");
+
+  const ownerTiles = isOwner
+    ? [
+        tile("profit", "c-gold", "📈", "লাভ-ক্ষতি"),
+        tile("report", "c-slate", "📊", "ব্যবসার রিপোর্ট"),
+        tile("aiAssistant", "c-purple", "🤖", "AI সহকারী"),
+        tile("staff", "c-gray", "👥", "স্টাফ ও লগ"),
+        tile("settings", "c-teal", "⚙️", "দোকানের তথ্য"),
+      ].join("")
+    : "";
 
   return `
  <div class="dash-hero">
@@ -891,36 +922,15 @@ function renderDashboard() {
  <div>মোট ইনভয়েস<b>${invoices.length} টি</b></div>
  </div>
  </div>
- <div class="dash-icons">
- <div class="dash-icon-tile" onclick="switchView('stock')">
- <div class="dic">📦</div><div class="dilbl">মোট স্টক</div><div class="dival">${totalStock} পিস</div>
- </div>
- <div class="dash-icon-tile" onclick="switchView('ledger')">
- <div class="dic">📒</div><div class="dilbl">বাকির খাতা</div><div class="dival">${fmt(totalDue)}</div>
- </div>
- <div class="dash-icon-tile" onclick="switchView('ledger')">
- <div class="dic">📥</div><div class="dilbl">আজকের বাকি আদায়</div><div class="dival">${fmt(todayCollected)}</div>
- </div>
- </div>
  <div class="dash-actions">
  <button class="dash-action-btn buy" onclick="switchView('stock')">📥 ক্রয় করুন</button>
  <button class="dash-action-btn sell" onclick="switchView('sales')">🧾 বিক্রি করুন</button>
  </div>
- <div class="dash-ledger-label">খাতা সমূহ</div>
- <div class="dash-ledger-grid">
- <div class="dash-ledger-tile" onclick="switchView('purchaseLedger')">
- <div class="dlt-ic c-blue">🛒</div><div class="dlt-lbl">কেনার খাতা</div>
- </div>
- <div class="dash-ledger-tile" onclick="switchView('salesLedger')">
- <div class="dlt-ic c-green">📗</div><div class="dlt-lbl">বেচার খাতা</div>
- </div>
- <div class="dash-ledger-tile" onclick="switchView('ledger')">
- <div class="dlt-ic c-red">📒</div><div class="dlt-lbl">বাকির খাতা</div>
- </div>
- <div class="dash-ledger-tile" onclick="switchView('expenses')">
- <div class="dlt-ic c-amber">💸</div><div class="dlt-lbl">খরচের খাতা</div>
- </div>
- </div>
+ <div class="dash-section-label">খাতা সমূহ</div>
+ <div class="dash-tile-grid">${ledgerTiles}</div>
+ <div class="dash-section-label">আপনার ব্যবসার জন্য</div>
+ <div class="dash-tile-grid">${businessTiles}</div>
+ ${isOwner ? `<div class="dash-section-label">মালিকের জন্য</div><div class="dash-tile-grid">${ownerTiles}</div>` : ""}
  <div class="panel">
  <h3>সবচেয়ে বেশি বাকি</h3>
  ${
