@@ -414,9 +414,11 @@ input, select{ font-family:inherit; }
 .person-row:hover{ border-color:var(--rust); }
  
 .bottom-nav{ display:none; }
-.home-btn{ display:inline-flex; align-items:center; justify-content:center; color:white; font-size:19px; width:36px; height:36px; border-radius:9px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.14); flex-shrink:0; }
+.home-btn{ display:inline-flex; align-items:center; gap:6px; color:white; font-size:13px; font-weight:700; padding:8px 13px; border-radius:20px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); flex-shrink:0; }
+.home-btn .hi{ font-size:15px; }
 .home-btn:hover{ background:rgba(255,255,255,0.16); }
 .home-btn:active{ background:rgba(255,255,255,0.22); }
+.home-btn.hidden{ display:none; }
 .sidebar-backdrop{ display:none; position:fixed; inset:0; background:rgba(15,18,20,0.55); z-index:69; }
 .sidebar-backdrop.active{ display:block; }
 .badge-role{ display:inline-block; padding:2px 8px; border-radius:20px; font-size:10.5px; font-weight:700; background:rgba(255,255,255,0.12); color:white; margin-left:6px; }
@@ -427,10 +429,10 @@ input, select{ font-family:inherit; }
 .dash-hero{ background:linear-gradient(135deg,var(--rust),var(--rust-dark)); color:white; border-radius:var(--radius); padding:22px 20px; margin-bottom:16px; box-shadow:0 10px 24px rgba(190,74,34,0.25); }
 .dash-hero .dh-label{ font-size:12.5px; opacity:.85; text-align:center; letter-spacing:.02em; }
 .dash-hero .dh-val{ font-family:'JetBrains Mono'; font-size:30px; font-weight:700; text-align:center; margin-top:4px; }
-.dash-hero .dh-sub{ display:flex; background:rgba(255,255,255,0.14); border-radius:8px; margin-top:16px; overflow:hidden; }
-.dash-hero .dh-sub > div{ flex:1; padding:10px 14px; font-size:12px; opacity:.9; }
-.dash-hero .dh-sub > div:first-child{ border-right:1px solid rgba(255,255,255,0.18); }
-.dash-hero .dh-sub > div:last-child{ text-align:right; }
+.dash-hero .dh-sub{ display:grid; grid-template-columns:1fr 1fr; background:rgba(255,255,255,0.14); border-radius:8px; margin-top:16px; overflow:hidden; }
+.dash-hero .dh-sub > div{ padding:10px 14px; font-size:12px; opacity:.9; border-right:1px solid rgba(255,255,255,0.18); border-bottom:1px solid rgba(255,255,255,0.18); }
+.dash-hero .dh-sub > div:nth-child(2n){ border-right:none; }
+.dash-hero .dh-sub > div:nth-last-child(-n+2){ border-bottom:none; }
 .dash-hero .dh-sub b{ font-family:'JetBrains Mono'; display:block; margin-top:3px; font-size:15px; font-weight:700; }
  
 .dash-actions{ display:flex; gap:12px; margin-bottom:22px; }
@@ -477,7 +479,7 @@ input, select{ font-family:inherit; }
  .topbar-shopname{ font-size:14.5px; max-width:38vw; }
  .topbar-pagetitle{ font-size:10.5px; }
  .logout-btn{ padding:7px 10px; font-size:11.5px; }
- .home-btn{ width:32px; height:32px; font-size:16px; }
+ .home-btn{ padding:6px 10px; font-size:11.5px; }
  .bottom-nav{ display:none !important; }
  .mobile-cart-bar{
  display:flex; position:fixed; left:10px; right:10px; bottom:16px; z-index:59;
@@ -489,9 +491,9 @@ input, select{ font-family:inherit; }
  .mobile-cart-bar .mcb-info b{ font-family:'JetBrains Mono'; }
  .mobile-cart-bar .mcb-btn{ background:var(--rust); color:white; padding:10px 16px; border-radius:8px; font-weight:700; font-size:13px; flex-shrink:0; }
  .mobile-cart-bar .mcb-btn:hover{ background:var(--rust-dark); }
- .dash-tile-grid{ grid-template-columns:repeat(3,1fr); gap:8px; }
- .dt-ic{ width:40px; height:40px; font-size:19px; border-radius:11px; }
- .dt-lbl{ font-size:10px; }
+ .dash-tile-grid{ grid-template-columns:repeat(4,1fr); gap:8px; }
+ .dt-ic{ width:38px; height:38px; font-size:17px; border-radius:10px; }
+ .dt-lbl{ font-size:9.5px; }
  .dash-section-label{ font-size:13px; margin:16px 2px 8px; }
  .dash-actions{ gap:8px; }
  .dash-action-btn{ padding:13px 6px; font-size:13.5px; }
@@ -518,7 +520,7 @@ input, select{ font-family:inherit; }
  <div class="main">
  <div class="topbar">
  <div class="topbar-left">
- <button class="home-btn" onclick="goHome()" aria-label="হোম" title="হোম">🏠</button>
+ <button class="home-btn" id="homeBtn" onclick="goHome()" aria-label="হোম" title="হোম"><span class="hi">🏠</span> হোম</button>
  <div class="topbar-brand-icon" id="topbarBrandIcon">🏪</div>
  <div class="topbar-brand-text">
  <div class="topbar-shopname" id="topbarShopName">আমার দোকান</div>
