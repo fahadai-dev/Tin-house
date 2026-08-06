@@ -179,6 +179,13 @@ async function callStaffApi(path, body){
  return json;
 }
  
+let isOffline = false;
+let pendingSync = false;
+function cacheKey(suffix){ return 'tinhouse_' + suffix; }
+function updateOfflineBadge(){
+ const el = document.getElementById('offlineBadge');
+ if(el) el.classList.toggle('hidden', !isOffline);
+}
 async function bootstrapApp(){
  const hint = document.getElementById('connStatusHint');
  try{
@@ -186,8 +193,17 @@ async function bootstrapApp(){
  if(!sessionData.session){ window.location.href = 'login.html'; return; }
  const uid = sessionData.session.user.id;
  
- const { data: profile, error: profErr } = await supabaseClient.from('profiles').select('*').eq('id', uid).maybeSingle();
- if(profErr || !profile){
+ let profile = null;
+ try{
+ const { data: profData, error: profErr } = await supabaseClient.from('profiles').select('*').eq('id', uid).maybeSingle();
+ if(profErr) throw profErr;
+ profile = profData;
+ if(profile) localStorage.setItem(cacheKey('profile_'+uid), JSON.stringify(profile));
+ } catch(netErr){
+ const cached = localStorage.getItem(cacheKey('profile_'+uid));
+ if(cached){ profile = JSON.parse(cached); isOffline = true; }
+ }
+ if(!profile){
  hint.textContent = 'প্রোফাইল পাওয়া যায়নি, আবার লগইন করুন...';
  await supabaseClient.auth.signOut();
  setTimeout(()=> window.location.href = 'login.html', 800);
@@ -197,25 +213,44 @@ async function bootstrapApp(){
  currentUser = { id: profile.id, full_name: profile.full_name, role: profile.role, shop_id: profile.shop_id };
  SHOP_ID = profile.shop_id;
  
+ try{
  const { data: shopRow } = await supabaseClient.from('shops').select('name').eq('id', SHOP_ID).maybeSingle();
  SHOP_NAME = (shopRow && shopRow.name) || 'আমার দোকান';
+ localStorage.setItem(cacheKey('shopname_'+SHOP_ID), SHOP_NAME);
+ } catch(netErr){
+ SHOP_NAME = localStorage.getItem(cacheKey('shopname_'+SHOP_ID)) || 'আমার দোকান';
+ isOffline = true;
+ }
  
+ let shopData = null;
+ try{
  const { data: dataRow, error: dataErr } = await supabaseClient.from('shop_data').select('data').eq('shop_id', SHOP_ID).maybeSingle();
- if(dataErr){ hint.textContent = 'দোকানের ডেটা লোড করা যায়নি — ইন্টারনেট সংযোগ পরীক্ষা করুন'; return; }
- applyState((dataRow && dataRow.data) || {});
+ if(dataErr) throw dataErr;
+ shopData = (dataRow && dataRow.data) || {};
+ localStorage.setItem(cacheKey('data_'+SHOP_ID), JSON.stringify(shopData));
+ } catch(netErr){
+ const cached = localStorage.getItem(cacheKey('data_'+SHOP_ID));
+ if(cached){ shopData = JSON.parse(cached); isOffline = true; }
+ else { hint.textContent = 'দোকানের ডেটা লোড করা যায়নি — ইন্টারনেট সংযোগ পরীক্ষা করুন'; return; }
+ }
+ applyState(shopData);
  updateShopBrandUI();
  
- if(currentUser.role === 'owner'){ await loadStaffList(); }
+ if(currentUser.role === 'owner'){ try{ await loadStaffList(); }catch(e){ /* অফলাইনে হলে সাইলেন্টলি বাদ */ } }
  
  document.getElementById('lockScreen').style.display = 'none';
  document.getElementById('app').classList.add('active');
  switchView('dashboard');
- showToast(`স্বাগতম, ${currentUser.full_name}`);
+ updateOfflineBadge();
+ showToast(isOffline ? '📡 অফলাইন মোডে চলছে — শেষ সেভ করা তথ্য দেখানো হচ্ছে' : `স্বাগতম, ${currentUser.full_name}`);
  } catch(e){
  hint.textContent = 'সংযোগে সমস্যা হয়েছে — পেজ রিলোড করে আবার চেষ্টা করুন';
  }
 }
 bootstrapApp();
+ 
+window.addEventListener('online', () => { if(isOffline || pendingSync) persistShopData(); });
+window.addEventListener('offline', () => { isOffline = true; updateOfflineBadge(); });
  
 async function logout(){
  await supabaseClient.auth.signOut();
@@ -485,6 +520,56 @@ function monthLabelOf(key){
 function tryPrint(){
  try{ window.print(); } catch(e){ showToast('প্রিন্ট চালু করা যায়নি — এর বদলে "ডাউনলোড করুন" বাটন চাপুন'); }
 }
+function buildThermalInvoiceHtml(inv, widthMm){
+ const rows = inv.items.map(it => `
+ <div class="th-item">
+ <div>${esc(it.brand)} ${it.mm}মিমি ${it.size}ফুট</div>
+ <div class="th-row"><span>${it.qty} × ${fmt(it.sellPrice)}</span><span>${fmt(it.qty*it.sellPrice)}</span></div>
+ </div>`).join('');
+ const itemsSubtotal = inv.itemsSubtotal != null ? inv.itemsSubtotal : inv.total;
+ return `
+ <div class="thermal-box" style="width:${widthMm}mm;">
+ <div class="th-center th-bold th-lg">${esc(SHOP_NAME)}</div>
+ ${SHOP_PHONE ? `<div class="th-center">ফোনঃ ${esc(SHOP_PHONE)}</div>` : ''}
+ ${SHOP_ADDRESS ? `<div class="th-center">${esc(SHOP_ADDRESS)}</div>` : ''}
+ <div class="th-line"></div>
+ <div>ইনভয়েস #${inv.id}</div>
+ <div>তারিখঃ ${new Date(inv.date).toLocaleDateString('bn-BD')}</div>
+ <div>ক্রেতাঃ ${esc(inv.customer)}</div>
+ ${inv.customerPhone ? `<div>ফোনঃ ${esc(inv.customerPhone)}</div>` : ''}
+ <div class="th-line"></div>
+ ${rows}
+ <div class="th-line"></div>
+ <div class="th-row"><span>সাবটোটাল</span><span>${fmt(itemsSubtotal)}</span></div>
+ ${inv.discount > 0 ? `<div class="th-row"><span>ডিসকাউন্ট</span><span>${fmt(inv.discount)}</span></div>` : ''}
+ ${inv.delivery > 0 ? `<div class="th-row"><span>ডেলিভারি</span><span>${fmt(inv.delivery)}</span></div>` : ''}
+ ${inv.expenseAmt > 0 ? `<div class="th-row"><span>${esc(inv.expenseLabel)||'ভাড়া'}</span><span>${fmt(inv.expenseAmt)}</span></div>` : ''}
+ <div class="th-line"></div>
+ <div class="th-row th-bold th-lg"><span>মোট</span><span>${fmt(inv.total)}</span></div>
+ <div class="th-row"><span>পেলাম</span><span>${fmt(inv.paid)}</span></div>
+ <div class="th-row th-bold"><span>বাকি</span><span>${fmt(inv.due)}</span></div>
+ <div class="th-line"></div>
+ <div class="th-center">ধন্যবাদ! আবার আসবেন</div>
+ </div>`;
+}
+function printThermal(invId, widthMm){
+ const inv = invoices.find(x => x.id === invId);
+ if(!inv) return;
+ const html = buildThermalInvoiceHtml(inv, widthMm);
+ const pa = document.getElementById('printArea');
+ if(pa) pa.innerHTML = html;
+ let styleTag = document.getElementById('thermalPageStyle');
+ if(!styleTag){ styleTag = document.createElement('style'); styleTag.id = 'thermalPageStyle'; document.head.appendChild(styleTag); }
+ styleTag.textContent = `@page{ size:${widthMm}mm auto; margin:2mm; }`;
+ setTimeout(() => { try{ window.print(); } catch(e){ showToast('প্রিন্ট চালু করা যায়নি'); } }, 60);
+}
+function downloadThermal(invId, widthMm){
+ const inv = invoices.find(x => x.id === invId);
+ if(!inv) return;
+ const pa = document.getElementById('printArea');
+ if(pa) pa.innerHTML = buildThermalInvoiceHtml(inv, widthMm);
+ downloadPrintArea('থার্মাল-ইনভয়েস-' + inv.id);
+}
 function downloadPrintArea(filename){
  try{
  const inner = document.getElementById('printArea').innerHTML;
@@ -533,6 +618,13 @@ function downloadPrintArea(filename){
  .si-words{font-size:12px;margin-top:18px;color:#3A464E;text-align:center;font-style:italic;}
  .si-sign{display:flex;justify-content:space-between;margin-top:48px;}
  .si-sign div{text-align:center;font-size:12px;border-top:1px solid #6B7A82;padding-top:6px;width:170px;}
+ .thermal-box{font-family:'JetBrains Mono',monospace;font-size:11px;color:#000;background:#fff;padding:6px 4px;margin:0 auto;line-height:1.5;}
+ .thermal-box .th-center{text-align:center;}
+ .thermal-box .th-bold{font-weight:700;}
+ .thermal-box .th-lg{font-size:13px;}
+ .thermal-box .th-line{border-top:1px dashed #000;margin:6px 0;}
+ .thermal-box .th-row{display:flex;justify-content:space-between;gap:6px;}
+ .thermal-box .th-item{margin-bottom:3px;}
  `;
  const doc = `<!DOCTYPE html><html lang="bn"><head><meta charset="UTF-8"><title>${filename}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@600;700;800&family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet"><style>${styles}</style></head><body>${inner}</body></html>`;
  const blob = new Blob([doc], {type:'text/html'});
@@ -620,7 +712,7 @@ function renderDashboard(){
  Object.values(inventory).forEach(mmObj => Object.values(mmObj).forEach(szObj => Object.values(szObj).forEach(v => totalStock += v.stock)));
  ledger.forEach(l => totalDue += l.due);
  const todayKey = dayKey(new Date());
- invoices.forEach(inv => { if(dayKey(inv.date) === todayKey){ todaySales += inv.total; todayReceivedFromSales += inv.paid; } });
+ invoices.forEach(inv => { if(inv.cancelled) return; if(dayKey(inv.date) === todayKey){ todaySales += inv.total; todayReceivedFromSales += inv.paid; } });
  payments.forEach(p => { if(dayKey(p.date) === todayKey) todayCollected += p.amount; });
  expenses.forEach(e => { if(dayKey(e.date) === todayKey) todayExpense += e.amount; });
  let todayQuickProfit = 0;
@@ -663,7 +755,7 @@ function renderDashboard(){
  <div class="dh-val">${fmt(todaySales)}</div>
  <div class="dh-sub">
  <div>মোট বাকি<b>${fmt(totalDue)}</b></div>
- <div>মোট ইনভয়েস<b>${invoices.length} টি</b></div>
+ <div>মোট ইনভয়েস<b>${invoices.filter(x=>!x.cancelled).length} টি</b></div>
  <div>আজকে পেলাম<b>${fmt(todayReceived)}</b></div>
  <div>আজকে দিয়েছি<b>${fmt(todayExpense)}</b></div>
  </div>
@@ -1254,22 +1346,78 @@ function renderInvoicePreview(){
  }
  const html = buildInvoiceHtml(inv);
  setTimeout(() => { const pa = document.getElementById('printArea'); if(pa) pa.innerHTML = html; }, 0);
+ const cancelledBanner = inv.cancelled ? `<div style="max-width:680px;margin:0 auto 14px;background:#FCEBE9;color:var(--red);border:1px solid #F3C4BC;border-radius:8px;padding:10px 14px;font-size:13px;text-align:center;font-weight:700;">❌ এই ইনভয়েসটি বাতিল করা হয়েছে — স্টক ও হিসাব ফিরিয়ে নেওয়া হয়েছে</div>` : '';
  return `
  <div class="back-row">
  <button class="btn btn-outline" onclick="switchView('sales')">← নতুন বিক্রয়</button>
  <div class="cur-brand">ইনভয়েস #${inv.id}</div>
  </div>
+ ${cancelledBanner}
  <div style="max-width:680px;margin:0 auto;">
  ${html}
  <div style="display:flex; gap:10px; justify-content:center; margin-top:20px; flex-wrap:wrap;">
  <button class="btn btn-outline" onclick="switchView('invoices')">🗂️ ইনভয়েস হিস্ট্রি</button>
- <button class="btn btn-outline" onclick="downloadPrintArea('${jsq('ইনভয়েস-' + inv.id)}')">⬇ ডাউনলোড করুন</button>
- <button class="btn btn-primary" onclick="tryPrint()">🖨 প্রিন্ট করুন</button>
+ <button class="btn btn-outline" onclick="downloadPrintArea('${jsq('ইনভয়েস-' + inv.id)}')">⬇ ডাউনলোড (A4)</button>
+ <button class="btn btn-primary" onclick="tryPrint()">🖨 প্রিন্ট (A4)</button>
+ <button class="btn btn-outline" onclick="printThermal(${inv.id},58)">🧾 থার্মাল প্রিন্ট (৫৮mm)</button>
+ <button class="btn btn-outline" onclick="downloadThermal(${inv.id},58)">⬇ থার্মাল ডাউনলোড (৫৮mm)</button>
+ <button class="btn btn-outline" onclick="printThermal(${inv.id},80)">🧾 থার্মাল প্রিন্ট (৮০mm)</button>
+ <button class="btn btn-outline" onclick="downloadThermal(${inv.id},80)">⬇ থার্মাল ডাউনলোড (৮০mm)</button>
+ ${!inv.cancelled ? `<button class="btn btn-outline" style="color:var(--red);border-color:var(--red);" onclick="cancelInvoicePrompt(${inv.id})">❌ ইনভয়েস বাতিল করুন</button>` : ''}
  </div>
  </div>`;
 }
  
-function openReceiptModal(kind, id){
+function cancelInvoicePrompt(id){
+ const inv = invoices.find(x => x.id === id);
+ if(!inv || inv.cancelled) return;
+ openModal('ইনভয়েস বাতিল করবেন?', `
+ <p style="font-size:13.5px;line-height:1.7;">ইনভয়েস <b>#${inv.id}</b> (${esc(inv.customer)} · ${fmt(inv.total)}) বাতিল করা হবে।</p>
+ <ul style="font-size:12.5px;color:var(--steel-700);line-height:1.8;padding-left:18px;">
+ <li>বিক্রি করা সব পণ্য স্টকে আবার যোগ হবে</li>
+ <li>এই ইনভয়েসের কারণে যে বাকি যোগ হয়েছিল সেটা গ্রাহকের হিসাব থেকে বাদ যাবে</li>
+ <li>ইনভয়েসটা "বাতিল" হিসেবে রেকর্ডে থাকবে (মুছে যাবে না), কিন্তু কোনো রিপোর্ট/হিসাবে গণনা হবে না</li>
+ </ul>
+ <p style="font-size:12px;color:var(--red);">এই কাজ ফিরিয়ে নেওয়া যাবে না।</p>
+ `, `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল করুন (থাক)</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="cancelInvoiceConfirmed(${id})">হ্যাঁ, ইনভয়েস বাতিল করুন</button>
+ `);
+}
+function cancelInvoiceConfirmed(id){
+ const inv = invoices.find(x => x.id === id);
+ if(!inv || inv.cancelled) return;
+ 
+ inv.items.forEach(it => {
+ if(inventory[it.brand] && inventory[it.brand][it.mm] && inventory[it.brand][it.mm][it.size]){
+ inventory[it.brand][it.mm][it.size].stock += it.qty;
+ }
+ });
+ 
+ if(inv.custId != null){
+ const cust = ledger.find(l => l.id === inv.custId);
+ if(cust && inv.due > 0){
+ cust.due = Math.max(0, cust.due - inv.due);
+ }
+ inv.due = 0;
+ if(inv.isCash){
+ const cc = cashCustomers.find(c => c.id === inv.custId);
+ if(cc){
+ cc.invoiceIds = cc.invoiceIds.filter(iid => iid !== inv.id);
+ cc.totalSpent = Math.max(0, cc.totalSpent - inv.total);
+ }
+ }
+ }
+ 
+ inv.cancelled = true;
+ inv.cancelledAt = new Date();
+ logActivity('ইনভয়েস বাতিল করা হয়েছে', `#${inv.id} · ${inv.customer} · ${fmt(inv.total)}`);
+ 
+ closeModal();
+ showToast('ইনভয়েস বাতিল করা হয়েছে');
+ persistShopData();
+ render();
+}
  let html, filename;
  if(kind === 'invoice'){
  const inv = invoices.find(x=>x.id===id);
@@ -1293,8 +1441,7 @@ function openReceiptModal(kind, id){
  <button class="btn btn-outline" onclick="downloadPrintArea('${jsq(filename)}')">⬇ ডাউনলোড করুন</button>
  <button class="btn btn-primary" onclick="tryPrint()">🖨 প্রিন্ট করুন</button>
  `);
-}
- 
+
 /* ============================================================
  স্টক তালিকা (ম্যানেজমেন্ট)
  ============================================================ */
@@ -1610,6 +1757,7 @@ function renderSalesLedger(){
  
  let rows = [];
  invoices.forEach(inv => {
+ if(inv.cancelled) return;
  inv.items.forEach(it => {
  rows.push({ date: inv.date, invId: inv.id, customer: inv.customer, customerPhone: inv.customerPhone, brand: it.brand, mm: it.mm, size: it.size, qty: it.qty, price: it.sellPrice, total: it.qty*it.sellPrice });
  });
@@ -2350,13 +2498,13 @@ function renderInvoices(){
  return searchBar + `<table class="tbl">
  <thead><tr><th>ইনভয়েস</th><th>ক্রেতা</th><th>মোবাইল</th><th>তারিখ</th><th>আইটেম</th><th class="r">সর্বমোট</th><th class="r">বাকি</th><th></th></tr></thead>
  <tbody>${filtered.slice().reverse().map(inv => `
- <tr>
- <td class="num">#${inv.id}</td><td>${esc(inv.customer)}</td><td class="num">${telHtml(inv.customerPhone) || '—'}</td>
+ <tr style="${inv.cancelled ? 'opacity:0.55;' : ''}">
+ <td class="num">#${inv.id}${inv.cancelled ? ' <span class="pill low">বাতিল</span>' : ''}</td><td>${esc(inv.customer)}</td><td class="num">${telHtml(inv.customerPhone) || '—'}</td>
  <td>${new Date(inv.date).toLocaleDateString('bn-BD')}</td>
  <td>${inv.items.length} টি</td>
  <td class="num">${fmt(inv.total)}</td>
  <td class="num" style="color:${inv.due>0?'var(--red)':'var(--green)'}">${fmt(inv.due)}</td>
- <td class="tbl-actions"><button onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">প্রিন্ট/ডাউনলোড</button><button style="margin-left:10px;" onclick="returnPrompt(${inv.id})">↩️ রিটার্ন</button></td>
+ <td class="tbl-actions"><button onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">প্রিন্ট/ডাউনলোড</button>${!inv.cancelled ? `<button style="margin-left:10px;" onclick="returnPrompt(${inv.id})">↩️ রিটার্ন</button><button style="margin-left:10px;color:var(--red);" onclick="cancelInvoicePrompt(${inv.id})">❌ বাতিল</button>` : ''}</td>
  </tr>`).join('')}
  </tbody></table>`;
 }
@@ -2467,6 +2615,7 @@ function renderReturns(){
 function renderDaily(){
  const days = {};
  invoices.forEach(inv => {
+ if(inv.cancelled) return;
  const k = dayKey(inv.date);
  if(!days[k]) days[k] = { sales:0, collected:0, discount:0, dueGiven:0, expense:0, purchase:0, txCount:0 };
  days[k].sales += inv.total;
@@ -2638,7 +2787,7 @@ function invoiceProfitInfo(inv){
  return { itemsRevenue, itemCogs, gross, net, realizedProfit, pendingProfit };
 }
 function profitFilteredInvoices(){
- let list = invoices;
+ let list = invoices.filter(inv => !inv.cancelled);
  profitDrillPath.forEach(step => {
  list = list.filter(inv => profitGroupKey(inv, step.type) === step.key);
  });
@@ -2818,6 +2967,7 @@ function renderCashbox(){
  
  let txns = [];
  invoices.forEach(inv => {
+ if(inv.cancelled) return;
  if(!reportInRange(inv.date, range.from, range.to)) return;
  if(inv.paid > 0) txns.push({ t: new Date(inv.date).getTime(), date: inv.date, dir:'in', cat:'sale', label:`বিক্রয় — ${inv.customer}`, detail:`ইনভয়েস #${inv.id}`, amount: inv.paid });
  });
@@ -2943,7 +3093,7 @@ function reportSetCustom(){
 }
 function renderBusinessReport(){
  const range = reportGetRange();
- const filteredInv = invoices.filter(inv => reportInRange(inv.date, range.from, range.to));
+ const filteredInv = invoices.filter(inv => !inv.cancelled && reportInRange(inv.date, range.from, range.to));
  const filteredPurch = purchases.filter(p => reportInRange(p.date, range.from, range.to));
  const filteredExp = expenses.filter(e => reportInRange(e.date, range.from, range.to));
  const filteredPay = payments.filter(p => reportInRange(p.date, range.from, range.to));
@@ -3194,4 +3344,3 @@ function showToast(msg){
  clearTimeout(toastTimer);
  toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
 }
- 
