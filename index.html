@@ -353,6 +353,16 @@ input, select{ font-family:inherit; }
 .si-sign div{ text-align:center; font-size:12px; border-top:1px solid var(--steel-500); padding-top:6px; width:170px; }
 @media print{ .si-box{ border:none; max-width:100%; padding:0 14px; box-shadow:none; } }
  
+/* ---- থার্মাল প্রিন্ট (৫৮mm/৮০mm) ---- */
+.thermal-box{ font-family:'JetBrains Mono', monospace; font-size:11px; color:#000; background:#fff; padding:6px 4px; margin:0 auto; line-height:1.5; }
+.thermal-box .th-center{ text-align:center; }
+.thermal-box .th-bold{ font-weight:700; }
+.thermal-box .th-lg{ font-size:13px; }
+.thermal-box .th-line{ border-top:1px dashed #000; margin:6px 0; }
+.thermal-box .th-row{ display:flex; justify-content:space-between; gap:6px; }
+.thermal-box .th-item{ margin-bottom:3px; }
+@media print{ .thermal-box{ padding:0; } }
+ 
 .toast{
  position:fixed; bottom:26px; left:50%; transform:translateX(-50%);
  background:var(--ink); color:white; padding:12px 22px; border-radius:8px; font-size:13.5px;
@@ -419,6 +429,8 @@ input, select{ font-family:inherit; }
 .home-btn:hover{ background:rgba(255,255,255,0.16); }
 .home-btn:active{ background:rgba(255,255,255,0.22); }
 .home-btn.hidden{ display:none; }
+.offline-badge{ display:inline-flex; align-items:center; background:rgba(224,160,48,0.18); color:var(--amber); border:1px solid rgba(224,160,48,0.4); padding:5px 10px; border-radius:20px; font-size:11px; font-weight:700; margin-right:8px; }
+.offline-badge.hidden{ display:none; }
 .sidebar-backdrop{ display:none; position:fixed; inset:0; background:rgba(15,18,20,0.55); z-index:69; }
 .sidebar-backdrop.active{ display:block; }
 .badge-role{ display:inline-block; padding:2px 8px; border-radius:20px; font-size:10.5px; font-weight:700; background:rgba(255,255,255,0.12); color:white; margin-left:6px; }
@@ -527,6 +539,7 @@ input, select{ font-family:inherit; }
  <div class="topbar-pagetitle" id="pageTitle">ড্যাশবোর্ড</div>
  </div>
  </div>
+ <span class="offline-badge hidden" id="offlineBadge">📡 অফলাইন</span>
  <button class="btn logout-btn" onclick="logout()">🔓 লগ-আউট</button>
  </div>
  <div class="content" id="content"></div>

@@ -100,6 +100,7 @@ let quickSaleNextId = 1;
  
 let currentView = 'dashboard';
 let lastInvoiceId = null;
+let lastPaymentId = null;
 let posStep = 1;
 let posBrand = null;
 let posBrandSearch = '';
@@ -448,7 +449,7 @@ function switchView(id){
  if(id === 'report'){ reportPreset = 'month'; reportFrom = null; reportTo = null; }
  if(id === 'cashbox'){ cashboxPreset = 'month'; cashboxFrom = null; cashboxTo = null; cashboxFilter = 'all'; }
  if(id === 'staff'){ loadStaffList().then(render); }
- const titles = {dashboard:'ড্যাশবোর্ড', sales:'বিক্রয়', cart:'কার্ট', checkout:'ইনভয়েস তৈরি করুন', invoicePreview:'ইনভয়েস', stock:'স্টক তালিকা', purchaseLedger:'কেনার খাতা', salesLedger:'বেচার খাতা', ledger:'বাকির খাতা', cash:'নগদ ক্রেতা', expenses:'খরচ', invoices:'ইনভয়েস হিস্ট্রি', returns:'রিটার্ন/এক্সচেঞ্জ', daily:'দৈনিক হিসাব', profit:'লাভ-ক্ষতি', report:'ব্যবসার রিপোর্ট', aiAssistant:'AI সহকারী', cashbox:'ক্যাশবক্স', staff:'স্টাফ ও লগ', settings:'দোকানের তথ্য'};
+ const titles = {dashboard:'ড্যাশবোর্ড', sales:'বিক্রয়', cart:'কার্ট', checkout:'ইনভয়েস তৈরি করুন', invoicePreview:'ইনভয়েস', paymentReceipt:'প্রাপ্তি রশিদ', stock:'স্টক তালিকা', purchaseLedger:'কেনার খাতা', salesLedger:'বেচার খাতা', ledger:'বাকির খাতা', cash:'নগদ ক্রেতা', expenses:'খরচ', invoices:'ইনভয়েস হিস্ট্রি', returns:'রিটার্ন/এক্সচেঞ্জ', daily:'দৈনিক হিসাব', profit:'লাভ-ক্ষতি', report:'ব্যবসার রিপোর্ট', aiAssistant:'AI সহকারী', cashbox:'ক্যাশবক্স', staff:'স্টাফ ও লগ', settings:'দোকানের তথ্য'};
  document.getElementById('pageTitle').textContent = titles[id];
  const homeBtnEl = document.getElementById('homeBtn');
  if(homeBtnEl) homeBtnEl.classList.toggle('hidden', id === 'dashboard');
@@ -462,6 +463,7 @@ function render(){
  else if(currentView === 'cart') c.innerHTML = renderCartPage();
  else if(currentView === 'checkout') c.innerHTML = renderCheckout();
  else if(currentView === 'invoicePreview') c.innerHTML = renderInvoicePreview();
+ else if(currentView === 'paymentReceipt') c.innerHTML = renderPaymentReceiptPage();
  else if(currentView === 'stock') c.innerHTML = renderStock();
  else if(currentView === 'purchaseLedger') c.innerHTML = renderPurchaseLedger();
  else if(currentView === 'salesLedger') c.innerHTML = renderSalesLedger();
@@ -769,19 +771,7 @@ function renderDashboard(){
  <div class="dash-section-label">আপনার ব্যবসার জন্য</div>
  <div class="dash-tile-grid">${businessTiles}</div>
  ${isOwner ? `<div class="dash-section-label">মালিকের জন্য</div><div class="dash-tile-grid">${ownerTiles}</div>` : ''}
- <div class="panel">
- <h3>সবচেয়ে বেশি বাকি</h3>
- ${[...ledger].sort((a,b)=>b.due-a.due).filter(l=>l.due>0).slice(0,6).map(l => `
- <div style="padding:9px 0;border-bottom:1px solid var(--steel-100);font-size:13.5px;">
- <div style="display:flex;justify-content:space-between;">
- <span>${esc(l.name)}</span><span class="mono" style="color:var(--red);font-weight:700;">${fmt(l.due)}</span>
- </div>
- <div style="display:flex;gap:6px;margin-top:6px;">
- <button class="btn btn-outline" style="padding:4px 9px;font-size:11.5px;background:#25D366;color:white;border-color:#25D366;" onclick="sendDueReminder(${l.id})">📱 রিমাইন্ডার</button>
- <button class="btn btn-outline" style="padding:4px 9px;font-size:11.5px;" onclick="callCustomer(${l.id})">📞 কল</button>
- </div>
- </div>`).join('') || `<div class="empty-state" style="padding:20px;"><div class="ic">✅</div>কোনো বাকি নেই</div>`}
- </div>`;
+ `;
 }
  
 /* ============================================================
@@ -1418,6 +1408,7 @@ function cancelInvoiceConfirmed(id){
  persistShopData();
  render();
 }
+function openReceiptModal(kind, id){
  let html, filename;
  if(kind === 'invoice'){
  const inv = invoices.find(x=>x.id===id);
@@ -1441,7 +1432,8 @@ function cancelInvoiceConfirmed(id){
  <button class="btn btn-outline" onclick="downloadPrintArea('${jsq(filename)}')">⬇ ডাউনলোড করুন</button>
  <button class="btn btn-primary" onclick="tryPrint()">🖨 প্রিন্ট করুন</button>
  `);
-
+}
+ 
 /* ============================================================
  স্টক তালিকা (ম্যানেজমেন্ট)
  ============================================================ */
@@ -1874,7 +1866,7 @@ function viewCustomerInvoices(custId){
  <div style="font-weight:600;"><span class="tx-tag payment">জমা</span>রশিদ #${p.id} · ${new Date(p.date).toLocaleDateString('bn-BD')}</div>
  <div style="color:var(--steel-500);font-size:12px;">জমা ${fmt(p.amount)}${p.discount>0 ? ' · ছাড় '+fmt(p.discount) : ''}</div>
  </div>
- <button class="btn btn-outline" onclick="openReceiptModal('payment', ${p.id})">প্রিন্ট/ডাউনলোড</button>
+ <button class="btn btn-outline" onclick="viewPaymentReceipt(${p.id})">প্রিন্ট/ডাউনলোড</button>
  </div>` })),
  ].sort((a,b)=>b.t-a.t);
  const rows = combined.length === 0 ? `<div class="no-match">এখনো কোনো লেনদেন নেই</div>` : combined.map(x=>x.html).join('');
@@ -1966,8 +1958,32 @@ function applyPayment(id){
  logActivity('পেমেন্ট গ্রহণ', `${cust.name} থেকে ${fmt(amt)} (${method})${disc>0?' · ছাড় '+fmt(disc):''} (বকেয়া ${fmt(dueBefore)} → ${fmt(cust.due)})`);
  
  closeModal(); render(); showToast(`${fmt(amt)} জমা হয়েছে${disc>0?' · ছাড় '+fmt(disc):''}`);
- openReceiptModal('payment', payment.id);
+ lastPaymentId = payment.id;
  persistShopData();
+ switchView('paymentReceipt');
+}
+function viewPaymentReceipt(id){ lastPaymentId = id; switchView('paymentReceipt'); }
+function renderPaymentReceiptPage(){
+ const p = payments.find(x => x.id === lastPaymentId);
+ if(!p){
+ return `<div class="empty-state"><div class="ic">🧾</div>কোনো রশিদ পাওয়া যায়নি</div>
+ <div style="text-align:center;margin-top:14px;"><button class="btn btn-primary" onclick="switchView('ledger')">← বাকির খাতায় ফিরে যান</button></div>`;
+ }
+ const html = buildPaymentReceiptHtml(p);
+ setTimeout(() => { const pa = document.getElementById('printArea'); if(pa) pa.innerHTML = html; }, 0);
+ return `
+ <div class="back-row">
+ <button class="btn btn-outline" onclick="switchView('ledger')">← বাকির খাতায় ফিরে যান</button>
+ <div class="cur-brand">রশিদ #${p.id}</div>
+ </div>
+ <div style="max-width:680px;margin:0 auto;">
+ ${html}
+ <div style="display:flex; gap:10px; justify-content:center; margin-top:20px; flex-wrap:wrap;">
+ <button class="btn btn-outline" onclick="switchView('ledger')">📒 বাকির খাতা</button>
+ <button class="btn btn-outline" onclick="downloadPrintArea('${jsq('রশিদ-' + p.id)}')">⬇ ডাউনলোড করুন</button>
+ <button class="btn btn-primary" onclick="tryPrint()">🖨 প্রিন্ট করুন / কাস্টমারকে দিন</button>
+ </div>
+ </div>`;
 }
 function reduceCustomerInvoiceDues(custId, amountToClear){
  let remaining = amountToClear;
@@ -2701,7 +2717,7 @@ function renderDaily(){
  <div class="txname"><span class="tx-tag payment">জমা</span>${esc(p.custName)}${p.custPhone?' · '+telHtml(p.custPhone):''}</div>
  <div class="txmeta">রশিদ #${p.id} · জমা ${fmt(p.amount)}${p.discount>0 ? ' · ছাড় '+fmt(p.discount) : ''} · বাকি ছিল ${fmt(p.dueBefore)} → এখন ${fmt(p.dueAfter)}</div>
  </div>
- <button class="btn btn-outline" onclick="openReceiptModal('payment', ${p.id})">দেখুন</button>
+ <button class="btn btn-outline" onclick="viewPaymentReceipt(${p.id})">দেখুন</button>
  </div>` })),
  ...dayExpenses.map(e => ({ t: new Date(e.date).getTime(), html: `
  <div class="day-tx">
@@ -3344,3 +3360,4 @@ function showToast(msg){
  clearTimeout(toastTimer);
  toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
 }
+ 
