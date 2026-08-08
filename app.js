@@ -76,8 +76,9 @@ let expenseCategories = [
   { id: 4, name: "ভাড়া", icon: "🏠" },
   { id: 5, name: "পরিবহন", icon: "🚚" },
   { id: 6, name: "দোকান খরচ", icon: "🏪" },
+  { id: 7, name: "অগ্রিম", icon: "🪙" },
 ];
-let expenseCatNextId = 7;
+let expenseCatNextId = 8;
 
 let expensePeople = [];
 let expensePersonNextId = 1;
@@ -142,6 +143,9 @@ let reportSelectedDay = null;
 let profitTab = "monthly";
 let profitDrillPath = [];
 
+// কর্মচারী পেজের জন্য — কোন কর্মচারীর বিস্তারিত দেখানো হচ্ছে
+let employeeDetailId = null;
+
 // ড্যাশবোর্ডের দিন/মাস টগল
 let dashboardPeriod = "day"; // 'day' | 'month'
 
@@ -163,6 +167,7 @@ const nav = [
   { id: "purchaseLedger", label: "কেনার খাতা", icon: "🛒" },
   { id: "salesLedger", label: "বেচার খাতা", icon: "📗" },
   { id: "ledger", label: "বাকির খাতা", icon: "📒" },
+  { id: "employees", label: "কর্মচারী", icon: "👷" },
   { id: "cash", label: "নগদ ক্রেতা", icon: "💵" },
   { id: "expenses", label: "খরচ", icon: "💸" },
   { id: "invoices", label: "ইনভয়েস হিস্ট্রি", icon: "🗂️" },
@@ -736,6 +741,7 @@ let listPeriod = {
   expenses: "all",
   returns: "all",
   dueSummary: "day",
+  employees: "month",
 };
 function setListPeriod(pageKey, period) {
   listPeriod[pageKey] = period;
@@ -799,6 +805,9 @@ function switchView(id) {
   if (id === "ledger") {
     ledgerSearch = "";
   }
+  if (id === "employees") {
+    employeeDetailId = null;
+  }
   if (id === "cash") {
     cashSearch = "";
   }
@@ -840,6 +849,7 @@ function switchView(id) {
     salesLedger: "বেচার খাতা",
     ledger: "বাকির খাতা",
     dueSummary: "বাকির হিসাব (দিয়েছি/পেয়েছি)",
+    employees: "কর্মচারী",
     cash: "নগদ ক্রেতা",
     expenses: "খরচ",
     invoices: "ইনভয়েস হিস্ট্রি",
@@ -874,6 +884,7 @@ function render() {
   else if (currentView === "salesLedger") c.innerHTML = renderSalesLedger();
   else if (currentView === "ledger") c.innerHTML = renderLedger();
   else if (currentView === "dueSummary") c.innerHTML = renderDueSummary();
+  else if (currentView === "employees") c.innerHTML = renderEmployees();
   else if (currentView === "cash") c.innerHTML = renderCashCustomers();
   else if (currentView === "expenses") c.innerHTML = renderExpenses();
   else if (currentView === "invoices") c.innerHTML = renderInvoices();
@@ -1206,6 +1217,7 @@ function renderDashboard() {
     tile("salesLedger", "c-green", "🧾", "বেচার খাতা"),
     tile("ledger", "c-red", "📒", "বাকির খাতা"),
     tile("expenses", "c-amber", "💸", "খরচের খাতা"),
+    tile("employees", "c-brown", "👷", "কর্মচারী"),
   ].join("");
 
   const businessTiles = [
@@ -3015,14 +3027,263 @@ function renderDueSummary() {
  `;
 }
 
-function viewCustomerInvoices(custId) {
-  const cust = ledger.find((l) => l.id === custId);
-  const custInvoices = invoices.filter((inv) => inv.custId === custId);
-  const custPayments = payments.filter((p) => p.custId === custId);
-  const combined = [
-    ...custInvoices.map((inv) => ({
-      t: new Date(inv.date).getTime(),
-      html: `
+/* ============================================================
+ কর্মচারী — বেতন ও অগ্রিমের হিসাব (খরচের খাতার সাথে সরাসরি যুক্ত)
+ ============================================================ */
+function getOrCreateAdvanceCategoryId() {
+  let cat = expenseCategories.find((c) => c.name === "অগ্রিম");
+  if (!cat) {
+    cat = { id: expenseCatNextId++, name: "অগ্রিম", icon: "🪙" };
+    expenseCategories.push(cat);
+    persistShopData();
+  }
+  return cat.id;
+}
+function getSalaryCategoryId() {
+  let cat = expenseCategories.find((c) => c.name === "বেতন");
+  if (!cat) {
+    cat = { id: expenseCatNextId++, name: "বেতন", icon: "💰" };
+    expenseCategories.push(cat);
+    persistShopData();
+  }
+  return cat.id;
+}
+function employeePeriodTotal(personId, period) {
+  return expenses
+    .filter((e) => e.personId === personId && inSelectedPeriod(e.date, period))
+    .reduce((s, e) => s + e.amount, 0);
+}
+function openEmployeeDetail(id) {
+  employeeDetailId = id;
+  render();
+}
+
+function addEmployeePrompt() {
+  openModal(
+    "নতুন কর্মচারী যুক্ত করুন",
+    `
+ <div class="field"><label>নাম</label><input type="text" id="empName" placeholder="যেমনঃ মোঃ রহিম"></div>
+ <div class="field"><label>মোবাইল নাম্বার (ঐচ্ছিক)</label><input type="text" id="empPhone" placeholder="01xxx-xxxxxx"></div>
+ <div class="field"><label>মাসিক বেতন (৳) — না জানলে ০ রাখুন</label><input type="number" id="empSalary" min="0" value="0"></div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveNewEmployee()">যুক্ত করুন</button>
+ `,
+  );
+}
+function saveNewEmployee() {
+  const name = document.getElementById("empName").value.trim();
+  if (!name) {
+    showToast("নাম আবশ্যক");
+    return;
+  }
+  const phone = document.getElementById("empPhone").value.trim();
+  const salary = Math.max(
+    0,
+    parseInt(document.getElementById("empSalary").value) || 0,
+  );
+  const emp = {
+    id: expensePersonNextId++,
+    name,
+    phone,
+    note: "",
+    role: "employee",
+    monthlySalary: salary,
+  };
+  expensePeople.push(emp);
+  logActivity(
+    "নতুন কর্মচারী যুক্ত",
+    `${name}${salary > 0 ? " · মাসিক বেতন " + fmt(salary) : ""}`,
+  );
+  closeModal();
+  render();
+  showToast("কর্মচারী যুক্ত হয়েছে");
+  persistShopData();
+}
+function editEmployeePrompt(id) {
+  const p = expensePeople.find((x) => x.id === id);
+  if (!p) return;
+  openModal(
+    `কর্মচারীর তথ্য — ${esc(p.name)}`,
+    `
+ <div class="field"><label>নাম</label><input type="text" id="empEditName" value="${esc(p.name)}"></div>
+ <div class="field"><label>মোবাইল নাম্বার</label><input type="text" id="empEditPhone" value="${esc(p.phone || "")}"></div>
+ <div class="field"><label>মাসিক বেতন (৳)</label><input type="number" id="empEditSalary" min="0" value="${p.monthlySalary || 0}"></div>
+ `,
+    `
+ <button class="btn btn-outline" style="color:var(--red);" onclick="deleteEmployeePrompt(${id})">মুছুন</button>
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveEmployeeEdit(${id})">সংরক্ষণ করুন</button>
+ `,
+  );
+}
+function saveEmployeeEdit(id) {
+  const p = expensePeople.find((x) => x.id === id);
+  if (!p) return;
+  const name = document.getElementById("empEditName").value.trim();
+  if (!name) {
+    showToast("নাম আবশ্যক");
+    return;
+  }
+  p.name = name;
+  p.phone = document.getElementById("empEditPhone").value.trim();
+  p.role = "employee";
+  p.monthlySalary = Math.max(
+    0,
+    parseInt(document.getElementById("empEditSalary").value) || 0,
+  );
+  closeModal();
+  render();
+  showToast("তথ্য আপডেট হয়েছে");
+  persistShopData();
+}
+function deleteEmployeePrompt(id) {
+  const p = expensePeople.find((x) => x.id === id);
+  if (!p) return;
+  openModal(
+    "কর্মচারী মুছবেন?",
+    `
+ <p style="font-size:13.5px;line-height:1.7;">"${esc(p.name)}" কে কর্মচারী তালিকা থেকে মুছে ফেলা হবে। তার আগের বেতন/অগ্রিমের হিসাব খরচের খাতায় থেকে যাবে (মুছে যাবে না), শুধু এই তালিকা থেকে বাদ যাবেন।</p>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="deleteEmployeeConfirmed(${id})">হ্যাঁ, মুছুন</button>
+ `,
+  );
+}
+function deleteEmployeeConfirmed(id) {
+  const p = expensePeople.find((x) => x.id === id);
+  expensePeople = expensePeople.filter((x) => x.id !== id);
+  employeeDetailId = null;
+  closeModal();
+  render();
+  showToast("কর্মচারী মুছে ফেলা হয়েছে");
+  if (p) logActivity("কর্মচারী মুছে ফেলা হয়েছে", p.name);
+  persistShopData();
+}
+
+function renderEmployees() {
+  if (employeeDetailId) return renderEmployeeDetail(employeeDetailId);
+
+  const employeeList = expensePeople.filter((p) => p.role === "employee");
+  const toolbar = `
+ <div class="ledger-toolbar">
+ <div style="font-size:13px;color:var(--steel-500);">কর্মচারীদের বেতন ও অগ্রিমের হিসাব — এখান থেকে যা দেবেন তা স্বয়ংক্রিয়ভাবে খরচের খাতা ও রিপোর্টে যোগ হয়ে যাবে</div>
+ <button class="btn btn-primary" onclick="addEmployeePrompt()">+ নতুন কর্মচারী</button>
+ </div>`;
+
+  if (employeeList.length === 0) {
+    return (
+      toolbar +
+      `<div class="empty-state"><div class="ic">👷</div>এখনো কোনো কর্মচারী যুক্ত করা হয়নি<br><span style="font-size:12px;">"+ নতুন কর্মচারী" চেপে শুরু করুন</span></div>`
+    );
+  }
+
+  const rows = employeeList
+    .map((p, idx) => {
+      const takenThisMonth = employeePeriodTotal(p.id, "month");
+      const salary = p.monthlySalary || 0;
+      const remaining = salary - takenThisMonth;
+      return `<div class="person-row">
+ <div class="ledger-serial">${idx + 1}</div>
+ <div class="ledger-info" style="cursor:pointer;" onclick="openEmployeeDetail(${p.id})">
+ <div class="lname">${esc(p.name)}</div>
+ <div class="lmeta">${[telHtml(p.phone), salary > 0 ? "মাসিক বেতনঃ " + fmt(salary) : "বেতন নির্ধারিত নয়"].filter(Boolean).join(" · ")}</div>
+ </div>
+ <div class="ledger-due">
+ <div class="amt" style="color:var(--rust);">${fmt(takenThisMonth)}</div>
+ <div class="lbl">এই মাসে নিয়েছে</div>
+ </div>
+ ${salary > 0 ? `<div class="ledger-due"><div class="amt" style="color:${remaining >= 0 ? "var(--green)" : "var(--red)"};">${fmt(Math.abs(remaining))}</div><div class="lbl">${remaining >= 0 ? "বেতন বাকি আছে" : "বেতনের বেশি নিয়েছে"}</div></div>` : ""}
+ <button class="btn btn-primary" onclick="openEmployeeDetail(${p.id})">বিস্তারিত</button>
+ </div>`;
+    })
+    .join("");
+
+  return toolbar + `<div class="ledger-list">${rows}</div>`;
+}
+
+function renderEmployeeDetail(id) {
+  const p = expensePeople.find((x) => x.id === id);
+  if (!p) {
+    employeeDetailId = null;
+    return renderEmployees();
+  }
+
+  const period = listPeriod.employees || "month";
+  const list = expenses
+    .filter((e) => e.personId === id && inSelectedPeriod(e.date, period))
+    .slice()
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  const totalInPeriod = list.reduce((s, e) => s + e.amount, 0);
+  const salary = p.monthlySalary || 0;
+  const monthTaken = employeePeriodTotal(id, "month");
+  const remaining = salary - monthTaken;
+
+  const backRow = `<div class="back-row">
+ <button class="btn btn-outline" onclick="employeeDetailId=null; render();">← সব কর্মচারী</button>
+ <div class="cur-brand">${esc(p.name)}</div>
+ </div>`;
+
+  const infoPanel = `
+ <div class="panel" style="margin-bottom:16px;">
+ <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+ <div>
+ <div style="font-weight:700; font-size:15px;">${esc(p.name)}</div>
+ <div style="font-size:12.5px; color:var(--steel-500); margin-top:4px;">${p.phone ? telHtml(p.phone) : "ফোন নাম্বার নেই"}</div>
+ </div>
+ <button class="btn btn-outline" onclick="editEmployeePrompt(${id})">✏️ তথ্য এডিট</button>
+ </div>
+ <div class="stat-grid" style="grid-template-columns:repeat(3,1fr); margin-top:14px;">
+ <div class="stat-card" style="--accent:var(--steel-700);"><div class="lbl">মাসিক বেতন</div><div class="val">${salary > 0 ? fmt(salary) : "নির্ধারিত নয়"}</div></div>
+ <div class="stat-card" style="--accent:var(--amber);"><div class="lbl">এই মাসে নিয়েছে (মোট)</div><div class="val">${fmt(monthTaken)}</div></div>
+ <div class="stat-card" style="--accent:${remaining >= 0 ? "var(--green)" : "var(--red)"};"><div class="lbl">${remaining >= 0 ? "এই মাসে বেতন বাকি" : "বেতনের বেশি নিয়েছে"}</div><div class="val">${salary > 0 ? fmt(Math.abs(remaining)) : "—"}</div></div>
+ </div>
+ <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
+ <button class="btn btn-primary" onclick="openAddExpenseModal(getSalaryCategoryId(), ${id})">💰 বেতন দিন</button>
+ <button class="btn btn-outline" onclick="openAddExpenseModal(getOrCreateAdvanceCategoryId(), ${id})">🪙 অগ্রিম দিন</button>
+ </div>
+ </div>`;
+
+  const txRows =
+    list.length === 0
+      ? `<div class="no-match">এই সময়ে কোনো লেনদেন নেই</div>`
+      : list
+          .map(
+            (e) => `
+ <div class="day-tx">
+ <div>
+ <div class="txname">${expenseCategoryIcon(e.categoryId)} ${esc(e.categoryName)}</div>
+ <div class="txmeta">${new Date(e.date).toLocaleDateString("bn-BD")}${e.note ? " · " + esc(e.note) : ""}</div>
+ </div>
+ <div style="text-align:right;">
+ <div class="mono" style="font-weight:700;">${fmt(e.amount)}</div>
+ <button class="btn btn-outline" style="margin-top:4px;padding:3px 8px;font-size:11px;" onclick="openReceiptModal('expense', ${e.id})">রশিদ</button>
+ </div>
+ </div>`,
+          )
+          .join("");
+
+  return (
+    backRow +
+    infoPanel +
+    periodTabsHtml("employees") +
+    `
+ <div class="panel">
+ <h3>লেনদেনের তালিকা — মোট ${fmt(totalInPeriod)}</h3>
+ ${txRows}
+ </div>`
+  );
+}
+
+const cust = ledger.find((l) => l.id === custId);
+const custInvoices = invoices.filter((inv) => inv.custId === custId);
+const custPayments = payments.filter((p) => p.custId === custId);
+const combined = [
+  ...custInvoices.map((inv) => ({
+    t: new Date(inv.date).getTime(),
+    html: `
  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--steel-100);font-size:13px;">
  <div>
  <div style="font-weight:600;"><span class="tx-tag sale">বিক্রয়</span>ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
@@ -3030,10 +3291,10 @@ function viewCustomerInvoices(custId) {
  </div>
  <button class="btn btn-outline" onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">প্রিন্ট/ডাউনলোড</button>
  </div>`,
-    })),
-    ...custPayments.map((p) => ({
-      t: new Date(p.date).getTime(),
-      html: `
+  })),
+  ...custPayments.map((p) => ({
+    t: new Date(p.date).getTime(),
+    html: `
  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--steel-100);font-size:13px;">
  <div>
  <div style="font-weight:600;"><span class="tx-tag payment">জমা</span>রশিদ #${p.id} · ${new Date(p.date).toLocaleDateString("bn-BD")}</div>
@@ -3041,18 +3302,18 @@ function viewCustomerInvoices(custId) {
  </div>
  <button class="btn btn-outline" onclick="viewPaymentReceipt(${p.id})">প্রিন্ট/ডাউনলোড</button>
  </div>`,
-    })),
-  ].sort((a, b) => b.t - a.t);
-  const rows =
-    combined.length === 0
-      ? `<div class="no-match">এখনো কোনো লেনদেন নেই</div>`
-      : combined.map((x) => x.html).join("");
-  openModal(
-    `লেনদেন — ${esc(cust.name)}`,
-    rows,
-    `<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>`,
-  );
-}
+  })),
+].sort((a, b) => b.t - a.t);
+const rows =
+  combined.length === 0
+    ? `<div class="no-match">এখনো কোনো লেনদেন নেই</div>`
+    : combined.map((x) => x.html).join("");
+openModal(
+  `লেনদেন — ${esc(cust.name)}`,
+  rows,
+  `<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>`,
+);
+
 function addCustomerPrompt() {
   openModal(
     "নতুন গ্রাহক যুক্ত করুন",
