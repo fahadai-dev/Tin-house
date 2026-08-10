@@ -1011,7 +1011,7 @@ function buildThermalInvoiceHtml(inv, widthMm) {
     .map(
       (it) => `
  <div class="th-item">
- <div>${esc(it.brand)} ${it.mm}মিমি ${it.size}ফুট</div>
+ <div>${esc(it.brand)} ${it.mm}মি:লি: ${it.size}ফুট</div>
  <div class="th-row"><span>${it.qty} × ${fmt(it.sellPrice)}</span><span>${fmt(it.qty * it.sellPrice)}</span></div>
  </div>`,
     )
@@ -1356,7 +1356,7 @@ function renderSales() {
     const results = [];
     Object.keys(inventory[posBrand] || {}).forEach((mm) => {
       Object.keys(inventory[posBrand][mm]).forEach((sz) => {
-        const hay = (mm + " মিমি " + sz + " ফুট").toLowerCase();
+        const hay = (mm + " মি:লি: " + sz + " ফুট").toLowerCase();
         if (q === "" || hay.includes(q))
           results.push({ mm, sz, v: inventory[posBrand][mm][sz] });
       });
@@ -1370,7 +1370,7 @@ function renderSales() {
     const searchBar = `
  <div class="search-bar ${q ? "has-val" : ""}">
  <span class="sic">🔍</span>
- <input type="text" id="posItemSearchInput" value="${posItemSearch}" placeholder="মিমি বা ফুট দিয়ে সার্চ করুন (যেমনঃ ১৪, ৮ ফুট)"
+ <input type="text" id="posItemSearchInput" value="${posItemSearch}" placeholder="মি:লি: বা ফুট দিয়ে সার্চ করুন (যেমনঃ ১৪, ৮ ফুট)"
  oninput="posItemSearchInput(this.value)" autocomplete="off">
  <span class="sclear" onclick="posItemSearchInput('')">✕</span>
  </div>`;
@@ -1388,7 +1388,7 @@ function renderSales() {
               return `<div class="result-row ${out ? "out" : ""}">
  <div class="result-serial">${i + 1}</div>
  <div class="result-info">
- <div class="rname">${esc(posBrand)} <span class="rdim">· ${r.mm} মিমি · ${r.sz} ফুট</span></div>
+ <div class="rname">${esc(posBrand)} <span class="rdim">· ${r.mm} মি:লি: · ${r.sz} ফুট</span></div>
  <div class="rmeta">ক্রয়ঃ <b>${fmt(r.v.buy)}</b> &nbsp;বিক্রয়ঃ <b>${fmt(r.v.sell)}</b> &nbsp;স্টকঃ <b class="${r.v.stock <= 3 ? "stock-low" : ""}">${r.v.stock} পিস</b></div>
  </div>
  <button class="result-add" ${out ? "disabled" : ""} onclick="addToCart('${jsq(posBrand)}', ${r.mm}, ${r.sz})">${out ? "স্টক নেই" : "+ যোগ করুন"}</button>
@@ -1451,7 +1451,7 @@ function renderCartPage() {
       return `
  <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
  <div class="cart-item-top">
- <span style="font-weight:700;">${esc(item.brand)} · ${item.mm}মিমি · ${item.size}ফুট</span>
+ <span style="font-weight:700;">${esc(item.brand)} · ${item.mm}মি:লি: · ${item.size}ফুট</span>
  <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
  </div>
  <div style="font-size:10.5px;color:var(--steel-500);margin-top:2px;">এক বানে (৭২ ফুট) প্রায় ${ppb.toFixed(1)} পিস — বান বা পিস, যেকোনো একটিতে মান দিন</div>
@@ -1683,7 +1683,7 @@ function addToCart(brand, mm, size) {
       sellPrice: item.sell,
       buyPrice: item.buy,
     });
-  showToast(`${brand} ${mm}মিমি ${size}ফুট কার্টে যোগ হয়েছে`);
+  showToast(`${brand} ${mm}মি:লি: ${size}ফুট কার্টে যোগ হয়েছে`);
   render();
 }
 function removeFromCart(idx) {
@@ -1791,7 +1791,7 @@ function renderCheckout() {
     .map((item) => {
       const eff = cartEffectiveQty(item);
       return `<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--steel-100);">
- <span>${esc(item.brand)} · ${item.mm}মিমি · ${item.size}ফুট <span class="mono" style="color:var(--steel-500);">× ${eff}</span></span>
+ <span>${esc(item.brand)} · ${item.mm}মি:লি: · ${item.size}ফুট <span class="mono" style="color:var(--steel-500);">× ${eff}</span></span>
  <b class="mono">${fmt(eff * item.sellPrice)}</b>
  </div>`;
     })
@@ -2170,7 +2170,7 @@ function buildInvoiceHtml(inv) {
       (it, idx) => `
  <tr>
  <td><span class="si-serial">${idx + 1}</span></td>
- <td>${esc(it.brand)} · ${it.mm}মিমি · ${it.size}ফুট${it.banQty ? " · " + it.banQty + " বান" : ""}</td>
+ <td>${esc(it.brand)} · ${it.mm}মি:লি: · ${it.size}ফুট${it.banQty ? " · " + it.banQty + " বান" : ""}</td>
  <td class="r num">${it.qty}</td>
  <td class="r num">${fmt(it.sellPrice)}</td>
  <td class="r num">${fmt(it.qty * it.sellPrice)}</td>
@@ -2376,7 +2376,7 @@ function renderStock() {
   if (stockStep === 1) {
     return `
  <div class="mgmt-toolbar">
- <div style="font-size:13px;color:var(--steel-500);">একটি ব্র্যান্ডের ঘরে ক্লিক করে তার মিমি ও সাইজ অনুযায়ী স্টক পরিচালনা করুন</div>
+ <div style="font-size:13px;color:var(--steel-500);">একটি ব্র্যান্ডের ঘরে ক্লিক করে তার মি:লি: ও সাইজ অনুযায়ী স্টক পরিচালনা করুন</div>
  <button class="btn btn-primary" onclick="addBrandPrompt()">+ নতুন ব্র্যান্ড</button>
  </div>
  <div class="brand-grid">
@@ -2389,10 +2389,11 @@ function renderStock() {
        totalStock += v.stock;
      }),
    );
-   return `<button class="brand-tile" onclick="stockSelectBrand('${jsq(b)}')">
+   return `<div class="brand-tile" style="position:relative; cursor:pointer;" onclick="stockSelectBrand('${jsq(b)}')">
+ <button type="button" onclick="event.stopPropagation(); editBrandPrompt('${jsq(b)}')" title="ব্র্যান্ড এডিট/মুছুন" style="position:absolute; top:8px; right:8px; background:var(--steel-100); border:none; border-radius:8px; width:28px; height:28px; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✏️</button>
  <div class="bname">${esc(b)}</div>
  <div class="bmeta">${itemCount} টি আইটেম · ${totalStock} পিস স্টক</div>
- </button>`;
+ </div>`;
  }).join("")}
  </div>`;
   }
@@ -2413,7 +2414,7 @@ function renderStock() {
               ? v.banPrice
               : Math.round((v.buy * FEET_PER_BAN) / sz);
           rows += `<tr>
- <td class="num">${mm} মিমি</td><td class="num">${sz} ফুট</td>
+ <td class="num">${mm} মি:লি:</td><td class="num">${sz} ফুট</td>
  <td class="num">${fmt(banVal)}</td>
  <td class="num">${fmt(v.buy)}</td><td class="num">${fmt(v.sell)}</td>
  <td class="num">${v.stock}</td>
@@ -2437,12 +2438,12 @@ function renderStock() {
  </div>
  <div class="search-bar ${q ? "has-val" : ""}">
  <span class="sic">🔍</span>
- <input type="text" id="stockSearchInput" value="${stockSearch}" placeholder="মিমি বা ফুট দিয়ে সার্চ করুন..."
+ <input type="text" id="stockSearchInput" value="${stockSearch}" placeholder="মি:লি: বা ফুট দিয়ে সার্চ করুন..."
  oninput="stockSearchInputFn(this.value)" autocomplete="off">
  <span class="sclear" onclick="stockSearchInputFn('')">✕</span>
  </div>
  <table class="tbl">
- <thead><tr><th>মিমি</th><th>সাইজ</th><th>বানের দাম</th><th>ক্রয়মূল্য/পিস</th><th>বিক্রয়মূল্য</th><th>স্টক</th><th>অবস্থা</th><th></th></tr></thead>
+ <thead><tr><th>মি:লি:</th><th>সাইজ</th><th>বানের দাম</th><th>ক্রয়মূল্য/পিস</th><th>বিক্রয়মূল্য</th><th>স্টক</th><th>অবস্থা</th><th></th></tr></thead>
  <tbody>${rows || emptyMsg}</tbody>
  </table>`;
 }
@@ -2487,6 +2488,64 @@ function saveNewBrand() {
   closeModal();
   render();
   showToast("নতুন ব্র্যান্ড যুক্ত হয়েছে");
+  persistShopData();
+}
+function editBrandPrompt(name) {
+  openModal(
+    `ব্র্যান্ড এডিট — ${esc(name)}`,
+    `
+ <div class="field"><label>ব্র্যান্ডের নাম পরিবর্তন করুন</label><input type="text" id="editBrandName" value="${esc(name)}"></div>
+ `,
+    `
+ <button class="btn btn-outline" style="color:var(--red);" onclick="deleteBrandPrompt('${jsq(name)}')">🗑️ ব্র্যান্ড মুছুন</button>
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveBrandRename('${jsq(name)}')">সংরক্ষণ করুন</button>
+ `,
+  );
+}
+function saveBrandRename(oldName) {
+  const newName = document.getElementById("editBrandName").value.trim();
+  if (!newName) {
+    showToast("ব্র্যান্ডের নাম আবশ্যক");
+    return;
+  }
+  if (newName !== oldName && BRANDS.includes(newName)) {
+    showToast("এই নামে আরেকটা ব্র্যান্ড আগে থেকেই আছে");
+    return;
+  }
+  if (newName !== oldName) {
+    const idx = BRANDS.indexOf(oldName);
+    if (idx > -1) BRANDS[idx] = newName;
+    inventory[newName] = inventory[oldName] || {};
+    if (newName !== oldName) delete inventory[oldName];
+    logActivity("ব্র্যান্ডের নাম পরিবর্তন", `${oldName} → ${newName}`);
+  }
+  closeModal();
+  render();
+  showToast("ব্র্যান্ড আপডেট হয়েছে");
+  persistShopData();
+}
+function deleteBrandPrompt(name) {
+  const itemCount = Object.keys(inventory[name] || {}).length;
+  openModal(
+    "ব্র্যান্ড মুছবেন?",
+    `
+ <p style="font-size:13.5px;line-height:1.7;">"${esc(name)}" ব্র্যান্ডটি ও এর বর্তমান স্টক তালিকা (${itemCount} টি আইটেম) স্থায়ীভাবে মুছে ফেলা হবে। আগের ইনভয়েস/কেনার খাতার রেকর্ডে ব্র্যান্ডের নাম থেকে যাবে (মুছে যাবে না), শুধু বর্তমান স্টক তালিকা থেকে ব্র্যান্ডটি বাদ যাবে।</p>
+ <p style="font-size:12px;color:var(--red);">এই কাজ ফিরিয়ে নেওয়া যাবে না।</p>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="deleteBrandConfirmed('${jsq(name)}')">হ্যাঁ, মুছুন</button>
+ `,
+  );
+}
+function deleteBrandConfirmed(name) {
+  BRANDS = BRANDS.filter((b) => b !== name);
+  delete inventory[name];
+  logActivity("ব্র্যান্ড মুছে ফেলা হয়েছে", name);
+  closeModal();
+  render();
+  showToast("ব্র্যান্ড মুছে ফেলা হয়েছে");
   persistShopData();
 }
 function stockSearchInputFn(val) {
@@ -2638,7 +2697,7 @@ function editStockPrompt(brand, mm, sz) {
   const banStart =
     v.banPrice != null ? v.banPrice : Math.round((v.buy * FEET_PER_BAN) / sz);
   openModal(
-    `এডিট — ${esc(brand)} · ${mm}মিমি · ${sz}ফুট`,
+    `এডিট — ${esc(brand)} · ${mm}মি:লি: · ${sz}ফুট`,
     `
  <div class="field"><label>বানের দাম (৳) — ৭২ ফুট = ১ বান</label><input type="number" id="editBanPrice" value="${banStart}" min="0" oninput="editStockRecalc(${sz})"></div>
  <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;">
@@ -2694,7 +2753,7 @@ function recordPurchase(brand, mm, sz, banQty, banPrice, pieces, buyPerPiece) {
   });
   logActivity(
     "নতুন মাল ক্রয়/যোগ",
-    `${brand} · ${mm}মিমি · ${sz}ফুট · ${pieces} পিস · খরচ ${fmt(cost)}`,
+    `${brand} · ${mm}মি:লি: · ${sz}ফুট · ${pieces} পিস · খরচ ${fmt(cost)}`,
   );
 }
 function renderPurchaseLedger() {
@@ -2703,7 +2762,7 @@ function renderPurchaseLedger() {
   const searchBar = `
  <div class="search-bar ${q ? "has-val" : ""}">
  <span class="sic">🔍</span>
- <input type="text" id="purchaseSearchInput" value="${esc(purchaseSearch)}" placeholder="ব্র্যান্ড, মিমি, সাইজ বা তারিখ দিয়ে সার্চ করুন..."
+ <input type="text" id="purchaseSearchInput" value="${esc(purchaseSearch)}" placeholder="ব্র্যান্ড, মি:লি:, সাইজ বা তারিখ দিয়ে সার্চ করুন..."
  oninput="purchaseSearchInputFn(this.value)" autocomplete="off">
  <span class="sclear" onclick="purchaseSearchInputFn('')">✕</span>
  </div>`;
@@ -2757,7 +2816,7 @@ function renderPurchaseLedger() {
  </div>
  ${searchBar}
  <table class="tbl">
- <thead><tr><th>তারিখ</th><th>ব্র্যান্ড</th><th>মিমি</th><th>সাইজ</th><th>বান</th><th>বানের দাম</th><th class="r">পিস এলো</th><th class="r">মোট খরচ</th></tr></thead>
+ <thead><tr><th>তারিখ</th><th>ব্র্যান্ড</th><th>মি:লি:</th><th>সাইজ</th><th>বান</th><th>বানের দাম</th><th class="r">পিস এলো</th><th class="r">মোট খরচ</th></tr></thead>
  <tbody>${filtered
    .slice()
    .sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -2766,7 +2825,7 @@ function renderPurchaseLedger() {
  <tr>
  <td>${new Date(p.date).toLocaleDateString("bn-BD")}</td>
  <td>${esc(p.brand)}</td>
- <td class="num">${p.mm} মিমি</td>
+ <td class="num">${p.mm} মি:লি:</td>
  <td class="num">${p.size} ফুট</td>
  <td class="num">${p.banQty}</td>
  <td class="num">${fmt(p.banPrice)}</td>
@@ -2878,7 +2937,7 @@ function renderSalesLedger() {
  <td>${new Date(r.date).toLocaleDateString("bn-BD")}</td>
  <td class="num">#${r.invId}</td>
  <td>${esc(r.customer)}</td>
- <td>${esc(r.brand)} · ${r.mm}মিমি · ${r.size}ফুট</td>
+ <td>${esc(r.brand)} · ${r.mm}মি:লি: · ${r.size}ফুট</td>
  <td class="num r">${r.qty}</td>
  <td class="num r">${fmt(r.price)}</td>
  <td class="num r">${fmt(r.total)}</td>
@@ -4799,7 +4858,7 @@ function returnPrompt(invId) {
       (it, idx) => `
  <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--steel-100);font-size:13px;">
  <div style="flex:1;">
- <div>${esc(it.brand)} · ${it.mm}মিমি · ${it.size}ফুট</div>
+ <div>${esc(it.brand)} · ${it.mm}মি:লি: · ${it.size}ফুট</div>
  <div style="color:var(--steel-500);font-size:11.5px;">বিক্রিত ${it.qty} পিস @ ${fmt(it.sellPrice)}</div>
  </div>
  <div style="width:90px;">
@@ -5111,7 +5170,7 @@ function renderDaily() {
       html: `
  <div class="day-tx">
  <div>
- <div class="txname"><span class="tx-tag expense">ক্রয়</span>${esc(p.brand)} · ${p.mm}মিমি · ${p.size}ফুট</div>
+ <div class="txname"><span class="tx-tag expense">ক্রয়</span>${esc(p.brand)} · ${p.mm}মি:লি: · ${p.size}ফুট</div>
  <div class="txmeta">${p.banQty} বান · খরচ ${fmt(p.cost)} · ${p.pieces} পিস স্টকে যোগ হয়েছে</div>
  </div>
  </div>`,
@@ -5435,7 +5494,7 @@ function profitInvoiceDetail(invId) {
   );
 }
 function inv_item_label_(it) {
-  return `${it.brand} · ${it.mm}মিমি · ${it.size}ফুট`;
+  return `${it.brand} · ${it.mm}মি:লি: · ${it.size}ফুট`;
 }
 
 /* ============================================================
@@ -5506,7 +5565,7 @@ function renderCashbox() {
       dir: "out",
       cat: "purchase",
       label: `কেনা — ${pu.brand}`,
-      detail: `${pu.mm}মিমি · ${pu.size}ফুট · ${pu.banQty} বান`,
+      detail: `${pu.mm}মি:লি: · ${pu.size}ফুট · ${pu.banQty} বান`,
       amount: pu.cost,
     });
   });
