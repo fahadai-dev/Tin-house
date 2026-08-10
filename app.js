@@ -4856,14 +4856,16 @@ function returnPrompt(invId) {
   const itemsHtml = inv.items
     .map(
       (it, idx) => `
- <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--steel-100);font-size:13px;">
+ <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--steel-100);font-size:13px;">
  <div style="flex:1;">
- <div>${esc(it.brand)} · ${it.mm}মি:লি: · ${it.size}ফুট</div>
+ <div style="font-weight:600;">${esc(it.brand)} · ${it.mm}মি:লি: · ${it.size}ফুট</div>
  <div style="color:var(--steel-500);font-size:11.5px;">বিক্রিত ${it.qty} পিস @ ${fmt(it.sellPrice)}</div>
  </div>
- <div style="width:90px;">
- <input type="number" id="retQty${idx}" min="0" max="${it.qty}" value="0" placeholder="পিস"
- style="width:100%;padding:7px;border:1.5px solid var(--steel-100);border-radius:6px;font-size:13px;" oninput="returnRecalc(${invId})">
+ <div style="display:flex; align-items:center; gap:6px;">
+ <button type="button" onclick="returnQtyStep(${invId}, ${idx}, -1, ${it.qty})" style="width:32px;height:32px;border-radius:9px;border:1.5px solid var(--steel-100);background:white;font-size:17px;font-weight:700;cursor:pointer;color:var(--red);">−</button>
+ <input type="number" id="retQty${idx}" min="0" max="${it.qty}" value="0" placeholder="০"
+ style="width:52px;text-align:center;padding:7px 4px;border:1.5px solid var(--steel-100);border-radius:9px;font-size:14px;font-weight:700;" oninput="returnRecalc(${invId})">
+ <button type="button" onclick="returnQtyStep(${invId}, ${idx}, 1, ${it.qty})" style="width:32px;height:32px;border-radius:9px;border:1.5px solid var(--steel-100);background:white;font-size:17px;font-weight:700;cursor:pointer;color:var(--green);">+</button>
  </div>
  </div>`,
     )
@@ -4872,7 +4874,7 @@ function returnPrompt(invId) {
   openModal(
     `রিটার্ন — ইনভয়েস #${inv.id}`,
     `
- <div style="font-size:12.5px;color:var(--steel-500);margin-bottom:10px;">যে পণ্যগুলো ফেরত নিচ্ছেন তার পিস সংখ্যা লিখুন (০ মানে ফেরত নয়)</div>
+ <div style="font-size:12.5px;color:var(--steel-500);margin-bottom:10px;">যে পণ্যগুলো ফেরত নিচ্ছেন তার পাশে − / + চেপে পরিমাণ ঠিক করুন (০ মানে ফেরত নয়)</div>
  ${itemsHtml}
  <div class="field" style="margin-top:14px;"><label><input type="checkbox" id="retRestock" checked style="width:auto;margin-right:6px;"> স্টকে আবার যোগ করুন</label></div>
  ${
@@ -4881,8 +4883,9 @@ function returnPrompt(invId) {
  <select id="retMethod"><option value="due">গ্রাহকের বাকি থেকে বিয়োগ করুন</option><option value="cash">নগদ ফেরত দিয়েছেন</option></select></div>`
      : `<div style="font-size:12px;color:var(--steel-500);margin-top:6px;">এটি নগদ বিক্রয় ছিল — ফেরত নগদে দেওয়া হয়েছে বলে রেকর্ড হবে</div>`
  }
- <div style="background:var(--steel-100);border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13.5px;display:flex;justify-content:space-between;">
- <span>মোট ফেরত মূল্য</span><b class="mono" id="retTotal">৳0</b>
+ <div style="background:linear-gradient(135deg,var(--steel-900),var(--ink)); border-radius:12px; padding:16px 18px; margin-top:14px; color:white;">
+ <div style="font-size:12px; color:rgba(255,255,255,0.75);">গ্রাহক মোট ফেরত পাবেন</div>
+ <div style="font-size:26px; font-weight:800; margin-top:4px; font-family:'JetBrains Mono',monospace;" id="retTotal">৳0</div>
  </div>
  `,
     `
@@ -4890,6 +4893,13 @@ function returnPrompt(invId) {
  <button class="btn btn-primary" onclick="processReturn(${invId})">রিটার্ন সম্পন্ন করুন</button>
  `,
   );
+}
+function returnQtyStep(invId, idx, delta, maxQty) {
+  const el = document.getElementById("retQty" + idx);
+  if (!el) return;
+  let val = Math.max(0, Math.min(maxQty, (parseInt(el.value) || 0) + delta));
+  el.value = val;
+  returnRecalc(invId);
 }
 function returnRecalc(invId) {
   const inv = invoices.find((x) => x.id === invId);
@@ -5140,7 +5150,7 @@ function renderDaily() {
  <div class="txname"><span class="tx-tag sale">বিক্রয়</span>${esc(inv.customer)}${inv.customerPhone ? " · " + telHtml(inv.customerPhone) : ""}</div>
  <div class="txmeta">ইনভয়েস #${inv.id} · ${inv.items.length} টি পণ্য · মোট ${fmt(inv.total)} · পরিশোধিত ${fmt(inv.paid)}${inv.due > 0 ? " · নতুন বাকি " + fmt(inv.due) : " · সম্পূর্ণ নগদ"}</div>
  </div>
- <button class="btn btn-outline" onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">দেখুন</button>
+ <button class="btn btn-outline" onclick="openCashboxMemoDetail(${inv.id})">দেখুন</button>
  </div>`,
     })),
     ...dayPayments.map((p) => ({
@@ -5543,6 +5553,7 @@ function renderCashbox() {
         label: `বিক্রয় — ${inv.customer}`,
         detail: `ইনভয়েস #${inv.id}`,
         amount: inv.paid,
+        invoiceId: inv.id,
       });
   });
   payments.forEach((p) => {
@@ -5656,9 +5667,9 @@ function renderCashbox() {
       : filtered
           .map(
             (x) => `
- <div class="day-tx">
+ <div class="day-tx" ${x.invoiceId ? `style="cursor:pointer;" onclick="openCashboxMemoDetail(${x.invoiceId})"` : ""}>
  <div>
- <div class="txname"><span class="tx-tag ${x.dir === "in" ? "payment" : "expense"}">${x.dir === "in" ? "ক্যাশ ইন" : "ক্যাশ আউট"}</span>${esc(x.label)}</div>
+ <div class="txname"><span class="tx-tag ${x.dir === "in" ? "payment" : "expense"}">${x.dir === "in" ? "ক্যাশ ইন" : "ক্যাশ আউট"}</span>${esc(x.label)}${x.invoiceId ? ' <span style="font-size:10.5px;color:var(--steel-500);">· বিস্তারিত দেখতে চাপুন</span>' : ""}</div>
  <div class="txmeta">${esc(x.detail)} · ${new Date(x.date).toLocaleDateString("bn-BD")}</div>
  </div>
  <div class="mono" style="font-weight:700; color:${x.dir === "in" ? "var(--green)" : "var(--red)"};">${x.dir === "in" ? "+" : "−"} ${fmt(x.amount)}</div>
@@ -5678,6 +5689,95 @@ function renderCashbox() {
  </div>
  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">${filterChips}</div>
  ${rows}`;
+}
+
+/* ============================================================
+ মেমো বিস্তারিত — ক্যাশবক্স/দৈনিক হিসাব থেকে ক্লিক করলে একটা মেমোর
+ সম্পূর্ণ তথ্য (গ্রাহক, লাভ-ক্ষতি, রিটার্ন, ডিলিট) একসাথে দেখায়
+ ============================================================ */
+function openCashboxMemoDetail(invId) {
+  const inv = invoices.find((x) => x.id === invId);
+  if (!inv) return;
+
+  const info = invoiceProfitInfo(inv);
+  const profitColor = info.net >= 0 ? "var(--green)" : "var(--red)";
+
+  const itemsRows = inv.items
+    .map(
+      (it) => `
+ <tr>
+ <td>${esc(it.brand)} · ${it.mm}মি:লি: · ${it.size}ফুট</td>
+ <td class="r">${it.qty}</td>
+ <td class="r">${fmt(it.sellPrice)}</td>
+ <td class="r">${fmt(it.qty * it.sellPrice)}</td>
+ </tr>`,
+    )
+    .join("");
+
+  const relatedReturns = returns.filter((r) => r.invoiceId === invId);
+  const totalReturned = relatedReturns.reduce((s, r) => s + r.total, 0);
+  const returnedRows = relatedReturns
+    .map(
+      (r) => `
+ <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--steel-100);font-size:12.5px;">
+ <span>↩️ রিটার্ন #${r.id} · ${new Date(r.date).toLocaleDateString("bn-BD")}</span>
+ <b class="mono" style="color:var(--red);">− ${fmt(r.total)}</b>
+ </div>`,
+    )
+    .join("");
+  const netAfterReturn = inv.total - totalReturned;
+
+  const cancelledBanner = inv.cancelled
+    ? `<div style="background:#FCEBE9;color:var(--red);border-radius:8px;padding:10px 14px;font-size:12.5px;text-align:center;font-weight:700;margin-bottom:12px;">❌ এই ইনভয়েসটি বাতিল করা হয়েছে</div>`
+    : "";
+
+  const body = `
+ ${cancelledBanner}
+ <div style="background:var(--paper); border-radius:12px; padding:14px 16px; margin-bottom:14px;">
+ <div style="font-weight:700; font-size:15px;">${esc(inv.customer)}</div>
+ <div style="font-size:12.5px; color:var(--steel-500); margin-top:6px; line-height:1.9;">
+ ${inv.customerPhone ? `📞 ${telHtml(inv.customerPhone)}<br>` : ""}
+ ${inv.customerAddress ? `📍 ${esc(inv.customerAddress)}<br>` : ""}
+ 🧾 ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}${inv.salesBy ? " · বিক্রয়কারীঃ " + esc(inv.salesBy) : ""}
+ </div>
+ </div>
+ <table class="itbl">
+ <thead><tr><th>পণ্য</th><th class="r">পরিমাণ</th><th class="r">দর</th><th class="r">মোট</th></tr></thead>
+ <tbody>${itemsRows}</tbody>
+ </table>
+ <div style="display:flex; justify-content:space-between; padding:10px 0; border-top:2px solid var(--ink); font-weight:700; font-size:14px; margin-top:2px;">
+ <span>মূল বিল</span><span class="mono">${fmt(inv.total)}</span>
+ </div>
+ <div style="display:flex; justify-content:space-between; padding:4px 0; font-size:12.5px; color:var(--steel-500);">
+ <span>পেলাম</span><span class="mono">${fmt(inv.paid)}</span>
+ </div>
+ ${inv.due > 0 ? `<div style="display:flex; justify-content:space-between; padding:4px 0; font-size:12.5px; color:var(--red);"><span>বাকি</span><span class="mono">${fmt(inv.due)}</span></div>` : ""}
+ ${
+   relatedReturns.length
+     ? `
+ <div style="margin-top:14px;">
+ <div style="font-size:12.5px; font-weight:600; color:var(--steel-700); margin-bottom:6px;">↩️ এই মেমোতে রিটার্ন হয়েছে</div>
+ ${returnedRows}
+ <div style="display:flex; justify-content:space-between; padding-top:8px; font-weight:700; font-size:14px;">
+ <span>রিটার্নের পর নিট বিল</span><span class="mono" style="color:var(--rust);">${fmt(netAfterReturn)}</span>
+ </div>
+ </div>`
+     : ""
+ }
+ <div style="background:${info.net >= 0 ? "rgba(60,122,84,0.1)" : "rgba(196,60,45,0.1)"}; border-radius:12px; padding:14px 16px; margin-top:16px; display:flex; justify-content:space-between; align-items:center;">
+ <span style="font-size:13px; font-weight:600; color:${profitColor};">${info.net >= 0 ? "✅ এই মেমোতে লাভ হয়েছে" : "⚠️ এই মেমোতে ক্ষতি হয়েছে"}</span>
+ <b class="mono" style="font-size:19px; color:${profitColor};">${fmt(Math.abs(info.net))}</b>
+ </div>
+ `;
+
+  const footer = `
+ <button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>
+ <button class="btn btn-outline" onclick="closeModal(); returnPrompt(${inv.id});">↩️ রিটার্ন করুন</button>
+ ${!inv.cancelled ? `<button class="btn btn-outline" style="color:var(--red);border-color:var(--red);" onclick="closeModal(); cancelInvoicePrompt(${inv.id});">🗑️ ইনভয়েস ডিলিট/বাতিল</button>` : ""}
+ <button class="btn btn-primary" onclick="closeModal(); printInvoice(invoices.find(x=>x.id===${inv.id}));">🖨️ প্রিন্ট/ডাউনলোড</button>
+ `;
+
+  openModal(`মেমো বিস্তারিত — #${inv.id}`, body, footer);
 }
 
 function reportGetRange() {
