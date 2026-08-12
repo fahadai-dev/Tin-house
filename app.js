@@ -2546,6 +2546,7 @@ function calcBuyFromBan(banPrice, sizeFeet) {
   if (!sizeFeet) return 0;
   return Math.round((banPrice * sizeFeet) / FEET_PER_BAN);
 }
+let stockSellManualOverride = false;
 function addStockRecalc() {
   const szEl = document.getElementById("newSize");
   const banEl = document.getElementById("newBanPrice");
@@ -2561,20 +2562,26 @@ function addStockRecalc() {
   const buyEl = document.getElementById("newBuyComputed");
   const totalPiecesEl = document.getElementById("newTotalPiecesInfo");
   const stockEl = document.getElementById("newStock");
+  const sellEl = document.getElementById("newSell");
   if (infoEl)
     infoEl.textContent = `এক বানে (৭২ ফুট) প্রায় ${piecesPerBan ? piecesPerBan.toFixed(1) : "০"} পিস আসে`;
   if (buyEl) buyEl.textContent = fmt(buyPerPiece);
   if (totalPiecesEl)
     totalPiecesEl.textContent = `${banQty || 0} বানে মোট প্রায় ${totalPieces} পিস আসবে`;
   if (stockEl) stockEl.value = totalPieces;
+  if (sellEl && !stockSellManualOverride)
+    sellEl.value = buyPerPiece > 0 ? buyPerPiece + 10 : "";
 }
 function editStockRecalc(sz) {
   const banEl = document.getElementById("editBanPrice");
+  const sellEl = document.getElementById("editSell");
   if (!banEl) return;
   const banPrice = parseFloat(banEl.value) || 0;
   const buyPerPiece = calcBuyFromBan(banPrice, sz);
   const el = document.getElementById("editBuyComputed");
   if (el) el.textContent = fmt(buyPerPiece);
+  if (sellEl && !stockSellManualOverride)
+    sellEl.value = buyPerPiece > 0 ? buyPerPiece + 10 : sellEl.value;
 }
 function editNewBanRecalc(sz) {
   const qtyEl = document.getElementById("editNewBanQty");
