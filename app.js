@@ -328,7 +328,7 @@ async function bootstrapApp() {
 
     document.getElementById("lockScreen").style.display = "none";
     document.getElementById("app").classList.add("active");
-    switchView("dashboard");
+    switchView("dashboard", { replace: true });
     updateOfflineBadge();
     showToast(
       isOffline
@@ -610,14 +610,21 @@ function persistShopData() {
 }
 
 /* ============================================================
- ডাটা ব্যাকআপ — সম্পূর্ণ দোকানের ডেটা JSON ফাইল আকারে ডাউনলোড/রিস্টোর
+ ডাটা ব্যাকআপ — সম্পূর্ণ দোকানের ডেটা JSON ফাইল আকারে ডাউনলোড
  ============================================================ */
 function backupTimestampLabel() {
   if (!lastBackupAt) return "এখনো ব্যাকআপ নেওয়া হয়নি";
-  return new Date(lastBackupAt).toLocaleString("bn-BD", {
-    dateStyle: "medium",
-    timeStyle: "short",
+  const d = new Date(lastBackupAt);
+  const dateStr = d.toLocaleDateString("bn-BD", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   });
+  const timeStr = d.toLocaleTimeString("bn-BD", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${dateStr}, ${timeStr}`;
 }
 function downloadBackupNow() {
   try {
@@ -651,42 +658,6 @@ function downloadBackupNow() {
   } catch (e) {
     showToast("ব্যাকআপ ব্যর্থ হয়েছে, আবার চেষ্টা করুন");
   }
-}
-function restoreBackupPrompt() {
-  openModal(
-    "ব্যাকআপ থেকে পুনরুদ্ধার করুন",
-    `
- <div style="font-size:12.5px;color:var(--red);margin-bottom:12px;line-height:1.6;">⚠️ সতর্কতাঃ এটি আপনার বর্তমান সব ডেটা (স্টক, ইনভয়েস, বাকির খাতা ইত্যাদি) মুছে ব্যাকআপ ফাইলের ডেটা দিয়ে প্রতিস্থাপন করবে। এই কাজ ফিরিয়ে নেওয়া যাবে না।</div>
- <div class="field"><label>ব্যাকআপ ফাইল (.json) বাছুন</label><input type="file" id="restoreFileInput" accept="application/json"></div>
- `,
-    `
- <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
- <button class="btn btn-primary" style="background:var(--red);" onclick="restoreBackupConfirmed()">পুনরুদ্ধার করুন</button>
- `,
-  );
-}
-function restoreBackupConfirmed() {
-  const fileEl = document.getElementById("restoreFileInput");
-  const file = fileEl && fileEl.files && fileEl.files[0];
-  if (!file) {
-    showToast("একটি ব্যাকআপ ফাইল বাছুন");
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const parsed = JSON.parse(reader.result);
-      const dataToApply = parsed.data || parsed;
-      applyState(dataToApply);
-      closeModal();
-      persistShopData();
-      showToast("✅ ব্যাকআপ থেকে ডেটা পুনরুদ্ধার হয়েছে");
-      render();
-    } catch (e) {
-      showToast("ফাইলটি পড়া যায়নি — সঠিক ব্যাকআপ ফাইল কিনা যাচাই করুন");
-    }
-  };
-  reader.readAsText(file);
 }
 
 /* ============================================================
@@ -793,7 +764,8 @@ function periodTabsHtml(pageKey) {
 function goHome() {
   switchView("dashboard");
 }
-function switchView(id) {
+function switchView(id, opts) {
+  opts = opts || {};
   const isOwner = currentUser && currentUser.role === "owner";
   if (!isOwner && OWNER_ONLY_VIEWS.includes(id)) {
     showToast("এই পেজ শুধু দোকানের মালিক দেখতে পারবেন");
@@ -888,7 +860,20 @@ function switchView(id) {
   const homeBtnEl = document.getElementById("homeBtn");
   if (homeBtnEl) homeBtnEl.classList.toggle("hidden", id === "dashboard");
   render();
+  // মোবাইলে ব্যাক বাটন চাপলে যেন পুরো অ্যাপ থেকে বের না হয়ে শুধু একধাপ পেছনে যায়
+  if (!opts.fromPopState) {
+    try {
+      if (opts.replace) history.replaceState({ view: id }, "", "#" + id);
+      else history.pushState({ view: id }, "", "#" + id);
+    } catch (e) {
+      /* history API না থাকলে সাইলেন্টলি বাদ */
+    }
+  }
 }
+window.addEventListener("popstate", (e) => {
+  const view = (e.state && e.state.view) || "dashboard";
+  switchView(view, { fromPopState: true });
+});
 
 function render() {
   const c = document.getElementById("content");
@@ -1267,7 +1252,6 @@ function renderDashboard() {
  <div class="panel" style="margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; font-size:12px;">
  <div style="color:var(--steel-500);">সর্বশেষ ব্যাকআপঃ <b style="color:var(--steel-900);">${backupTimestampLabel()}</b></div>
  <div style="display:flex; gap:8px;">
- <button class="btn btn-outline" style="padding:6px 12px;font-size:11.5px;" onclick="restoreBackupPrompt()">📥 রিস্টোর</button>
  <button class="btn btn-primary" style="padding:6px 12px;font-size:11.5px;" onclick="downloadBackupNow()">💾 ডাটা ব্যাকআপ</button>
  </div>
  </div>
@@ -2414,10 +2398,10 @@ function renderStock() {
               ? v.banPrice
               : Math.round((v.buy * FEET_PER_BAN) / sz);
           rows += `<tr>
- <td class="num">${mm} মি:লি:</td><td class="num">${sz} ফুট</td>
- <td class="num">${fmt(banVal)}</td>
- <td class="num">${fmt(v.buy)}</td><td class="num">${fmt(v.sell)}</td>
- <td class="num">${v.stock}</td>
+ <td class="num mono">${mm} মি:লি:</td><td class="num mono">${sz} ফুট</td>
+ <td class="num mono">${fmt(banVal)}</td>
+ <td class="num mono">${fmt(v.buy)}</td><td class="num mono">${fmt(v.sell)}</td>
+ <td class="num mono">${v.stock}</td>
  <td>${v.stock <= 3 ? `<span class="pill low">কম স্টক</span>` : `<span class="pill ok">স্বাভাবিক</span>`}</td>
  <td class="tbl-actions"><button onclick="editStockPrompt('${jsq(stockBrand)}',${mm},${sz})">এডিট</button></td>
  </tr>`;
@@ -2699,6 +2683,11 @@ function editStockPrompt(brand, mm, sz) {
   openModal(
     `এডিট — ${esc(brand)} · ${mm}মি:লি: · ${sz}ফুট`,
     `
+ <div style="font-size:11.5px;color:var(--red);margin-bottom:10px;line-height:1.5;">ভুল করে মি:লি: বা ফুট ভুল দিয়ে থাকলে এখানে ঠিক করে নিন।</div>
+ <div style="display:flex; gap:10px;">
+ <div class="field" style="flex:1;"><label>মি:লি:</label><input type="number" id="editMM" value="${mm}" step="0.5" min="1"></div>
+ <div class="field" style="flex:1;"><label>ফুট</label><input type="number" id="editSize" value="${sz}" step="0.5" min="1"></div>
+ </div>
  <div class="field"><label>বানের দাম (৳) — ৭২ ফুট = ১ বান</label><input type="number" id="editBanPrice" value="${banStart}" min="0" oninput="editStockRecalc(${sz})"></div>
  <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;">
  <div style="display:flex;justify-content:space-between;"><span>এক বানে (৭২ ফুট) প্রায়</span><b class="mono">${(FEET_PER_BAN / sz).toFixed(1)} পিস</b></div>
@@ -2723,11 +2712,37 @@ function editStockPrompt(brand, mm, sz) {
 }
 function saveStockEdit(brand, mm, sz) {
   const v = inventory[brand][mm][sz];
+  const newMM = document.getElementById("editMM").value;
+  const newSize = document.getElementById("editSize").value;
+  if (!newMM || !newSize) {
+    showToast("মি:লি: ও ফুট আবশ্যক");
+    return;
+  }
   const banPrice = parseInt(document.getElementById("editBanPrice").value) || 0;
   v.banPrice = banPrice;
-  v.buy = calcBuyFromBan(banPrice, sz) || v.buy;
+  v.buy = calcBuyFromBan(banPrice, parseFloat(newSize)) || v.buy;
   v.sell = parseInt(document.getElementById("editSell").value) || v.sell;
   v.stock = parseInt(document.getElementById("editStock").value) ?? v.stock;
+
+  const mmChanged = String(newMM) !== String(mm);
+  const sizeChanged = String(newSize) !== String(sz);
+  if (mmChanged || sizeChanged) {
+    const collision =
+      inventory[brand][newMM] && inventory[brand][newMM][newSize];
+    if (collision) {
+      showToast("এই মি:লি: ও ফুটের আইটেম আগে থেকেই আছে — অন্য মান দিন");
+      return;
+    }
+    delete inventory[brand][mm][sz];
+    if (Object.keys(inventory[brand][mm]).length === 0)
+      delete inventory[brand][mm];
+    if (!inventory[brand][newMM]) inventory[brand][newMM] = {};
+    inventory[brand][newMM][newSize] = v;
+    logActivity(
+      "স্টক আইটেমের মি:লি:/ফুট সংশোধন",
+      `${brand} · ${mm}মি:লি:→${newMM}মি:লি:, ${sz}ফুট→${newSize}ফুট`,
+    );
+  }
   closeModal();
   render();
   showToast("আপডেট হয়েছে");
@@ -2825,12 +2840,12 @@ function renderPurchaseLedger() {
  <tr>
  <td>${new Date(p.date).toLocaleDateString("bn-BD")}</td>
  <td>${esc(p.brand)}</td>
- <td class="num">${p.mm} মি:লি:</td>
- <td class="num">${p.size} ফুট</td>
- <td class="num">${p.banQty}</td>
- <td class="num">${fmt(p.banPrice)}</td>
- <td class="num r">${p.pieces}</td>
- <td class="num r">${fmt(p.cost)}</td>
+ <td class="num mono">${p.mm} মি:লি:</td>
+ <td class="num mono">${p.size} ফুট</td>
+ <td class="num mono">${p.banQty}</td>
+ <td class="num mono">${fmt(p.banPrice)}</td>
+ <td class="num r mono">${p.pieces}</td>
+ <td class="num r mono">${fmt(p.cost)}</td>
  </tr>`,
    )
    .join("")}
@@ -2935,12 +2950,12 @@ function renderSalesLedger() {
      (r) => `
  <tr>
  <td>${new Date(r.date).toLocaleDateString("bn-BD")}</td>
- <td class="num">#${r.invId}</td>
+ <td class="num mono">#${r.invId}</td>
  <td>${esc(r.customer)}</td>
  <td>${esc(r.brand)} · ${r.mm}মি:লি: · ${r.size}ফুট</td>
- <td class="num r">${r.qty}</td>
- <td class="num r">${fmt(r.price)}</td>
- <td class="num r">${fmt(r.total)}</td>
+ <td class="num r mono">${r.qty}</td>
+ <td class="num r mono">${fmt(r.price)}</td>
+ <td class="num r mono">${fmt(r.total)}</td>
  </tr>`,
    )
    .join("")}
@@ -4401,7 +4416,7 @@ function renderExpenseEntriesTab() {
  <td>${expenseCategoryIcon(e.categoryId)} ${esc(e.categoryName)}</td>
  <td>${esc(e.personName) || "—"}</td>
  <td>${esc(e.note) || "—"}</td>
- <td class="num r">${fmt(e.amount)}</td>
+ <td class="num r mono">${fmt(e.amount)}</td>
  <td class="tbl-actions">
  <button onclick="openReceiptModal('expense', ${e.id})">রশিদ</button>
  <button onclick="editExpensePrompt(${e.id})">এডিট</button>
@@ -4824,11 +4839,11 @@ function renderInvoices() {
    .map(
      (inv) => `
  <tr style="${inv.cancelled ? "opacity:0.55;" : ""}">
- <td class="num">#${inv.id}${inv.cancelled ? ' <span class="pill low">বাতিল</span>' : ""}</td><td>${esc(inv.customer)}</td><td class="num">${telHtml(inv.customerPhone) || "—"}</td>
+ <td class="num mono">#${inv.id}${inv.cancelled ? ' <span class="pill low">বাতিল</span>' : ""}</td><td>${esc(inv.customer)}</td><td class="num mono">${telHtml(inv.customerPhone) || "—"}</td>
  <td>${new Date(inv.date).toLocaleDateString("bn-BD")}</td>
  <td>${inv.items.length} টি</td>
- <td class="num">${fmt(inv.total)}</td>
- <td class="num" style="color:${inv.due > 0 ? "var(--red)" : "var(--green)"}">${fmt(inv.due)}</td>
+ <td class="num mono">${fmt(inv.total)}</td>
+ <td class="num mono" style="color:${inv.due > 0 ? "var(--red)" : "var(--green)"}">${fmt(inv.due)}</td>
  <td class="tbl-actions"><button onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">প্রিন্ট/ডাউনলোড</button>${!inv.cancelled ? `<button style="margin-left:10px;" onclick="returnPrompt(${inv.id})">↩️ রিটার্ন</button><button style="margin-left:10px;color:var(--red);" onclick="cancelInvoicePrompt(${inv.id})">❌ বাতিল</button>` : ""}</td>
  </tr>`,
    )
@@ -4999,10 +5014,10 @@ function renderReturns() {
    .map(
      (r) => `
  <tr>
- <td class="num">#${r.id}</td><td class="num">#${r.invoiceId}</td><td>${esc(r.customer)}</td>
+ <td class="num mono">#${r.id}</td><td class="num mono">#${r.invoiceId}</td><td>${esc(r.customer)}</td>
  <td>${new Date(r.date).toLocaleDateString("bn-BD")}</td>
  <td>${r.items.reduce((s, i) => s + i.qty, 0)} পিস</td>
- <td class="num">${fmt(r.total)}</td>
+ <td class="num mono">${fmt(r.total)}</td>
  <td>${r.method === "due" ? "বাকি থেকে সমন্বয়" : "নগদ ফেরত"}</td>
  <td>${r.restocked ? "✅ যোগ হয়েছে" : "—"}</td>
  </tr>`,
@@ -5390,12 +5405,12 @@ function renderProfit() {
               const gross = itemsRevenue - itemCogs;
               const net = gross - (inv.discount || 0);
               return `<tr>
- <td class="num">#${inv.id}</td>
+ <td class="num mono">#${inv.id}</td>
  <td>${esc(inv.customer)}</td>
  <td>${new Date(inv.date).toLocaleDateString("bn-BD")}</td>
- <td class="num">${fmt(itemsRevenue)}</td>
- <td class="num">${fmt(itemCogs)}</td>
- <td class="num" style="color:${net >= 0 ? "var(--green)" : "var(--red)"}">${fmt(net)}</td>
+ <td class="num mono">${fmt(itemsRevenue)}</td>
+ <td class="num mono">${fmt(itemCogs)}</td>
+ <td class="num mono" style="color:${net >= 0 ? "var(--green)" : "var(--red)"}">${fmt(net)}</td>
  <td class="tbl-actions"><button onclick="profitInvoiceDetail(${inv.id})">বিস্তারিত</button></td>
  </tr>`;
             })
@@ -5917,7 +5932,7 @@ function renderBusinessReport() {
     .sort((a, b) => b[1].revenue - a[1].revenue)
     .map(
       ([b, v]) => `
- <tr><td>${esc(b)}</td><td class="num r">${v.qty}</td><td class="num r">${fmt(v.revenue)}</td></tr>`,
+ <tr><td>${esc(b)}</td><td class="num r mono">${v.qty}</td><td class="num r mono">${fmt(v.revenue)}</td></tr>`,
     )
     .join("");
 
@@ -6009,11 +6024,11 @@ function renderBusinessReport() {
      (c) => `
  <tr>
  <td>${esc(c.name)}${c.phone ? " · " + telHtml(c.phone) : ""}</td>
- <td class="num r">${c.invCount}</td>
- <td class="num r">${fmt(Math.round(c.sales))}</td>
- <td class="num r" style="color:var(--green)">${fmt(Math.round(c.cash))}</td>
- <td class="num r" style="color:${c.due > 0.5 ? "var(--amber)" : "var(--steel-500)"}">${fmt(Math.round(c.due))}</td>
- <td class="num r" style="color:${c.net >= 0 ? "var(--green)" : "var(--red)"};font-weight:700;">${fmt(Math.round(c.net))}</td>
+ <td class="num r mono">${c.invCount}</td>
+ <td class="num r mono">${fmt(Math.round(c.sales))}</td>
+ <td class="num r mono" style="color:var(--green)">${fmt(Math.round(c.cash))}</td>
+ <td class="num r mono" style="color:${c.due > 0.5 ? "var(--amber)" : "var(--steel-500)"}">${fmt(Math.round(c.due))}</td>
+ <td class="num r mono" style="color:${c.net >= 0 ? "var(--green)" : "var(--red)"};font-weight:700;">${fmt(Math.round(c.net))}</td>
  </tr>`,
    )
    .join("")}
