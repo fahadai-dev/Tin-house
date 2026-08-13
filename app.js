@@ -276,6 +276,7 @@ async function bootstrapApp() {
       full_name: profile.full_name,
       role: profile.role,
       shop_id: profile.shop_id,
+      email: sessionData.session.user.email,
     };
     SHOP_ID = profile.shop_id;
 
@@ -493,7 +494,7 @@ function deleteStaffPrompt(id, name) {
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
- <button class="btn btn-primary" style="background:var(--red);" onclick="deleteStaffConfirmed('${id}')">হ্যাঁ, মুছুন</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('স্টাফ মুছুন', () => deleteStaffConfirmed('${id}'))">হ্যাঁ, মুছুন</button>
  `,
   );
 }
@@ -1421,7 +1422,7 @@ function renderRecentQuickSales() {
  <span class="tx-tag ${q.mode === "profit" ? "payment" : "sale"}">${q.mode === "profit" ? "শুধু লাভ" : "লগ"}</span>
  ${q.name ? esc(q.name) + " · " : ""}${fmt(q.totalAmount)}${q.profit ? " · লাভ " + fmt(q.profit) : ""}
  </div>
- <button class="btn btn-outline" style="padding:3px 8px;font-size:11px;color:var(--red);" onclick="deleteQuickSale(${q.id})">✕</button>
+ <button class="btn btn-outline" style="padding:3px 8px;font-size:11px;color:var(--red);" onclick="requestPasswordConfirm('দ্রুত বিক্রি এন্ট্রি মুছুন', () => deleteQuickSale(${q.id}))">✕</button>
  </div>`,
    )
    .join("")}
@@ -2282,7 +2283,7 @@ function cancelInvoicePrompt(id) {
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল করুন (থাক)</button>
- <button class="btn btn-primary" style="background:var(--red);" onclick="cancelInvoiceConfirmed(${id})">হ্যাঁ, ইনভয়েস বাতিল করুন</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('ইনভয়েস বাতিল করুন', () => cancelInvoiceConfirmed(${id}))">হ্যাঁ, ইনভয়েস বাতিল করুন</button>
  `,
   );
 }
@@ -2523,7 +2524,7 @@ function deleteBrandPrompt(name) {
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
- <button class="btn btn-primary" style="background:var(--red);" onclick="deleteBrandConfirmed('${jsq(name)}')">হ্যাঁ, মুছুন</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('ব্র্যান্ড মুছুন', () => deleteBrandConfirmed('${jsq(name)}'))">হ্যাঁ, মুছুন</button>
  `,
   );
 }
@@ -2842,7 +2843,7 @@ function renderPurchaseLedger() {
  </div>
  ${searchBar}
  <table class="tbl">
- <thead><tr><th>তারিখ</th><th>ব্র্যান্ড</th><th>মি:লি:</th><th>সাইজ</th><th>বান</th><th>বানের দাম</th><th class="r">পিস এলো</th><th class="r">মোট খরচ</th></tr></thead>
+ <thead><tr><th>তারিখ</th><th>ব্র্যান্ড</th><th>মি:লি:</th><th>সাইজ</th><th>বান</th><th>বানের দাম</th><th class="r">পিস এলো</th><th class="r">মোট খরচ</th><th></th></tr></thead>
  <tbody>${filtered
    .slice()
    .sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -2857,11 +2858,117 @@ function renderPurchaseLedger() {
  <td class="num mono">${fmt(p.banPrice)}</td>
  <td class="num r mono">${p.pieces}</td>
  <td class="num r mono">${fmt(p.cost)}</td>
+ <td class="tbl-actions">
+ <button onclick="editPurchasePrompt(${p.id})">এডিট</button>
+ <button style="color:var(--red);" onclick="deletePurchasePrompt(${p.id})">মুছুন</button>
+ </td>
  </tr>`,
    )
    .join("")}
  </tbody></table>`
   );
+}
+function editPurchasePrompt(id) {
+  const p = purchases.find((x) => x.id === id);
+  if (!p) return;
+  openModal(
+    `ক্রয় এডিট — ${esc(p.brand)} · ${p.mm}মি:লি: · ${p.size}ফুট`,
+    `
+ <div style="font-size:11.5px;color:var(--steel-500);margin-bottom:10px;line-height:1.5;">বান সংখ্যা বা দাম বদলালে স্টকের পরিমাণও সেই অনুযায়ী সমন্বয় হয়ে যাবে।</div>
+ <div class="field"><label>বান সংখ্যা</label><input type="number" id="editPurchaseBanQty" value="${p.banQty}" min="0" step="0.5"></div>
+ <div class="field"><label>বানের দাম (৳)</label><input type="number" id="editPurchaseBanPrice" value="${p.banPrice}" min="0"></div>
+ <div class="field"><label>তারিখ</label><input type="date" id="editPurchaseDate" value="${toDateInputValue(p.date)}"></div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="savePurchaseEdit(${id})">সংরক্ষণ করুন</button>
+ `,
+  );
+}
+function savePurchaseEdit(id) {
+  const p = purchases.find((x) => x.id === id);
+  if (!p) return;
+  const newBanQty = Math.max(
+    0,
+    parseFloat(document.getElementById("editPurchaseBanQty").value) || 0,
+  );
+  const newBanPrice = Math.max(
+    0,
+    parseFloat(document.getElementById("editPurchaseBanPrice").value) || 0,
+  );
+  const newDate = dateFromInput(
+    document.getElementById("editPurchaseDate").value,
+  );
+
+  const piecesPerBan = p.size > 0 ? FEET_PER_BAN / p.size : 0;
+  const newPieces = Math.round(piecesPerBan * newBanQty);
+  const newBuyPerPiece = calcBuyFromBan(newBanPrice, p.size);
+  const pieceDiff = newPieces - p.pieces;
+
+  if (
+    inventory[p.brand] &&
+    inventory[p.brand][p.mm] &&
+    inventory[p.brand][p.mm][p.size]
+  ) {
+    const item = inventory[p.brand][p.mm][p.size];
+    item.stock = Math.max(0, item.stock + pieceDiff);
+    if (newBuyPerPiece > 0) {
+      item.buy = newBuyPerPiece;
+      item.banPrice = newBanPrice;
+    }
+  }
+
+  p.banQty = newBanQty;
+  p.banPrice = newBanPrice;
+  p.pieces = newPieces;
+  p.buyPerPiece = newBuyPerPiece;
+  p.cost = Math.round(newBanQty * newBanPrice);
+  p.date = newDate;
+
+  logActivity(
+    "ক্রয়ের এন্ট্রি এডিট",
+    `${p.brand} · ${p.mm}মি:লি: · ${p.size}ফুট · নতুন খরচ ${fmt(p.cost)}`,
+  );
+  closeModal();
+  render();
+  showToast("আপডেট হয়েছে");
+  persistShopData();
+}
+function deletePurchasePrompt(id) {
+  const p = purchases.find((x) => x.id === id);
+  if (!p) return;
+  openModal(
+    "ক্রয়ের এন্ট্রি মুছবেন?",
+    `
+ <p style="font-size:13.5px;line-height:1.7;">${esc(p.brand)} · ${p.mm}মি:লি: · ${p.size}ফুট · ${fmt(p.cost)} টাকার এই ক্রয়ের এন্ট্রিটি মুছে ফেলা হবে। এই ক্রয়ের ${p.pieces} পিস স্টক থেকেও বাদ যাবে (স্টকে যতটুকু আছে তার বেশি বাদ যাবে না)।</p>
+ <p style="font-size:12px;color:var(--red);">এই কাজ ফিরিয়ে নেওয়া যাবে না।</p>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('ক্রয়ের এন্ট্রি মুছুন', () => deletePurchaseConfirmed(${id}))">হ্যাঁ, মুছুন</button>
+ `,
+  );
+}
+function deletePurchaseConfirmed(id) {
+  const p = purchases.find((x) => x.id === id);
+  if (!p) return;
+  if (
+    inventory[p.brand] &&
+    inventory[p.brand][p.mm] &&
+    inventory[p.brand][p.mm][p.size]
+  ) {
+    const item = inventory[p.brand][p.mm][p.size];
+    item.stock = Math.max(0, item.stock - p.pieces);
+  }
+  purchases = purchases.filter((x) => x.id !== id);
+  logActivity(
+    "ক্রয়ের এন্ট্রি মুছে ফেলা হয়েছে",
+    `${p.brand} · ${p.mm}মি:লি: · ${p.size}ফুট · ${fmt(p.cost)}`,
+  );
+  closeModal();
+  render();
+  showToast("মুছে ফেলা হয়েছে");
+  persistShopData();
 }
 function purchaseSearchInputFn(val) {
   purchaseSearch = val;
@@ -3358,7 +3465,7 @@ function deleteEmployeePrompt(id) {
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
- <button class="btn btn-primary" style="background:var(--red);" onclick="deleteEmployeeConfirmed(${id})">হ্যাঁ, মুছুন</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('কর্মচারী মুছুন', () => deleteEmployeeConfirmed(${id}))">হ্যাঁ, মুছুন</button>
  `,
   );
 }
@@ -3621,7 +3728,7 @@ function deleteSupplierPrompt(id) {
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
- <button class="btn btn-primary" style="background:var(--red);" onclick="deleteSupplierConfirmed(${id})">হ্যাঁ, মুছুন</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('সাপ্লায়ার মুছুন', () => deleteSupplierConfirmed(${id}))">হ্যাঁ, মুছুন</button>
  `,
   );
 }
@@ -4825,7 +4932,7 @@ function deleteExpensePrompt(id) {
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
- <button class="btn btn-primary" style="background:var(--red);" onclick="deleteExpenseConfirmed(${id})">হ্যাঁ, মুছুন</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('খরচের এন্ট্রি মুছুন', () => deleteExpenseConfirmed(${id}))">হ্যাঁ, মুছুন</button>
  `,
   );
 }
@@ -6296,6 +6403,73 @@ function renderStaff() {
 /* ============================================================
  MODAL / TOAST HELPERS
  ============================================================ */
+/* ============================================================
+ পাসওয়ার্ড কনফার্মেশন — যেকোনো ডিলিট করার আগে বাধ্যতামূলক
+ (মালিক বা স্টাফ যেই হোন না কেন, নিজের লগইন পাসওয়ার্ড দিতে হবে)
+ ============================================================ */
+let __pwConfirmCallback = null;
+function requestPasswordConfirm(actionLabel, onConfirm) {
+  __pwConfirmCallback = onConfirm;
+  openModal(
+    "🔒 পাসওয়ার্ড দিয়ে নিশ্চিত করুন",
+    `
+ <div style="font-size:12.5px;color:var(--steel-500);margin-bottom:14px;line-height:1.6;">"${esc(actionLabel)}" — এই কাজটা করার আগে নিজের লগইন পাসওয়ার্ড দিয়ে নিশ্চিত করুন। মালিক বা স্টাফ যেই হোন না কেন এটা লাগবে।</div>
+ <div class="field"><label>পাসওয়ার্ড</label><input type="password" id="pwConfirmInput" placeholder="আপনার লগইন পাসওয়ার্ড" onkeydown="if(event.key==='Enter') verifyPasswordAndProceed();"></div>
+ <div id="pwConfirmError" style="color:var(--red); font-size:12px; display:none; margin-top:-8px; margin-bottom:10px;"></div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="__pwConfirmCallback=null; closeModal();">বাতিল</button>
+ <button class="btn btn-primary" style="background:var(--red);" id="pwConfirmBtn" onclick="verifyPasswordAndProceed()">নিশ্চিত করুন</button>
+ `,
+  );
+  setTimeout(() => {
+    const el = document.getElementById("pwConfirmInput");
+    if (el) el.focus();
+  }, 50);
+}
+async function verifyPasswordAndProceed() {
+  const pwdEl = document.getElementById("pwConfirmInput");
+  const errEl = document.getElementById("pwConfirmError");
+  const btn = document.getElementById("pwConfirmBtn");
+  const pwd = pwdEl ? pwdEl.value : "";
+  if (!pwd) {
+    if (errEl) {
+      errEl.textContent = "পাসওয়ার্ড লিখুন";
+      errEl.style.display = "block";
+    }
+    return;
+  }
+  if (!currentUser || !currentUser.email) {
+    showToast("ইউজার তথ্য পাওয়া যায়নি — আবার লগইন করুন");
+    return;
+  }
+  if (btn) btn.disabled = true;
+  try {
+    const { error } = await supabaseClient.auth.signInWithPassword({
+      email: currentUser.email,
+      password: pwd,
+    });
+    if (error) {
+      if (errEl) {
+        errEl.textContent = "❌ পাসওয়ার্ড সঠিক নয়, আবার চেষ্টা করুন";
+        errEl.style.display = "block";
+      }
+      if (btn) btn.disabled = false;
+      return;
+    }
+    const cb = __pwConfirmCallback;
+    __pwConfirmCallback = null;
+    closeModal();
+    if (typeof cb === "function") cb();
+  } catch (e) {
+    if (errEl) {
+      errEl.textContent = "যাচাই করা যায়নি — আবার চেষ্টা করুন";
+      errEl.style.display = "block";
+    }
+    if (btn) btn.disabled = false;
+  }
+}
+
 function openModal(title, body, foot) {
   document.getElementById("modalBox").innerHTML = `
  <div class="modal-head"><h3>${title}</h3><span class="modal-close" onclick="closeModal()">✕</span></div>
