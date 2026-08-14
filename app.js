@@ -4297,8 +4297,44 @@ function renderPaymentReceiptPage() {
  <button class="btn btn-outline" onclick="switchView('ledger')">📒 বাকির খাতা</button>
  <button class="btn btn-outline" onclick="downloadPrintArea('${jsq("রশিদ-" + p.id)}')">⬇ ডাউনলোড করুন</button>
  <button class="btn btn-primary" onclick="tryPrint()">🖨 প্রিন্ট করুন / কাস্টমারকে দিন</button>
+ <button class="btn btn-outline" style="color:var(--red);border-color:var(--red);" onclick="deletePaymentPrompt(${p.id})">🗑️ রশিদ মুছুন</button>
  </div>
  </div>`;
+}
+function deletePaymentPrompt(id) {
+  const p = payments.find((x) => x.id === id);
+  if (!p) return;
+  openModal(
+    "পেমেন্ট রশিদ মুছবেন?",
+    `
+ <p style="font-size:13.5px;line-height:1.7;">রশিদ <b>#${p.id}</b> (${esc(p.custName)} · জমা ${fmt(p.amount)}) মুছে ফেলা হবে। এই পরিমাণ টাকা আবার গ্রাহকের বাকিতে যোগ হয়ে যাবে।</p>
+ <p style="font-size:12px;color:var(--red);">এই কাজ ফিরিয়ে নেওয়া যাবে না।</p>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('পেমেন্ট রশিদ মুছুন', () => deletePaymentConfirmed(${id}))">হ্যাঁ, মুছুন</button>
+ `,
+  );
+}
+function deletePaymentConfirmed(id) {
+  const p = payments.find((x) => x.id === id);
+  if (!p) return;
+  const cust = ledger.find((l) => l.id === p.custId);
+  if (cust) {
+    cust.due = (cust.due || 0) + p.amount + (p.discount || 0);
+    cust.paidTotal = Math.max(0, (cust.paidTotal || 0) - p.amount);
+    if (cust.discountTotal)
+      cust.discountTotal = Math.max(0, cust.discountTotal - (p.discount || 0));
+  }
+  payments = payments.filter((x) => x.id !== id);
+  logActivity(
+    "পেমেন্ট রশিদ মুছে ফেলা হয়েছে",
+    `#${p.id} · ${p.custName} · ${fmt(p.amount)} (বাকিতে ফিরিয়ে দেওয়া হয়েছে)`,
+  );
+  closeModal();
+  showToast("রশিদ মুছে ফেলা হয়েছে, টাকা আবার বাকিতে যোগ হয়েছে");
+  persistShopData();
+  switchView("ledger");
 }
 function reduceCustomerInvoiceDues(custId, amountToClear) {
   let remaining = amountToClear;
