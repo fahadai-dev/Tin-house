@@ -1451,7 +1451,11 @@ function renderCartPage() {
  <input type="number" min="0" placeholder="—" value="${item.qtyPieces !== null && item.qtyPieces !== undefined ? item.qtyPieces : ""}" onchange="updateCartPieces(${idx}, this.value)">
  </div>
  <div class="cart-item-row">
- <label>দর</label>
+ <label>বানের দর</label>
+ <input type="number" min="0" placeholder="ঐচ্ছিক — পুরো বানের দাম দিন" onchange="updateCartBanPrice(${idx}, this.value)">
+ </div>
+ <div class="cart-item-row">
+ <label>দর (প্রতি পিস)</label>
  <input type="number" min="0" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)">
  </div>
  <div class="cart-sub" style="text-align:left;">মোট পিস: ${eff} · উপমোট: ${fmt(eff * item.sellPrice)}</div>
@@ -1726,6 +1730,14 @@ function updateCartPieces(idx, val) {
 }
 function updateCartPrice(idx, val) {
   cart[idx].sellPrice = Math.max(0, parseInt(val) || 0);
+  render();
+}
+function updateCartBanPrice(idx, val) {
+  const item = cart[idx];
+  const ppb = piecesPerBan(item.size);
+  if (val === "" || !ppb) return;
+  const banPrice = Math.max(0, parseFloat(val) || 0);
+  item.sellPrice = Math.round(banPrice / ppb);
   render();
 }
 
