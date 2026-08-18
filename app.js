@@ -128,6 +128,7 @@ let posItemSearch = "";
 let stockStep = 1;
 let stockBrand = null;
 let stockSearch = "";
+let stockAddUnitMode = "ban"; // 'ban' | 'piece'
 let invoiceSearch = "";
 let ledgerSearch = "";
 let cashSearch = "";
@@ -2563,13 +2564,49 @@ function calcBuyFromBan(banPrice, sizeFeet) {
   if (!sizeFeet) return 0;
   return Math.round((banPrice * sizeFeet) / FEET_PER_BAN);
 }
+
+function setStockAddUnitMode(mode) {
+  stockAddUnitMode = mode;
+  const banWrap = document.getElementById("banFieldsWrap");
+  const pieceWrap = document.getElementById("pieceFieldsWrap");
+  const banBtn = document.getElementById("unitModeBanBtn");
+  const pieceBtn = document.getElementById("unitModePieceBtn");
+  if (banWrap) banWrap.classList.toggle("hidden", mode !== "ban");
+  if (pieceWrap) pieceWrap.classList.toggle("hidden", mode !== "piece");
+  if (banBtn)
+    banBtn.className =
+      "btn " + (mode === "ban" ? "btn-primary" : "btn-outline");
+  if (pieceBtn)
+    pieceBtn.className =
+      "btn " + (mode === "piece" ? "btn-primary" : "btn-outline");
+  addStockRecalc();
+}
 let stockSellManualOverride = false;
 function addStockRecalc() {
   const szEl = document.getElementById("newSize");
+  if (!szEl) return;
+  const sz = parseFloat(szEl.value) || 0;
+  const stockEl = document.getElementById("newStock");
+  const sellEl = document.getElementById("newSell");
+
+  if (stockAddUnitMode === "piece") {
+    const pieceQtyEl = document.getElementById("newPieceQty");
+    const pieceBuyEl = document.getElementById("newPieceBuyPrice");
+    const pieceQty = pieceQtyEl
+      ? Math.max(0, parseFloat(pieceQtyEl.value) || 0)
+      : 0;
+    const buyPerPiece = pieceBuyEl
+      ? Math.max(0, parseFloat(pieceBuyEl.value) || 0)
+      : 0;
+    if (stockEl) stockEl.value = Math.round(pieceQty);
+    if (sellEl && !stockSellManualOverride)
+      sellEl.value = buyPerPiece > 0 ? buyPerPiece + 10 : "";
+    return;
+  }
+
   const banEl = document.getElementById("newBanPrice");
   const banQtyEl = document.getElementById("newBanQty");
-  if (!szEl || !banEl) return;
-  const sz = parseFloat(szEl.value) || 0;
+  if (!banEl) return;
   const banPrice = parseFloat(banEl.value) || 0;
   const banQty = banQtyEl ? parseFloat(banQtyEl.value) || 0 : 0;
   const piecesPerBan = sz > 0 ? FEET_PER_BAN / sz : 0;
@@ -2578,8 +2615,6 @@ function addStockRecalc() {
   const infoEl = document.getElementById("newPiecesInfo");
   const buyEl = document.getElementById("newBuyComputed");
   const totalPiecesEl = document.getElementById("newTotalPiecesInfo");
-  const stockEl = document.getElementById("newStock");
-  const sellEl = document.getElementById("newSell");
   if (infoEl)
     infoEl.textContent = `এক বানে (৭২ ফুট) প্রায় ${piecesPerBan ? piecesPerBan.toFixed(1) : "০"} পিস আসে`;
   if (buyEl) buyEl.textContent = fmt(buyPerPiece);
@@ -2588,17 +2623,6 @@ function addStockRecalc() {
   if (stockEl) stockEl.value = totalPieces;
   if (sellEl && !stockSellManualOverride)
     sellEl.value = buyPerPiece > 0 ? buyPerPiece + 10 : "";
-}
-function editStockRecalc(sz) {
-  const banEl = document.getElementById("editBanPrice");
-  const sellEl = document.getElementById("editSell");
-  if (!banEl) return;
-  const banPrice = parseFloat(banEl.value) || 0;
-  const buyPerPiece = calcBuyFromBan(banPrice, sz);
-  const el = document.getElementById("editBuyComputed");
-  if (el) el.textContent = fmt(buyPerPiece);
-  if (sellEl && !stockSellManualOverride)
-    sellEl.value = buyPerPiece > 0 ? buyPerPiece + 10 : sellEl.value;
 }
 function editNewBanRecalc(sz) {
   const qtyEl = document.getElementById("editNewBanQty");
@@ -2635,7 +2659,9 @@ function editAddBanToStock(brand, mm, sz) {
     `${addPieces} পিস স্টকে যোগ হয়েছে ও কেনার খাতায় লেখা হয়েছে — সংরক্ষণ করতে "সংরক্ষণ করুন" চাপুন`,
   );
 }
+
 function addStockPrompt() {
+  stockAddUnitMode = "ban";
   const mmOptions = MM_LIST.map((m) => `<option value="${m}">`).join("");
   const szOptions = SIZE_LIST.map((s) => `<option value="${s}">`).join("");
   openModal(
@@ -2649,6 +2675,14 @@ function addStockPrompt() {
  <input type="number" id="newSize" list="sizeSuggestList" value="${SIZE_LIST[0]}" step="0.5" min="1" placeholder="যেমনঃ 8" oninput="addStockRecalc()">
  <datalist id="sizeSuggestList">${szOptions}</datalist>
  </div>
+ <div class="field">
+ <label>কীভাবে স্টক যোগ করবেন</label>
+ <div style="display:flex;gap:8px;">
+ <button type="button" id="unitModeBanBtn" class="btn btn-primary" style="flex:1;justify-content:center;" onclick="setStockAddUnitMode('ban')">📦 বান হিসেবে</button>
+ <button type="button" id="unitModePieceBtn" class="btn btn-outline" style="flex:1;justify-content:center;" onclick="setStockAddUnitMode('piece')">🔢 পিস হিসেবে</button>
+ </div>
+ </div>
+ <div id="banFieldsWrap">
  <div class="field"><label>বানের দাম (৳) — ৭২ ফুট = ১ বান</label><input type="number" id="newBanPrice" value="4000" min="0" oninput="addStockRecalc()"></div>
  <div class="field"><label>কয় বান কিনলেন</label><input type="number" id="newBanQty" value="1" min="0" step="0.5" oninput="addStockRecalc()"></div>
  <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;">
@@ -2656,8 +2690,13 @@ function addStockPrompt() {
  <div id="newTotalPiecesInfo" style="margin-top:4px;font-weight:600;">০ বানে মোট প্রায় ০ পিস আসবে</div>
  <div style="display:flex;justify-content:space-between;margin-top:6px;"><span>প্রতি পিস ক্রয়মূল্য (স্বয়ংক্রিয়)</span><b class="mono" id="newBuyComputed">৳০</b></div>
  </div>
+ </div>
+ <div id="pieceFieldsWrap" class="hidden">
+ <div class="field"><label>কত পিস স্টকে যোগ করবেন</label><input type="number" id="newPieceQty" value="0" min="0" oninput="addStockRecalc()"></div>
+ <div class="field"><label>প্রতি পিস ক্রয়মূল্য (৳)</label><input type="number" id="newPieceBuyPrice" value="0" min="0" oninput="addStockRecalc()"></div>
+ </div>
  <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="newSell" value="570" min="0"></div>
- <div class="field"><label>স্টক (পিস) — বান সংখ্যা অনুযায়ী স্বয়ংক্রিয়ভাবে বসেছে, চাইলে হাতে ঠিক করে নিন</label><input type="number" id="newStock" value="0" min="0"></div>
+ <div class="field"><label>স্টক (পিস) — উপরের হিসাব অনুযায়ী স্বয়ংক্রিয়ভাবে বসেছে, চাইলে হাতে ঠিক করে নিন</label><input type="number" id="newStock" value="0" min="0"></div>
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -2673,10 +2712,22 @@ function saveNewStock() {
     showToast("মিলিমিটার ও সাইজ লিখুন");
     return;
   }
-  const banPrice = parseInt(document.getElementById("newBanPrice").value) || 0;
-  const banQty = parseFloat(document.getElementById("newBanQty").value) || 0;
-  const buyPerPiece = calcBuyFromBan(banPrice, parseFloat(sz));
   const stockPieces = parseInt(document.getElementById("newStock").value) || 0;
+  let buyPerPiece = 0;
+  let banPrice = 0;
+  let banQty = 0;
+
+  if (stockAddUnitMode === "piece") {
+    buyPerPiece = Math.max(
+      0,
+      parseInt(document.getElementById("newPieceBuyPrice").value) || 0,
+    );
+  } else {
+    banPrice = parseInt(document.getElementById("newBanPrice").value) || 0;
+    banQty = parseFloat(document.getElementById("newBanQty").value) || 0;
+    buyPerPiece = calcBuyFromBan(banPrice, parseFloat(sz));
+  }
+
   if (!inventory[stockBrand][mm]) inventory[stockBrand][mm] = {};
   inventory[stockBrand][mm][sz] = {
     buy: buyPerPiece,
@@ -2684,7 +2735,21 @@ function saveNewStock() {
     sell: parseInt(document.getElementById("newSell").value) || 0,
     stock: stockPieces,
   };
-  if (banQty > 0 && banPrice > 0) {
+
+  if (stockAddUnitMode === "piece") {
+    if (stockPieces > 0 && buyPerPiece > 0) {
+      recordPurchase(
+        stockBrand,
+        mm,
+        sz,
+        0,
+        buyPerPiece,
+        stockPieces,
+        buyPerPiece,
+        stockPieces * buyPerPiece,
+      );
+    }
+  } else if (banQty > 0 && banPrice > 0) {
     recordPurchase(
       stockBrand,
       mm,
@@ -2776,8 +2841,20 @@ function saveStockEdit(brand, mm, sz) {
 /* ============================================================
  কেনার খাতা (PURCHASE LEDGER)
  ============================================================ */
-function recordPurchase(brand, mm, sz, banQty, banPrice, pieces, buyPerPiece) {
-  const cost = Math.round(Number(banQty) * Number(banPrice));
+function recordPurchase(
+  brand,
+  mm,
+  sz,
+  banQty,
+  banPrice,
+  pieces,
+  buyPerPiece,
+  explicitCost,
+) {
+  const cost =
+    explicitCost != null
+      ? Math.round(Number(explicitCost))
+      : Math.round(Number(banQty) * Number(banPrice));
   purchases.push({
     id: purchaseCounter++,
     date: new Date(),
