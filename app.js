@@ -5829,12 +5829,12 @@ function profitDrillTo(index) {
 
 function metricCardsHtml(m) {
   return `
- <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);">
- <div class="stat-card" style="--accent:var(--steel-700)"><div class="lbl">পণ্য বিক্রয়</div><div class="val">${fmt(m.sales)}</div></div>
- <div class="stat-card" style="--accent:var(--amber)"><div class="lbl">ক্রয়মূল্য (COGS)</div><div class="val">${fmt(m.cogs)}</div></div>
- <div class="stat-card" style="--accent:${m.grossProfit >= 0 ? "var(--green)" : "var(--red)"}"><div class="lbl">গ্রস মুনাফা</div><div class="val">${fmt(m.grossProfit)}</div></div>
- <div class="stat-card" style="--accent:var(--red)"><div class="lbl">ছাড় (বাদ)</div><div class="val">${fmt(m.discount)}</div></div>
- <div class="stat-card" style="--accent:${m.netProfit >= 0 ? "var(--green)" : "var(--red)"}"><div class="lbl">নিট মুনাফা</div><div class="val" style="color:${m.netProfit >= 0 ? "var(--green)" : "var(--red)"}">${fmt(m.netProfit)}</div></div>
+ <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px;">
+ <div class="stat-card" style="--accent:var(--steel-700)"><div class="lbl">পণ্য বিক্রয়</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.sales)}</div></div>
+ <div class="stat-card" style="--accent:var(--amber)"><div class="lbl">ক্রয়মূল্য (COGS)</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.cogs)}</div></div>
+ <div class="stat-card" style="--accent:${m.grossProfit >= 0 ? "var(--green)" : "var(--red)"}"><div class="lbl">গ্রস মুনাফা</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.grossProfit)}</div></div>
+ <div class="stat-card" style="--accent:var(--red)"><div class="lbl">ছাড় (বাদ)</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.discount)}</div></div>
+ <div class="stat-card" style="--accent:${m.netProfit >= 0 ? "var(--green)" : "var(--red)"}"><div class="lbl">নিট মুনাফা</div><div class="val" style="font-size:16px;word-break:break-word;color:${m.netProfit >= 0 ? "var(--green)" : "var(--red)"}">${fmt(m.netProfit)}</div></div>
  </div>
  <div class="panel" style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
  <div style="font-size:13px;color:var(--steel-500);">
