@@ -143,6 +143,7 @@ let invoiceSearch = "";
 let ledgerSearch = "";
 let cashSearch = "";
 let dailySelectedDate = null;
+let dailyOverviewPreset = "all"; // 'day' | 'month' | 'year' | 'all'
 // বাকির খাতায় কোন গ্রাহকের বিস্তারিত দেখানো হচ্ছে
 let ledgerDetailId = null;
 
@@ -5541,6 +5542,55 @@ function renderDaily() {
 
   if (!dailySelectedDate) {
     const todayStr = toDateInputValue(new Date());
+    const now = new Date();
+    const curMonthKey = monthKeyOf(now);
+    const curYearKey = String(now.getFullYear());
+
+    const filteredKeys = sortedKeys.filter((k) => {
+      if (dailyOverviewPreset === "day") return k === todayStr;
+      if (dailyOverviewPreset === "month") return k.slice(0, 7) === curMonthKey;
+      if (dailyOverviewPreset === "year") return k.slice(0, 4) === curYearKey;
+      return true; // 'all'
+    });
+
+    const totals = filteredKeys.reduce(
+      (acc, k) => {
+        const d = days[k];
+        acc.sales += d.sales;
+        acc.purchase += d.purchase;
+        acc.collected += d.collected;
+        acc.expense += d.expense;
+        acc.dueGiven += d.dueGiven;
+        acc.txCount += d.txCount;
+        return acc;
+      },
+      {
+        sales: 0,
+        purchase: 0,
+        collected: 0,
+        expense: 0,
+        dueGiven: 0,
+        txCount: 0,
+      },
+    );
+
+    const presetTabs = `
+ <div class="tab-row" style="margin-bottom:14px;">
+ <button class="btn ${dailyOverviewPreset === "day" ? "btn-primary" : "btn-outline"}" onclick="dailyOverviewSetPreset('day')">দিন</button>
+ <button class="btn ${dailyOverviewPreset === "month" ? "btn-primary" : "btn-outline"}" onclick="dailyOverviewSetPreset('month')">মাস</button>
+ <button class="btn ${dailyOverviewPreset === "year" ? "btn-primary" : "btn-outline"}" onclick="dailyOverviewSetPreset('year')">বছর</button>
+ <button class="btn ${dailyOverviewPreset === "all" ? "btn-primary" : "btn-outline"}" onclick="dailyOverviewSetPreset('all')">সব সময়</button>
+ </div>`;
+
+    const totalsPanel = `
+ <div class="stat-grid" style="grid-template-columns:repeat(5,1fr); margin-bottom:16px;">
+ <div class="stat-card" style="--accent:var(--rust)"><div class="lbl">মোট বিক্রয়</div><div class="val">${fmt(totals.sales)}</div></div>
+ <div class="stat-card" style="--accent:var(--steel-700)"><div class="lbl">মোট ক্রয়</div><div class="val">${fmt(totals.purchase)}</div></div>
+ <div class="stat-card" style="--accent:var(--green)"><div class="lbl">মোট আদায়</div><div class="val">${fmt(totals.collected)}</div></div>
+ <div class="stat-card" style="--accent:var(--amber)"><div class="lbl">মোট খরচ</div><div class="val">${fmt(totals.expense)}</div></div>
+ <div class="stat-card" style="--accent:var(--red)"><div class="lbl">নতুন বাকি</div><div class="val">${fmt(totals.dueGiven)}</div></div>
+ </div>`;
+
     const datePicker = `
  <div class="panel" style="margin-bottom:16px; display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap;">
  <div class="field" style="margin-bottom:0; flex:1; min-width:180px;">
@@ -5550,18 +5600,22 @@ function renderDaily() {
  <button class="btn btn-primary" onclick="openDailyDetail(document.getElementById('dailyDatePicker').value)">দেখুন</button>
  </div>`;
 
-    if (sortedKeys.length === 0) {
+    if (filteredKeys.length === 0) {
       return (
+        presetTabs +
+        totalsPanel +
         datePicker +
-        `<div class="empty-state"><div class="ic">📅</div>এখনো কোনো লেনদেন হয়নি<br><span style="font-size:12px;">উপরে তারিখ বেছে "দেখুন" চাপুন, অথবা বিক্রয়/পেমেন্ট/খরচ/ক্রয় নিলে সেই তারিখ এখানে তালিকায় দেখা যাবে</span></div>`
+        `<div class="empty-state"><div class="ic">📅</div>এই সময়ে কোনো লেনদেন নেই<br><span style="font-size:12px;">উপরে তারিখ বেছে "দেখুন" চাপুন, অথবা বিক্রয়/পেমেন্ট/খরচ/ক্রয় নিলে সেই তারিখ এখানে তালিকায় দেখা যাবে</span></div>`
       );
     }
 
     return (
+      presetTabs +
+      totalsPanel +
       datePicker +
       `
  <div style="font-size:13px;color:var(--steel-500);margin-bottom:14px;">লেনদেন হয়েছে এমন দিনগুলোর তালিকা — যেকোনোটিতে ক্লিক করে বিস্তারিত দেখুন</div>
- ${sortedKeys
+ ${filteredKeys
    .map((k) => {
      const d = days[k];
      return `<div class="day-card" onclick="openDailyDetail('${k}')">
@@ -5656,6 +5710,10 @@ function renderDaily() {
  </div>
  ${combined.length === 0 ? `<div class="no-match">এই দিনে কোনো লেনদেন নেই</div>` : combined.map((x) => x.html).join("")}
  `;
+}
+function dailyOverviewSetPreset(p) {
+  dailyOverviewPreset = p;
+  render();
 }
 function openDailyDetail(k) {
   if (!k) return;
