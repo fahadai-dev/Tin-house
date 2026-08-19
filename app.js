@@ -121,6 +121,11 @@ let quickSaleNextId = 1;
 let currentView = "dashboard";
 let lastInvoiceId = null;
 let lastPaymentId = null;
+function pushBackStep() {
+  try {
+    history.pushState({ sub: true }, "");
+  } catch (e) {}
+}
 let posStep = 1;
 let posBrand = null;
 let posBrandSearch = "";
@@ -877,6 +882,45 @@ function switchView(id, opts) {
   }
 }
 window.addEventListener("popstate", (e) => {
+  const modalOverlay = document.getElementById("modalOverlay");
+  if (modalOverlay && modalOverlay.classList.contains("active")) {
+    modalOverlay.classList.remove("active");
+    __pwConfirmCallback = null;
+    return;
+  }
+  if (currentView === "sales" && posStep === 2) {
+    posGoStep(1);
+    return;
+  }
+  if (currentView === "stock" && stockStep === 2) {
+    stockGoStep(1);
+    return;
+  }
+  if (currentView === "ledger" && ledgerDetailId) {
+    ledgerDetailId = null;
+    render();
+    return;
+  }
+  if (currentView === "employees" && employeeDetailId) {
+    employeeDetailId = null;
+    render();
+    return;
+  }
+  if (currentView === "suppliers" && supplierDetailId) {
+    supplierDetailId = null;
+    render();
+    return;
+  }
+  if (currentView === "daily" && dailySelectedDate) {
+    dailySelectedDate = null;
+    render();
+    return;
+  }
+  if (currentView === "profit" && profitDrillPath.length > 0) {
+    profitDrillPath.pop();
+    render();
+    return;
+  }
   const view = (e.state && e.state.view) || "dashboard";
   switchView(view, { fromPopState: true });
 });
@@ -1630,6 +1674,7 @@ function posSelectBrand(b) {
   posStep = 2;
   posItemSearch = "";
   render();
+  pushBackStep();
 }
 
 function posBrandSearchInput(val) {
@@ -2462,6 +2507,7 @@ function stockSelectBrand(b) {
   stockStep = 2;
   stockSearch = "";
   render();
+  pushBackStep();
 }
 function addBrandPrompt() {
   openModal(
@@ -3362,6 +3408,7 @@ function employeePeriodTotal(personId, period) {
 function openEmployeeDetail(id) {
   employeeDetailId = id;
   render();
+  pushBackStep();
 }
 
 /* ---- মাস-ভিত্তিক বেতন/অগ্রিম সমন্বয় ---- */
@@ -3725,6 +3772,7 @@ function getSupplierPaymentCategoryId() {
 function openSupplierDetail(id) {
   supplierDetailId = id;
   render();
+  pushBackStep();
 }
 
 function addSupplierPrompt() {
@@ -4088,6 +4136,7 @@ function renderSupplierDetail(id) {
 function openCustomerDetail(id) {
   ledgerDetailId = id;
   render();
+  pushBackStep();
 }
 
 function renderCustomerDetail(id) {
@@ -5594,6 +5643,7 @@ function openDailyDetail(k) {
   if (!k) return;
   dailySelectedDate = k;
   render();
+  pushBackStep();
 }
 
 /* ============================================================
@@ -5690,6 +5740,7 @@ function profitSwitchTab(tab) {
 function profitDrillInto(type, key) {
   profitDrillPath.push({ type, key });
   render();
+  pushBackStep();
 }
 function profitDrillTo(index) {
   profitDrillPath = profitDrillPath.slice(0, index + 1);
@@ -6601,6 +6652,7 @@ function openModal(title, body, foot) {
  <div class="modal-body">${body}</div>
  <div class="modal-foot">${foot}</div>`;
   document.getElementById("modalOverlay").classList.add("active");
+  pushBackStep();
 }
 function closeModal() {
   document.getElementById("modalOverlay").classList.remove("active");
