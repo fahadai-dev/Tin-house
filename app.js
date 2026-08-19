@@ -126,6 +126,11 @@ function pushBackStep() {
     history.pushState({ sub: true }, "");
   } catch (e) {}
 }
+function scrollContentTop() {
+  const c = document.getElementById("content");
+  if (c) c.scrollTop = 0;
+  window.scrollTo(0, 0);
+}
 let posStep = 1;
 let posBrand = null;
 let posBrandSearch = "";
@@ -871,6 +876,7 @@ function switchView(id, opts) {
   const homeBtnEl = document.getElementById("homeBtn");
   if (homeBtnEl) homeBtnEl.classList.toggle("hidden", id === "dashboard");
   render();
+  scrollContentTop();
   // মোবাইলে ব্যাক বাটন চাপলে যেন পুরো অ্যাপ থেকে বের না হয়ে শুধু একধাপ পেছনে যায়
   if (!opts.fromPopState) {
     try {
@@ -899,26 +905,31 @@ window.addEventListener("popstate", (e) => {
   if (currentView === "ledger" && ledgerDetailId) {
     ledgerDetailId = null;
     render();
+    scrollContentTop();
     return;
   }
   if (currentView === "employees" && employeeDetailId) {
     employeeDetailId = null;
     render();
+    scrollContentTop();
     return;
   }
   if (currentView === "suppliers" && supplierDetailId) {
     supplierDetailId = null;
     render();
+    scrollContentTop();
     return;
   }
   if (currentView === "daily" && dailySelectedDate) {
     dailySelectedDate = null;
     render();
+    scrollContentTop();
     return;
   }
   if (currentView === "profit" && profitDrillPath.length > 0) {
     profitDrillPath.pop();
     render();
+    scrollContentTop();
     return;
   }
   const view = (e.state && e.state.view) || "dashboard";
@@ -1668,6 +1679,7 @@ function posGoStep(step) {
     posItemSearch = "";
   }
   render();
+  scrollContentTop();
 }
 function posSelectBrand(b) {
   posBrand = b;
@@ -1675,6 +1687,7 @@ function posSelectBrand(b) {
   posItemSearch = "";
   render();
   pushBackStep();
+  scrollContentTop();
 }
 
 function posBrandSearchInput(val) {
@@ -2501,6 +2514,7 @@ function stockGoStep(step) {
     stockSearch = "";
   }
   render();
+  scrollContentTop();
 }
 function stockSelectBrand(b) {
   stockBrand = b;
@@ -2508,6 +2522,7 @@ function stockSelectBrand(b) {
   stockSearch = "";
   render();
   pushBackStep();
+  scrollContentTop();
 }
 function addBrandPrompt() {
   openModal(
@@ -3409,6 +3424,7 @@ function openEmployeeDetail(id) {
   employeeDetailId = id;
   render();
   pushBackStep();
+  scrollContentTop();
 }
 
 /* ---- মাস-ভিত্তিক বেতন/অগ্রিম সমন্বয় ---- */
@@ -3673,7 +3689,7 @@ function renderEmployeeDetail(id) {
   const remaining = salary - totalForMonth;
 
   const backRow = `<div class="back-row">
- <button class="btn btn-outline" onclick="employeeDetailId=null; render();">← সব কর্মচারী</button>
+ <button class="btn btn-outline" onclick="employeeDetailId=null; render(); scrollContentTop();">← সব কর্মচারী</button>
  <div class="cur-brand">${esc(p.name)}</div>
  </div>`;
 
@@ -3773,6 +3789,7 @@ function openSupplierDetail(id) {
   supplierDetailId = id;
   render();
   pushBackStep();
+  scrollContentTop();
 }
 
 function addSupplierPrompt() {
@@ -4042,7 +4059,7 @@ function renderSupplierDetail(id) {
     .reduce((sum, e) => sum + e.amount, 0);
 
   const backRow = `<div class="back-row">
- <button class="btn btn-outline" onclick="supplierDetailId=null; render();">← সব সাপ্লায়ার</button>
+ <button class="btn btn-outline" onclick="supplierDetailId=null; render(); scrollContentTop();">← সব সাপ্লায়ার</button>
  <div class="cur-brand">${esc(s.name)}</div>
  </div>`;
 
@@ -4137,6 +4154,7 @@ function openCustomerDetail(id) {
   ledgerDetailId = id;
   render();
   pushBackStep();
+  scrollContentTop();
 }
 
 function renderCustomerDetail(id) {
@@ -4154,7 +4172,7 @@ function renderCustomerDetail(id) {
   const totalPaidAllTime = cust.paidTotal || 0;
 
   const backRow = `<div class="back-row">
- <button class="btn btn-outline" onclick="ledgerDetailId=null; render();">← বাকির খাতা</button>
+ <button class="btn btn-outline" onclick="ledgerDetailId=null; render(); scrollContentTop();">← বাকির খাতা</button>
  <div class="cur-brand">${esc(cust.name)}</div>
  </div>`;
 
@@ -5626,7 +5644,7 @@ function renderDaily() {
 
   return `
  <div class="back-row">
- <button class="btn btn-outline" onclick="dailySelectedDate=null; render();">← সব তারিখ</button>
+ <button class="btn btn-outline" onclick="dailySelectedDate=null; render(); scrollContentTop();">← সব তারিখ</button>
  <div class="cur-brand">${dayLabel(k)}</div>
  </div>
  <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);">
@@ -5644,6 +5662,7 @@ function openDailyDetail(k) {
   dailySelectedDate = k;
   render();
   pushBackStep();
+  scrollContentTop();
 }
 
 /* ============================================================
@@ -5736,15 +5755,18 @@ function profitSwitchTab(tab) {
   profitTab = tab;
   profitDrillPath = [];
   render();
+  scrollContentTop();
 }
 function profitDrillInto(type, key) {
   profitDrillPath.push({ type, key });
   render();
   pushBackStep();
+  scrollContentTop();
 }
 function profitDrillTo(index) {
   profitDrillPath = profitDrillPath.slice(0, index + 1);
   render();
+  scrollContentTop();
 }
 
 function metricCardsHtml(m) {
