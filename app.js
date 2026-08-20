@@ -1583,7 +1583,8 @@ function renderSales() {
  </div>
  ${renderRecentQuickSales()}`;
 
-  return quickSaleBar + cartBar + bodyHtml;
+  const showQuickSale = posStep !== 0;
+  return (showQuickSale ? quickSaleBar : "") + cartBar + bodyHtml;
 }
 function renderRecentQuickSales() {
   const recent = quickSales.slice(-5).reverse();
@@ -2916,8 +2917,8 @@ function setStockAddUnitMode(mode) {
   const pieceWrap = document.getElementById("pieceFieldsWrap");
   const banBtn = document.getElementById("unitModeBanBtn");
   const pieceBtn = document.getElementById("unitModePieceBtn");
-  if (banWrap) banWrap.classList.toggle("hidden", mode !== "ban");
-  if (pieceWrap) pieceWrap.classList.toggle("hidden", mode !== "piece");
+  if (banWrap) banWrap.style.display = mode === "ban" ? "block" : "none";
+  if (pieceWrap) pieceWrap.style.display = mode === "piece" ? "block" : "none";
   if (banBtn)
     banBtn.className =
       "btn " + (mode === "ban" ? "btn-primary" : "btn-outline");
@@ -3028,7 +3029,7 @@ function addStockPrompt() {
  <button type="button" id="unitModePieceBtn" class="btn btn-outline" style="flex:1;justify-content:center;" onclick="setStockAddUnitMode('piece')">🔢 পিস হিসেবে</button>
  </div>
  </div>
- <div id="banFieldsWrap">
+  <div id="banFieldsWrap" style="display:block;">
  <div class="field"><label>বানের দাম (৳) — ৭২ ফুট = ১ বান</label><input type="number" id="newBanPrice" value="4000" min="0" oninput="addStockRecalc()"></div>
  <div class="field"><label>কয় বান কিনলেন</label><input type="number" id="newBanQty" value="1" min="0" step="0.5" oninput="addStockRecalc()"></div>
  <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;">
@@ -3037,7 +3038,7 @@ function addStockPrompt() {
  <div style="display:flex;justify-content:space-between;margin-top:6px;"><span>প্রতি পিস ক্রয়মূল্য (স্বয়ংক্রিয়)</span><b class="mono" id="newBuyComputed">৳০</b></div>
  </div>
  </div>
- <div id="pieceFieldsWrap" class="hidden">
+  <div id="pieceFieldsWrap" style="display:none;">
  <div class="field"><label>কত পিস স্টকে যোগ করবেন</label><input type="number" id="newPieceQty" value="0" min="0" oninput="addStockRecalc()"></div>
  <div class="field"><label>প্রতি পিস ক্রয়মূল্য (৳)</label><input type="number" id="newPieceBuyPrice" value="0" min="0" oninput="addStockRecalc()"></div>
  </div>
