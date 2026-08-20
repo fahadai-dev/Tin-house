@@ -15,6 +15,60 @@ if ("serviceWorker" in navigator) {
  ডেটা মডেল (Supabase-এ shop_data টেবিলে JSON আকারে সংরক্ষিত হয়)
  ============================================================ */
 let BRANDS = ["আকিজ", "পিএইচপি", "কেওয়াই স্টিল", "নাহার", "গ্যালকো"];
+let PRODUCT_CATEGORIES = [
+  {
+    id: "tin",
+    name: "টিন",
+    icon: "🏠",
+    hasBrands: true,
+    unitLabel: "মিলিমিটার",
+    sizeLabel: "সাইজ/ফুট",
+  },
+  {
+    id: "tua",
+    name: "টুয়া",
+    icon: "🔩",
+    hasBrands: false,
+    unitLabel: "মিলিমিটার",
+    sizeLabel: "সাইজ/ফুট",
+  },
+  {
+    id: "plainsheet",
+    name: "প্লেন সিট",
+    icon: "🧱",
+    hasBrands: false,
+    unitLabel: "মিলিমিটার",
+    sizeLabel: "সাইজ/ফুট",
+  },
+  {
+    id: "hardware",
+    name: "হার্ডওয়্যার",
+    icon: "🛠️",
+    hasBrands: false,
+    unitLabel: "মিলিমিটার",
+    sizeLabel: "সাইজ/ফুট",
+  },
+];
+let categoryNextId = 5;
+let brandCategory = {}; // ব্র্যান্ডের নাম -> ক্যাটাগরি আইডি
+function ensureCategoryPseudoBrand(cat) {
+  if (cat.hasBrands) return;
+  if (!BRANDS.includes(cat.name)) BRANDS.push(cat.name);
+  if (!inventory[cat.name]) inventory[cat.name] = {};
+  brandCategory[cat.name] = cat.id;
+}
+function initCategoryPseudoBrands() {
+  PRODUCT_CATEGORIES.forEach((cat) => {
+    if (!cat.hasBrands) ensureCategoryPseudoBrand(cat);
+  });
+  BRANDS.forEach((b) => {
+    if (!brandCategory[b]) brandCategory[b] = "tin";
+  });
+}
+function getCategoryOf(brand) {
+  const cid = brandCategory[brand];
+  return PRODUCT_CATEGORIES.find((c) => c.id === cid) || PRODUCT_CATEGORIES[0];
+}
 const MM_LIST = [12, 13, 14, 15, 16, 17, 18, 19, 20];
 const SIZE_LIST = [6, 7, 8, 9, 10, 11, 12];
 const FEET_PER_BAN = 72; // ৭২ ফুটে এক বান
@@ -131,11 +185,13 @@ function scrollContentTop() {
   if (c) c.scrollTop = 0;
   window.scrollTo(0, 0);
 }
-let posStep = 1;
+let posStep = 0;
+let posCategory = null;
 let posBrand = null;
 let posBrandSearch = "";
 let posItemSearch = "";
-let stockStep = 1;
+let stockStep = 0;
+let stockCategory = null;
 let stockBrand = null;
 let stockSearch = "";
 let stockAddUnitMode = "ban"; // 'ban' | 'piece'
@@ -534,6 +590,9 @@ async function deleteStaffConfirmed(id) {
 function collectState(isNewShop) {
   return {
     BRANDS,
+    PRODUCT_CATEGORIES,
+    categoryNextId,
+    brandCategory,
     inventory: isNewShop ? buildDemoInventory() : inventory,
     ledger,
     ledgerNextId,
@@ -609,6 +668,13 @@ function applyState(s) {
   SHOP_EMAIL = s.shopEmail || "";
   SHOP_LOGO = s.shopLogo || "";
   lastBackupAt = s.lastBackupAt || null;
+  PRODUCT_CATEGORIES =
+    s.PRODUCT_CATEGORIES && s.PRODUCT_CATEGORIES.length
+      ? s.PRODUCT_CATEGORIES
+      : PRODUCT_CATEGORIES;
+  categoryNextId = s.categoryNextId || categoryNextId;
+  brandCategory = s.brandCategory || {};
+  initCategoryPseudoBrands();
 }
 let persistTimer = null;
 function persistShopData() {
@@ -794,13 +860,15 @@ function switchView(id, opts) {
   }
   currentView = id;
   if (id === "sales") {
-    posStep = 1;
+    posStep = 0;
+    posCategory = null;
     posBrand = null;
     posBrandSearch = "";
     posItemSearch = "";
   }
   if (id === "stock") {
-    stockStep = 1;
+    stockStep = 0;
+    stockCategory = null;
     stockBrand = null;
     stockSearch = "";
   }
@@ -909,11 +977,21 @@ window.addEventListener("popstate", (e) => {
     return;
   }
   if (currentView === "sales" && posStep === 2) {
-    posGoStep(1);
+    const posCat = PRODUCT_CATEGORIES.find((c) => c.id === posCategory);
+    posGoStep(posCat && !posCat.hasBrands ? 0 : 1);
+    return;
+  }
+  if (currentView === "sales" && posStep === 1) {
+    posGoStep(0);
     return;
   }
   if (currentView === "stock" && stockStep === 2) {
-    stockGoStep(1);
+    const stockCat = PRODUCT_CATEGORIES.find((c) => c.id === stockCategory);
+    stockGoStep(stockCat && !stockCat.hasBrands ? 0 : 1);
+    return;
+  }
+  if (currentView === "stock" && stockStep === 1) {
+    stockGoStep(0);
     return;
   }
   if (currentView === "ledger" && ledgerDetailId) {
@@ -1383,14 +1461,26 @@ function renderDashboard() {
 function renderSales() {
   let bodyHtml;
 
-  if (posStep === 1) {
+  if (posStep === 0) {
+    bodyHtml = categoryCardsHtml("sales");
+  } else if (posStep === 1) {
     const q = posBrandSearch.trim().toLowerCase();
-    const filteredBrands = BRANDS.filter((b) => b.toLowerCase().includes(q));
+    const catBrandsList = BRANDS.filter(
+      (b) => brandCategory[b] === posCategory,
+    );
+    const filteredBrands = catBrandsList.filter((b) =>
+      b.toLowerCase().includes(q),
+    );
+
+    const backBar = `<div class="back-row">
+ <button class="btn btn-outline" onclick="posGoStep(0)">← ক্যাটাগরি</button>
+ <div class="cur-brand">${esc((PRODUCT_CATEGORIES.find((c) => c.id === posCategory) || {}).name || "")}</div>
+ </div>`;
 
     const searchBar = `
  <div class="search-bar ${q ? "has-val" : ""}">
  <span class="sic">🔍</span>
- <input type="text" id="posBrandSearchInput" value="${posBrandSearch}" placeholder="ব্র্যান্ডের নাম দিয়ে সার্চ করুন (যেমনঃ আকিজ)"
+ <input type="text" id="posBrandSearchInput" value="${posBrandSearch}" placeholder="ব্র্যান্ডের নাম দিয়ে সার্চ করুন"
  oninput="posBrandSearchInput(this.value)" autocomplete="off">
  <span class="sclear" onclick="posBrandSearchInput('')">✕</span>
  </div>`;
@@ -1417,13 +1507,22 @@ function renderSales() {
             .join("") +
           `</div>`;
 
-    bodyHtml = searchBar + grid;
+    bodyHtml = backBar + searchBar + grid;
   } else {
+    const cat = getCategoryOf(posBrand);
     const q = posItemSearch.trim().toLowerCase();
     const results = [];
     Object.keys(inventory[posBrand] || {}).forEach((mm) => {
       Object.keys(inventory[posBrand][mm]).forEach((sz) => {
-        const hay = (mm + " মি:লি: " + sz + " ফুট").toLowerCase();
+        const hay = (
+          mm +
+          " " +
+          cat.unitLabel +
+          " " +
+          sz +
+          " " +
+          cat.sizeLabel
+        ).toLowerCase();
         if (q === "" || hay.includes(q))
           results.push({ mm, sz, v: inventory[posBrand][mm][sz] });
       });
@@ -1431,13 +1530,13 @@ function renderSales() {
     results.sort((a, b) => a.mm - b.mm || a.sz - b.sz);
 
     const backBar = `<div class="back-row">
- <button class="btn btn-outline" onclick="posGoStep(1)">← পেছনে যান</button>
+ <button class="btn btn-outline" onclick="posGoStep(${cat.hasBrands ? 1 : 0})">← পেছনে যান</button>
  <div class="cur-brand">${esc(posBrand)}</div>
  </div>`;
     const searchBar = `
  <div class="search-bar ${q ? "has-val" : ""}">
  <span class="sic">🔍</span>
- <input type="text" id="posItemSearchInput" value="${posItemSearch}" placeholder="মি:লি: বা ফুট দিয়ে সার্চ করুন (যেমনঃ ১৪, ৮ ফুট)"
+ <input type="text" id="posItemSearchInput" value="${posItemSearch}" placeholder="${esc(cat.unitLabel)} বা ${esc(cat.sizeLabel)} দিয়ে সার্চ করুন"
  oninput="posItemSearchInput(this.value)" autocomplete="off">
  <span class="sclear" onclick="posItemSearchInput('')">✕</span>
  </div>`;
@@ -1446,8 +1545,8 @@ function renderSales() {
     const list =
       results.length === 0
         ? isBrandEmpty
-          ? `<div class="no-match">📦 ${esc(posBrand)}-এ এখনো কোনো মাল স্টকে যোগ করা হয়নি। "স্টক তালিকা" থেকে আগে এই ব্র্যান্ডে মাল যোগ করুন।</div>`
-          : `<div class="no-match">🔍 এই ব্র্যান্ডে মিল খুঁজে পাওয়া যায়নি</div>`
+          ? `<div class="no-match">📦 ${esc(posBrand)}-এ এখনো কোনো মাল স্টকে যোগ করা হয়নি। "স্টক তালিকা" থেকে আগে মাল যোগ করুন।</div>`
+          : `<div class="no-match">🔍 মিল খুঁজে পাওয়া যায়নি</div>`
         : `<div class="search-results">` +
           results
             .map((r, i) => {
@@ -1455,7 +1554,7 @@ function renderSales() {
               return `<div class="result-row ${out ? "out" : ""}">
  <div class="result-serial">${i + 1}</div>
  <div class="result-info">
- <div class="rname">${esc(posBrand)} <span class="rdim">· ${r.mm} মি:লি: · ${r.sz} ফুট</span></div>
+ <div class="rname">${esc(posBrand)} <span class="rdim">· ${r.mm} ${esc(cat.unitLabel)} · ${r.sz} ${esc(cat.sizeLabel)}</span></div>
  <div class="rmeta">ক্রয়ঃ <b>${fmt(r.v.buy)}</b> &nbsp;বিক্রয়ঃ <b>${fmt(r.v.sell)}</b> &nbsp;স্টকঃ <b class="${r.v.stock <= 3 ? "stock-low" : ""}">${r.v.stock} পিস</b></div>
  </div>
  <button class="result-add" ${out ? "disabled" : ""} onclick="addToCart('${jsq(posBrand)}', ${r.mm}, ${r.sz})">${out ? "স্টক নেই" : "+ যোগ করুন"}</button>
@@ -1685,11 +1784,31 @@ function deleteQuickSale(id) {
 }
 function posGoStep(step) {
   posStep = step;
+  if (step === 0) {
+    posCategory = null;
+    posBrand = null;
+    posItemSearch = "";
+  }
   if (step === 1) {
     posBrand = null;
     posItemSearch = "";
   }
   render();
+  scrollContentTop();
+}
+function posSelectCategory(id) {
+  posCategory = id;
+  const cat = PRODUCT_CATEGORIES.find((c) => c.id === id);
+  if (cat && !cat.hasBrands) {
+    posBrand = cat.name;
+    posStep = 2;
+  } else {
+    posStep = 1;
+  }
+  posBrandSearch = "";
+  posItemSearch = "";
+  render();
+  pushBackStep();
   scrollContentTop();
 }
 function posSelectBrand(b) {
@@ -2444,31 +2563,43 @@ function openReceiptModal(kind, id) {
  স্টক তালিকা (ম্যানেজমেন্ট)
  ============================================================ */
 function renderStock() {
+  if (stockStep === 0) return categoryCardsHtml("stock");
+
   if (stockStep === 1) {
+    const catBrandsList = BRANDS.filter(
+      (b) => brandCategory[b] === stockCategory,
+    );
     return `
+ <div class="back-row">
+ <button class="btn btn-outline" onclick="stockGoStep(0)">← ক্যাটাগরি</button>
+ <div class="cur-brand">${esc((PRODUCT_CATEGORIES.find((c) => c.id === stockCategory) || {}).name || "")}</div>
+ </div>
  <div class="mgmt-toolbar">
- <div style="font-size:13px;color:var(--steel-500);">একটি ব্র্যান্ডের ঘরে ক্লিক করে তার মি:লি: ও সাইজ অনুযায়ী স্টক পরিচালনা করুন</div>
+ <div style="font-size:13px;color:var(--steel-500);">একটি ব্র্যান্ডের ঘরে ক্লিক করে স্টক পরিচালনা করুন</div>
  <button class="btn btn-primary" onclick="addBrandPrompt()">+ নতুন ব্র্যান্ড</button>
  </div>
  <div class="brand-grid">
- ${BRANDS.map((b) => {
-   let itemCount = 0,
-     totalStock = 0;
-   Object.values(inventory[b] || {}).forEach((szObj) =>
-     Object.values(szObj).forEach((v) => {
-       itemCount++;
-       totalStock += v.stock;
-     }),
-   );
-   return `<div class="brand-tile" style="position:relative; cursor:pointer;" onclick="stockSelectBrand('${jsq(b)}')">
+ ${catBrandsList
+   .map((b) => {
+     let itemCount = 0,
+       totalStock = 0;
+     Object.values(inventory[b] || {}).forEach((szObj) =>
+       Object.values(szObj).forEach((v) => {
+         itemCount++;
+         totalStock += v.stock;
+       }),
+     );
+     return `<div class="brand-tile" style="position:relative; cursor:pointer;" onclick="stockSelectBrand('${jsq(b)}')">
  <button type="button" onclick="event.stopPropagation(); editBrandPrompt('${jsq(b)}')" title="ব্র্যান্ড এডিট/মুছুন" style="position:absolute; top:8px; right:8px; background:var(--steel-100); border:none; border-radius:8px; width:28px; height:28px; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✏️</button>
  <div class="bname">${esc(b)}</div>
  <div class="bmeta">${itemCount} টি আইটেম · ${totalStock} পিস স্টক</div>
  </div>`;
- }).join("")}
+   })
+   .join("")}
  </div>`;
   }
 
+  const cat = getCategoryOf(stockBrand);
   const q = stockSearch.trim().toLowerCase();
   let rows = "";
   Object.keys(inventory[stockBrand] || {})
@@ -2485,7 +2616,7 @@ function renderStock() {
               ? v.banPrice
               : Math.round((v.buy * FEET_PER_BAN) / sz);
           rows += `<tr>
- <td class="num mono">${mm} মি:লি:</td><td class="num mono">${sz} ফুট</td>
+ <td class="num mono">${mm} ${esc(cat.unitLabel)}</td><td class="num mono">${sz} ${esc(cat.sizeLabel)}</td>
  <td class="num mono">${fmt(banVal)}</td>
  <td class="num mono">${fmt(v.buy)}</td><td class="num mono">${fmt(v.sell)}</td>
  <td class="num mono">${v.stock}</td>
@@ -2500,32 +2631,171 @@ function renderStock() {
     : `<tr><td colspan="8" class="no-match">🔍 কোনো ফলাফল পাওয়া যায়নি</td></tr>`;
   return `
  <div class="back-row">
- <button class="btn btn-outline" onclick="stockGoStep(1)">← পেছনে যান</button>
+ <button class="btn btn-outline" onclick="stockGoStep(${cat.hasBrands ? 1 : 0})">← পেছনে যান</button>
  <div class="cur-brand">${esc(stockBrand)}</div>
  </div>
  <div class="mgmt-toolbar">
- <div style="font-size:13px;color:var(--steel-500);">${esc(stockBrand)}-এর মিলিমিটার ও সাইজ অনুযায়ী স্টক ও মূল্য তালিকা (৭২ ফুট = ১ বান হিসেবে)</div>
+ <div style="font-size:13px;color:var(--steel-500);">${esc(stockBrand)}-এর ${esc(cat.unitLabel)} ও ${esc(cat.sizeLabel)} অনুযায়ী স্টক ও মূল্য তালিকা</div>
  <button class="btn btn-primary" onclick="addStockPrompt()">+ নতুন মাল যোগ করুন</button>
  </div>
  <div class="search-bar ${q ? "has-val" : ""}">
  <span class="sic">🔍</span>
- <input type="text" id="stockSearchInput" value="${stockSearch}" placeholder="মি:লি: বা ফুট দিয়ে সার্চ করুন..."
+ <input type="text" id="stockSearchInput" value="${stockSearch}" placeholder="${esc(cat.unitLabel)} বা ${esc(cat.sizeLabel)} দিয়ে সার্চ করুন..."
  oninput="stockSearchInputFn(this.value)" autocomplete="off">
  <span class="sclear" onclick="stockSearchInputFn('')">✕</span>
  </div>
  <table class="tbl">
- <thead><tr><th>মি:লি:</th><th>সাইজ</th><th>বানের দাম</th><th>ক্রয়মূল্য/পিস</th><th>বিক্রয়মূল্য</th><th>স্টক</th><th>অবস্থা</th><th></th></tr></thead>
+ <thead><tr><th>${esc(cat.unitLabel)}</th><th>${esc(cat.sizeLabel)}</th><th>বানের দাম</th><th>ক্রয়মূল্য/পিস</th><th>বিক্রয়মূল্য</th><th>স্টক</th><th>অবস্থা</th><th></th></tr></thead>
  <tbody>${rows || emptyMsg}</tbody>
  </table>`;
 }
 function stockGoStep(step) {
   stockStep = step;
+  if (step === 0) {
+    stockCategory = null;
+    stockBrand = null;
+    stockSearch = "";
+  }
   if (step === 1) {
     stockBrand = null;
     stockSearch = "";
   }
   render();
   scrollContentTop();
+}
+function stockSelectCategory(id) {
+  stockCategory = id;
+  const cat = PRODUCT_CATEGORIES.find((c) => c.id === id);
+  if (cat && !cat.hasBrands) {
+    stockBrand = cat.name;
+    stockStep = 2;
+  } else {
+    stockStep = 1;
+  }
+  stockSearch = "";
+  render();
+  pushBackStep();
+  scrollContentTop();
+}
+function categoryCardsHtml(navType) {
+  const selectFn =
+    navType === "stock" ? "stockSelectCategory" : "posSelectCategory";
+  return `
+ <div class="mgmt-toolbar">
+ <div style="font-size:13px;color:var(--steel-500);">একটা ক্যাটাগরিতে ক্লিক করুন</div>
+ <button class="btn btn-primary" onclick="addCategoryPrompt()">+ নতুন ক্যাটাগরি</button>
+ </div>
+ <div class="brand-grid">
+ ${PRODUCT_CATEGORIES.map((cat) => {
+   let itemCount = 0;
+   Object.keys(brandCategory).forEach((b) => {
+     if (brandCategory[b] === cat.id && inventory[b]) {
+       Object.values(inventory[b]).forEach((mmObj) => {
+         itemCount += Object.keys(mmObj).length;
+       });
+     }
+   });
+   return `<div class="brand-tile" style="position:relative; cursor:pointer; transition:all 0.15s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(0,0,0,0.12)';" onmouseout="this.style.transform='none';this.style.boxShadow='';" onclick="${selectFn}('${cat.id}')">
+ <button type="button" onclick="event.stopPropagation(); editCategoryPrompt('${cat.id}')" title="ক্যাটাগরি এডিট" style="position:absolute; top:8px; right:8px; background:var(--steel-100); border:none; border-radius:8px; width:28px; height:28px; font-size:13px; cursor:pointer;">✏️</button>
+ <div style="font-size:26px;margin-bottom:6px;">${cat.icon}</div>
+ <div class="bname">${esc(cat.name)}</div>
+ <div class="bmeta">${itemCount} টি আইটেম</div>
+ </div>`;
+ }).join("")}
+ </div>`;
+}
+function addCategoryPrompt() {
+  openModal(
+    "নতুন ক্যাটাগরি যোগ করুন",
+    `
+ <div class="field"><label>ক্যাটাগরির নাম</label><input type="text" id="newCatName2" placeholder="যেমনঃ পাইপ"></div>
+ <div class="field"><label>আইকন (ইমোজি)</label><input type="text" id="newCatIcon2" value="📦"></div>
+ <div class="field"><label><input type="checkbox" id="newCatHasBrands" style="width:auto;margin-right:6px;"> এই ক্যাটাগরিতে একাধিক ব্র্যান্ড থাকবে (টিনের মতো)</label></div>
+ <div class="field"><label>প্রথম মাপের লেবেল (যেমনঃ মিলিমিটার/ইঞ্চি)</label><input type="text" id="newCatUnitLabel" value="মিলিমিটার"></div>
+ <div class="field"><label>দ্বিতীয় মাপের লেবেল (যেমনঃ সাইজ/ফুট)</label><input type="text" id="newCatSizeLabel" value="সাইজ/ফুট"></div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveNewCategory()">যোগ করুন</button>
+ `,
+  );
+}
+function saveNewCategory() {
+  const name = document.getElementById("newCatName2").value.trim();
+  if (!name) {
+    showToast("নাম আবশ্যক");
+    return;
+  }
+  if (PRODUCT_CATEGORIES.some((c) => c.name === name)) {
+    showToast("এই নামে ক্যাটাগরি আগে থেকেই আছে");
+    return;
+  }
+  const icon = document.getElementById("newCatIcon2").value.trim() || "📦";
+  const hasBrands = document.getElementById("newCatHasBrands").checked;
+  const unitLabel =
+    document.getElementById("newCatUnitLabel").value.trim() || "মিলিমিটার";
+  const sizeLabel =
+    document.getElementById("newCatSizeLabel").value.trim() || "সাইজ/ফুট";
+  const cat = {
+    id: "cat" + categoryNextId++,
+    name,
+    icon,
+    hasBrands,
+    unitLabel,
+    sizeLabel,
+  };
+  PRODUCT_CATEGORIES.push(cat);
+  ensureCategoryPseudoBrand(cat);
+  closeModal();
+  render();
+  showToast("নতুন ক্যাটাগরি যুক্ত হয়েছে");
+  persistShopData();
+}
+function editCategoryPrompt(id) {
+  const cat = PRODUCT_CATEGORIES.find((c) => c.id === id);
+  if (!cat) return;
+  openModal(
+    `ক্যাটাগরি এডিট — ${esc(cat.name)}`,
+    `
+ <div class="field"><label>ক্যাটাগরির নাম</label><input type="text" id="editCatName2" value="${esc(cat.name)}"></div>
+ <div class="field"><label>আইকন (ইমোজি)</label><input type="text" id="editCatIcon2" value="${esc(cat.icon)}"></div>
+ <div class="field"><label>প্রথম মাপের লেবেল</label><input type="text" id="editCatUnitLabel" value="${esc(cat.unitLabel)}"></div>
+ <div class="field"><label>দ্বিতীয় মাপের লেবেল</label><input type="text" id="editCatSizeLabel" value="${esc(cat.sizeLabel)}"></div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveCategoryEdit('${id}')">সংরক্ষণ করুন</button>
+ `,
+  );
+}
+function saveCategoryEdit(id) {
+  const cat = PRODUCT_CATEGORIES.find((c) => c.id === id);
+  if (!cat) return;
+  const name = document.getElementById("editCatName2").value.trim();
+  if (!name) {
+    showToast("নাম আবশ্যক");
+    return;
+  }
+  if (!cat.hasBrands && name !== cat.name) {
+    if (inventory[cat.name]) {
+      inventory[name] = inventory[cat.name];
+      delete inventory[cat.name];
+    }
+    const bIdx = BRANDS.indexOf(cat.name);
+    if (bIdx > -1) BRANDS[bIdx] = name;
+    delete brandCategory[cat.name];
+    brandCategory[name] = cat.id;
+  }
+  cat.name = name;
+  cat.icon = document.getElementById("editCatIcon2").value.trim() || cat.icon;
+  cat.unitLabel =
+    document.getElementById("editCatUnitLabel").value.trim() || cat.unitLabel;
+  cat.sizeLabel =
+    document.getElementById("editCatSizeLabel").value.trim() || cat.sizeLabel;
+  closeModal();
+  render();
+  showToast("ক্যাটাগরি আপডেট হয়েছে");
+  persistShopData();
 }
 function stockSelectBrand(b) {
   stockBrand = b;
@@ -2559,6 +2829,7 @@ function saveNewBrand() {
   }
   BRANDS.push(name);
   inventory[name] = {};
+  brandCategory[name] = stockCategory || "tin";
   closeModal();
   render();
   showToast("নতুন ব্র্যান্ড যুক্ত হয়েছে");
@@ -2592,6 +2863,8 @@ function saveBrandRename(oldName) {
     if (idx > -1) BRANDS[idx] = newName;
     inventory[newName] = inventory[oldName] || {};
     if (newName !== oldName) delete inventory[oldName];
+    brandCategory[newName] = brandCategory[oldName];
+    delete brandCategory[oldName];
     logActivity("ব্র্যান্ডের নাম পরিবর্তন", `${oldName} → ${newName}`);
   }
   closeModal();
@@ -2734,16 +3007,17 @@ function editAddBanToStock(brand, mm, sz) {
 
 function addStockPrompt() {
   stockAddUnitMode = "ban";
+  const cat = getCategoryOf(stockBrand);
   const mmOptions = MM_LIST.map((m) => `<option value="${m}">`).join("");
   const szOptions = SIZE_LIST.map((s) => `<option value="${s}">`).join("");
   openModal(
     `নতুন মাল যোগ করুন — ${esc(stockBrand)}`,
     `
- <div class="field"><label>মিলিমিটার (তালিকা থেকে বাছুন বা নিজে লিখুন)</label>
+ <div class="field"><label>${esc(cat.unitLabel)} (তালিকা থেকে বাছুন বা নিজে লিখুন)</label>
  <input type="number" id="newMM" list="mmSuggestList" value="${MM_LIST[0]}" step="0.5" min="1" placeholder="যেমনঃ 14">
  <datalist id="mmSuggestList">${mmOptions}</datalist>
  </div>
- <div class="field"><label>সাইজ / ফুট (তালিকা থেকে বাছুন বা নিজে লিখুন)</label>
+  <div class="field"><label>${esc(cat.sizeLabel)} (তালিকা থেকে বাছুন বা নিজে লিখুন)</label>
  <input type="number" id="newSize" list="sizeSuggestList" value="${SIZE_LIST[0]}" step="0.5" min="1" placeholder="যেমনঃ 8" oninput="addStockRecalc()">
  <datalist id="sizeSuggestList">${szOptions}</datalist>
  </div>
@@ -2839,15 +3113,16 @@ function saveNewStock() {
 }
 function editStockPrompt(brand, mm, sz) {
   const v = inventory[brand][mm][sz];
+  const cat = getCategoryOf(brand);
   const banStart =
     v.banPrice != null ? v.banPrice : Math.round((v.buy * FEET_PER_BAN) / sz);
   openModal(
     `এডিট — ${esc(brand)} · ${mm}মি:লি: · ${sz}ফুট`,
     `
  <div style="font-size:11.5px;color:var(--red);margin-bottom:10px;line-height:1.5;">ভুল করে মি:লি: বা ফুট ভুল দিয়ে থাকলে এখানে ঠিক করে নিন।</div>
- <div style="display:flex; gap:10px;">
- <div class="field" style="flex:1;"><label>মি:লি:</label><input type="number" id="editMM" value="${mm}" step="0.5" min="1"></div>
- <div class="field" style="flex:1;"><label>ফুট</label><input type="number" id="editSize" value="${sz}" step="0.5" min="1"></div>
+  <div style="display:flex; gap:10px;">
+ <div class="field" style="flex:1;"><label>${esc(cat.unitLabel)}</label><input type="number" id="editMM" value="${mm}" step="0.5" min="1"></div>
+ <div class="field" style="flex:1;"><label>${esc(cat.sizeLabel)}</label><input type="number" id="editSize" value="${sz}" step="0.5" min="1"></div>
  </div>
  <div class="field"><label>বানের দাম (৳) — ৭২ ফুট = ১ বান</label><input type="number" id="editBanPrice" value="${banStart}" min="0" oninput="editStockRecalc(${sz})"></div>
  <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;">
