@@ -149,6 +149,11 @@ let ledgerDetailId = null;
 
 let purchaseSearch = "";
 let salesLedgerSearch = "";
+let salesLedgerPreset = "month"; // 'day' | 'month' | 'year' | 'all'
+let salesLedgerAnchor = new Date();
+let salesLedgerCatPreset = "month";
+let salesLedgerCatAnchor = new Date();
+let salesLedgerCatType = "cash";
 
 let cashboxPreset = "month";
 let cashboxFrom = null;
@@ -804,6 +809,8 @@ function switchView(id, opts) {
   }
   if (id === "salesLedger") {
     salesLedgerSearch = "";
+    salesLedgerPreset = "month";
+    salesLedgerAnchor = new Date();
   }
   if (id === "invoices") {
     invoiceSearch = "";
@@ -3137,7 +3144,8 @@ function purchaseSearchInputFn(val) {
  ============================================================ */
 function renderSalesLedger() {
   const q = salesLedgerSearch.trim().toLowerCase();
-  const period = listPeriod.salesLedger || "all";
+  const range = salesLedgerGetRange();
+
   const searchBar = `
  <div class="search-bar ${q ? "has-val" : ""}">
  <span class="sic">🔍</span>
@@ -3146,14 +3154,69 @@ function renderSalesLedger() {
  <span class="sclear" onclick="salesLedgerSearchInputFn('')">✕</span>
  </div>`;
 
-  if (invoices.length === 0)
+  if (invoices.length === 0 && quickSales.length === 0)
     return `<div class="empty-state"><div class="ic">📗</div>এখনো কোনো বিক্রয় হয়নি<br><span style="font-size:12px;">"বিক্রয়" থেকে প্রথম ইনভয়েস তৈরি করুন</span></div>`;
 
-  let rows = [];
+  const presetTabs = `
+ <div class="tab-row" style="margin-bottom:10px;">
+ <button class="btn ${salesLedgerPreset === "day" ? "btn-primary" : "btn-outline"}" onclick="salesLedgerSetPreset('day')">দিন</button>
+ <button class="btn ${salesLedgerPreset === "month" ? "btn-primary" : "btn-outline"}" onclick="salesLedgerSetPreset('month')">মাস</button>
+ <button class="btn ${salesLedgerPreset === "year" ? "btn-primary" : "btn-outline"}" onclick="salesLedgerSetPreset('year')">বছর</button>
+ <button class="btn ${salesLedgerPreset === "all" ? "btn-primary" : "btn-outline"}" onclick="salesLedgerSetPreset('all')">সব সময়</button>
+ </div>`;
+
+  const navBar =
+    salesLedgerPreset !== "all"
+      ? `
+ <div style="display:flex;align-items:center;justify-content:space-between;background:var(--steel-900);border-radius:10px;padding:11px 16px;margin-bottom:14px;">
+ <button type="button" onclick="salesLedgerNav(-1)" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:4px 8px;">←</button>
+ <div style="color:white;font-size:14px;font-weight:700;">${salesLedgerRangeLabel()}</div>
+ <button type="button" onclick="salesLedgerNav(1)" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:4px 8px;">→</button>
+ </div>`
+      : `<div style="margin-bottom:14px;"></div>`;
+
+  let cashTotal = 0,
+    dueTotal = 0,
+    quickTotal = 0,
+    invoiceSalesTotal = 0;
   invoices.forEach((inv) => {
     if (inv.cancelled) return;
+    if (!reportInRange(inv.date, range.from, range.to)) return;
+    invoiceSalesTotal += inv.total;
+    cashTotal += inv.paid;
+    dueTotal += inv.due;
+  });
+  quickSales.forEach((qs) => {
+    if (!reportInRange(qs.date, range.from, range.to)) return;
+    quickTotal += qs.totalAmount;
+  });
+  const grandTotal = invoiceSalesTotal + quickTotal;
+
+  const totalHero = `
+ <div class="dash-hero" style="margin-bottom:14px;">
+ <div class="dh-label">${salesLedgerPreset === "all" ? "সর্বমোট বিক্রয়" : salesLedgerRangeLabel() + " — মোট বিক্রয়"}</div>
+ <div class="dh-val">${fmt(grandTotal)}</div>
+ </div>`;
+
+  const catCards = `
+ <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:16px;">
+ <div class="stat-card" style="--accent:var(--green); cursor:pointer;" onclick="openSalesLedgerCategoryDetail('cash')">
+ <div class="lbl">💵 নগদ বিক্রি</div><div class="val" style="font-size:16px;">${fmt(cashTotal)}</div>
+ </div>
+ <div class="stat-card" style="--accent:var(--red); cursor:pointer;" onclick="openSalesLedgerCategoryDetail('due')">
+ <div class="lbl">📒 বাকি বিক্রি</div><div class="val" style="font-size:16px;">${fmt(dueTotal)}</div>
+ </div>
+ <div class="stat-card" style="--accent:var(--amber); cursor:pointer;" onclick="openSalesLedgerCategoryDetail('quick')">
+ <div class="lbl">⚡ দ্রুত বিক্রি</div><div class="val" style="font-size:16px;">${fmt(quickTotal)}</div>
+ </div>
+ </div>`;
+
+  let itemRows = [];
+  invoices.forEach((inv) => {
+    if (inv.cancelled) return;
+    if (!reportInRange(inv.date, range.from, range.to)) return;
     inv.items.forEach((it) => {
-      rows.push({
+      itemRows.push({
         date: inv.date,
         invId: inv.id,
         customer: inv.customer,
@@ -3168,8 +3231,7 @@ function renderSalesLedger() {
     });
   });
 
-  const filtered = rows.filter((r) => {
-    if (!inSelectedPeriod(r.date, period)) return false;
+  const filtered = itemRows.filter((r) => {
     if (q === "") return true;
     const dateStr = new Date(r.date).toLocaleDateString("bn-BD", {
       weekday: "long",
@@ -3193,7 +3255,10 @@ function renderSalesLedger() {
 
   if (filtered.length === 0)
     return (
-      periodTabsHtml("salesLedger") +
+      presetTabs +
+      navBar +
+      totalHero +
+      catCards +
       searchBar +
       `<div class="no-match">🔍 এই সময়ে/সার্চে কোনো ফলাফল পাওয়া যায়নি</div>`
     );
@@ -3202,11 +3267,14 @@ function renderSalesLedger() {
   const totalAmt = filtered.reduce((s, r) => s + r.total, 0);
 
   return (
-    periodTabsHtml("salesLedger") +
+    presetTabs +
+    navBar +
+    totalHero +
+    catCards +
     `
- <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);">
+ <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px;">
  <div class="stat-card" style="--accent:var(--rust)"><div class="lbl">মোট বিক্রিত পিস</div><div class="val">${totalQty}</div></div>
- <div class="stat-card" style="--accent:var(--green)"><div class="lbl">মোট বিক্রয় মূল্য</div><div class="val">${fmt(totalAmt)}</div></div>
+ <div class="stat-card" style="--accent:var(--green)"><div class="lbl">পণ্যের বিক্রয় মূল্য</div><div class="val">${fmt(totalAmt)}</div></div>
  <div class="stat-card" style="--accent:var(--amber)"><div class="lbl">মোট এন্ট্রি</div><div class="val">${filtered.length}</div></div>
  </div>
  ${searchBar}
@@ -3240,6 +3308,196 @@ function salesLedgerSearchInputFn(val) {
     const p = el.value.length;
     el.setSelectionRange(p, p);
   }
+}
+function salesLedgerGetRange() {
+  const a = salesLedgerAnchor;
+  if (salesLedgerPreset === "day") {
+    const k = dayKey(a);
+    return { from: k, to: k };
+  }
+  if (salesLedgerPreset === "month") {
+    const first = new Date(a.getFullYear(), a.getMonth(), 1);
+    const last = new Date(a.getFullYear(), a.getMonth() + 1, 0);
+    return { from: dayKey(first), to: dayKey(last) };
+  }
+  if (salesLedgerPreset === "year") {
+    return { from: a.getFullYear() + "-01-01", to: a.getFullYear() + "-12-31" };
+  }
+  return { from: null, to: null };
+}
+function salesLedgerRangeLabel() {
+  const a = salesLedgerAnchor;
+  if (salesLedgerPreset === "day") return dayLabel(dayKey(a));
+  if (salesLedgerPreset === "month") return monthLabelOf(monthKeyOf(a));
+  if (salesLedgerPreset === "year") return bnDigits(a.getFullYear()) + " সাল";
+  return "সব সময়";
+}
+function salesLedgerNav(delta) {
+  const a = new Date(salesLedgerAnchor);
+  if (salesLedgerPreset === "day") a.setDate(a.getDate() + delta);
+  else if (salesLedgerPreset === "month") a.setMonth(a.getMonth() + delta);
+  else if (salesLedgerPreset === "year") a.setFullYear(a.getFullYear() + delta);
+  else return;
+  salesLedgerAnchor = a;
+  render();
+}
+function salesLedgerSetPreset(p) {
+  salesLedgerPreset = p;
+  salesLedgerAnchor = new Date();
+  render();
+}
+
+/* ===== "বেচার খাতা"-র নগদ/বাকি/দ্রুত বিক্রি — কার্ডে ক্লিক করলে বিস্তারিত মডাল ===== */
+function openSalesLedgerCategoryDetail(type) {
+  salesLedgerCatType = type;
+  salesLedgerCatPreset = "month";
+  salesLedgerCatAnchor = new Date();
+  renderSalesLedgerCatModal();
+}
+function salesLedgerCatTitle(type) {
+  if (type === "cash") return "💵 নগদ বিক্রি";
+  if (type === "due") return "📒 বাকি বিক্রি";
+  return "⚡ দ্রুত বিক্রি";
+}
+function salesLedgerCatGetRange() {
+  const a = salesLedgerCatAnchor;
+  if (salesLedgerCatPreset === "day") {
+    const k = dayKey(a);
+    return { from: k, to: k };
+  }
+  if (salesLedgerCatPreset === "month") {
+    const first = new Date(a.getFullYear(), a.getMonth(), 1);
+    const last = new Date(a.getFullYear(), a.getMonth() + 1, 0);
+    return { from: dayKey(first), to: dayKey(last) };
+  }
+  if (salesLedgerCatPreset === "year") {
+    return { from: a.getFullYear() + "-01-01", to: a.getFullYear() + "-12-31" };
+  }
+  return { from: null, to: null };
+}
+function salesLedgerCatRangeLabel() {
+  const a = salesLedgerCatAnchor;
+  if (salesLedgerCatPreset === "day") return dayLabel(dayKey(a));
+  if (salesLedgerCatPreset === "month") return monthLabelOf(monthKeyOf(a));
+  if (salesLedgerCatPreset === "year")
+    return bnDigits(a.getFullYear()) + " সাল";
+  return "সব সময়";
+}
+function salesLedgerCatNav(delta) {
+  const a = new Date(salesLedgerCatAnchor);
+  if (salesLedgerCatPreset === "day") a.setDate(a.getDate() + delta);
+  else if (salesLedgerCatPreset === "month") a.setMonth(a.getMonth() + delta);
+  else if (salesLedgerCatPreset === "year")
+    a.setFullYear(a.getFullYear() + delta);
+  else return;
+  salesLedgerCatAnchor = a;
+  renderSalesLedgerCatModal();
+}
+function salesLedgerCatSetPreset(p) {
+  salesLedgerCatPreset = p;
+  salesLedgerCatAnchor = new Date();
+  renderSalesLedgerCatModal();
+}
+function renderSalesLedgerCatModal() {
+  const type = salesLedgerCatType;
+  const range = salesLedgerCatGetRange();
+  let rows = [],
+    total = 0;
+
+  if (type === "cash") {
+    invoices.forEach((inv) => {
+      if (inv.cancelled) return;
+      if (!reportInRange(inv.date, range.from, range.to)) return;
+      if (inv.paid > 0) {
+        total += inv.paid;
+        rows.push({
+          t: new Date(inv.date).getTime(),
+          html: `
+ <div class="day-tx">
+ <div>
+ <div class="txname">${esc(inv.customer)}</div>
+ <div class="txmeta">ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
+ </div>
+ <div class="mono" style="font-weight:700;color:var(--green);">${fmt(inv.paid)}</div>
+ </div>`,
+        });
+      }
+    });
+  } else if (type === "due") {
+    invoices.forEach((inv) => {
+      if (inv.cancelled) return;
+      if (!reportInRange(inv.date, range.from, range.to)) return;
+      if (inv.due > 0) {
+        total += inv.due;
+        rows.push({
+          t: new Date(inv.date).getTime(),
+          html: `
+ <div class="day-tx">
+ <div>
+ <div class="txname">${esc(inv.customer)}</div>
+ <div class="txmeta">ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
+ </div>
+ <div class="mono" style="font-weight:700;color:var(--red);">${fmt(inv.due)}</div>
+ </div>`,
+        });
+      }
+    });
+  } else {
+    quickSales.forEach((qs) => {
+      if (!reportInRange(qs.date, range.from, range.to)) return;
+      total += qs.totalAmount;
+      rows.push({
+        t: new Date(qs.date).getTime(),
+        html: `
+ <div class="day-tx">
+ <div>
+ <div class="txname">${qs.name ? esc(qs.name) : "নাম নেই"}</div>
+ <div class="txmeta">${new Date(qs.date).toLocaleDateString("bn-BD")}${qs.profit ? " · লাভ " + fmt(qs.profit) : ""}</div>
+ </div>
+ <div class="mono" style="font-weight:700;">${fmt(qs.totalAmount)}</div>
+ </div>`,
+      });
+    });
+  }
+
+  rows.sort((a, b) => b.t - a.t);
+
+  const presetTabs = `
+ <div class="tab-row" style="margin-bottom:10px;">
+ <button class="btn ${salesLedgerCatPreset === "day" ? "btn-primary" : "btn-outline"}" style="padding:7px 12px;font-size:12px;" onclick="salesLedgerCatSetPreset('day')">দিন</button>
+ <button class="btn ${salesLedgerCatPreset === "month" ? "btn-primary" : "btn-outline"}" style="padding:7px 12px;font-size:12px;" onclick="salesLedgerCatSetPreset('month')">মাস</button>
+ <button class="btn ${salesLedgerCatPreset === "year" ? "btn-primary" : "btn-outline"}" style="padding:7px 12px;font-size:12px;" onclick="salesLedgerCatSetPreset('year')">বছর</button>
+ <button class="btn ${salesLedgerCatPreset === "all" ? "btn-primary" : "btn-outline"}" style="padding:7px 12px;font-size:12px;" onclick="salesLedgerCatSetPreset('all')">সব সময়</button>
+ </div>`;
+
+  const navBar =
+    salesLedgerCatPreset !== "all"
+      ? `
+ <div style="display:flex;align-items:center;justify-content:space-between;background:var(--steel-900);border-radius:9px;padding:9px 12px;margin-bottom:12px;">
+ <button type="button" onclick="salesLedgerCatNav(-1)" style="background:none;border:none;color:white;font-size:18px;cursor:pointer;">←</button>
+ <div style="color:white;font-size:13px;font-weight:600;">${salesLedgerCatRangeLabel()}</div>
+ <button type="button" onclick="salesLedgerCatNav(1)" style="background:none;border:none;color:white;font-size:18px;cursor:pointer;">→</button>
+ </div>`
+      : "";
+
+  const totalBar = `
+ <div style="background:var(--steel-100);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13.5px;display:flex;justify-content:space-between;">
+ <span>এই সময়ে সর্বমোট</span><b class="mono">${fmt(total)}</b>
+ </div>`;
+
+  const body =
+    presetTabs +
+    navBar +
+    totalBar +
+    (rows.length === 0
+      ? `<div class="no-match">এই সময়ে কোনো লেনদেন নেই</div>`
+      : rows.map((r) => r.html).join(""));
+
+  openModal(
+    salesLedgerCatTitle(type),
+    body,
+    `<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>`,
+  );
 }
 
 /* ============================================================
