@@ -700,7 +700,7 @@ function computePeriodStats(period) {
     dueGiven = 0,
     dueReceived = 0,
     expense = 0,
-    quickProfit = 0;
+    quickSalesRevenue = 0;
 
   invoices.forEach((inv) => {
     if (inv.cancelled) return;
@@ -717,12 +717,12 @@ function computePeriodStats(period) {
     if (matches(e.date)) expense += e.amount;
   });
   quickSales.forEach((q) => {
-    if (q.mode === "profit" && matches(q.date)) quickProfit += q.profit;
+    if (matches(q.date)) quickSalesRevenue += q.totalAmount;
   });
 
   return {
-    sales,
-    received: receivedFromSales + dueReceived + quickProfit,
+    sales: sales + quickSalesRevenue,
+    received: receivedFromSales + dueReceived + quickSalesRevenue,
     dueGiven,
     dueReceived,
     expense,
@@ -1483,7 +1483,7 @@ function renderRecentQuickSales() {
      (q) => `
  <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--steel-100);font-size:12.5px;">
  <div>
- <span class="tx-tag ${q.mode === "profit" ? "payment" : "sale"}">${q.mode === "profit" ? "শুধু লাভ" : "লগ"}</span>
+ <span class="tx-tag payment">দ্রুত বিক্রি</span>
  ${q.name ? esc(q.name) + " · " : ""}${fmt(q.totalAmount)}${q.profit ? " · লাভ " + fmt(q.profit) : ""}
  </div>
  <button class="btn btn-outline" style="padding:3px 8px;font-size:11px;color:var(--red);" onclick="requestPasswordConfirm('দ্রুত বিক্রি এন্ট্রি মুছুন', () => deleteQuickSale(${q.id}))">✕</button>
@@ -1550,8 +1550,8 @@ function quickSalePrompt() {
   openModal(
     "⚡ দ্রুত বিক্রি",
     `
- <div style="font-size:11.5px;color:var(--steel-500);margin-bottom:14px;line-height:1.6;">
- নাম ও ফোন দিলে সাধারণ ইনভয়েসের মতোই তৈরি হবে। নাম/ফোন ফাঁকা রেখে শুধু লাভ লিখলে কোনো ইনভয়েস হবে না, শুধু লাভের টাকাটা মূল হিসাবে যোগ হবে। শুধু বিক্রয়ের পরিমাণ লিখলে (নাম/লাভ ছাড়া) এটা শুধু লগ থাকবে, কোনো হিসাবে যোগ হবে না।
+  <div style="font-size:11.5px;color:var(--steel-500);margin-bottom:14px;line-height:1.6;">
+ নাম ও ফোন দিলে সাধারণ ইনভয়েসের মতোই তৈরি হবে (বাকির খাতা/নগদ ক্রেতায় যুক্ত হবে)। নাম/ফোন ফাঁকা রাখলে কোনো ইনভয়েস হবে না, কিন্তু বিক্রয়ের পুরো টাকাটা এখনই আপনার মূল হিসাব (ড্যাশবোর্ড, ক্যাশবক্স) ও লাভ-ক্ষতিতে যোগ হয়ে যাবে — লাভ লিখলে সেটাও আলাদাভাবে হিসাব হবে।
  </div>
  <div class="field"><label>ক্রেতার নাম (ঐচ্ছিক)</label><input type="text" id="qsName" placeholder="ঐচ্ছিক"></div>
  <div class="field"><label>ফোন নাম্বার (ঐচ্ছিক)</label><input type="text" id="qsPhone" placeholder="ঐচ্ছিক"></div>
@@ -1640,21 +1640,6 @@ function confirmQuickSale() {
       `#${invoice.id} · ${name} · ${fmt(totalAmount)}`,
     );
     showToast("ইনভয়েস তৈরি হয়েছে");
-  } else if (profit > 0) {
-    quickSales.push({
-      id: quickSaleNextId++,
-      date: qsDate,
-      name,
-      phone,
-      totalAmount,
-      profit,
-      mode: "profit",
-    });
-    logActivity(
-      "দ্রুত বিক্রি (শুধু লাভ)",
-      `বিক্রয় ${fmt(totalAmount)} · লাভ ${fmt(profit)}`,
-    );
-    showToast(`লাভ ${fmt(profit)} মূল হিসাবে যোগ হয়েছে`);
   } else {
     quickSales.push({
       id: quickSaleNextId++,
@@ -1662,14 +1647,18 @@ function confirmQuickSale() {
       name,
       phone,
       totalAmount,
-      profit: 0,
-      mode: "log",
+      profit,
+      mode: "sale",
     });
     logActivity(
-      "দ্রুত বিক্রি (শুধু লগ)",
-      `বিক্রয় ${fmt(totalAmount)} — হিসাবে যোগ হয়নি`,
+      "দ্রুত বিক্রি",
+      `বিক্রয় ${fmt(totalAmount)}${profit > 0 ? " · লাভ " + fmt(profit) : ""} — মূল হিসাবে যোগ হয়েছে`,
     );
-    showToast("লগ হিসেবে সংরক্ষিত হয়েছে");
+    showToast(
+      profit > 0
+        ? `বিক্রয় ${fmt(totalAmount)} ও লাভ ${fmt(profit)} মূল হিসাবে যোগ হয়েছে`
+        : `বিক্রয় ${fmt(totalAmount)} মূল হিসাবে যোগ হয়েছে`,
+    );
   }
   closeModal();
   render();
@@ -3143,16 +3132,7 @@ function purchaseSearchInputFn(val) {
  বেচার খাতা (SALES LEDGER)
  ============================================================ */
 function renderSalesLedger() {
-  const q = salesLedgerSearch.trim().toLowerCase();
   const range = salesLedgerGetRange();
-
-  const searchBar = `
- <div class="search-bar ${q ? "has-val" : ""}">
- <span class="sic">🔍</span>
- <input type="text" id="salesLedgerSearchInput" value="${esc(salesLedgerSearch)}" placeholder="ব্র্যান্ড, ক্রেতা বা তারিখ দিয়ে সার্চ করুন..."
- oninput="salesLedgerSearchInputFn(this.value)" autocomplete="off">
- <span class="sclear" onclick="salesLedgerSearchInputFn('')">✕</span>
- </div>`;
 
   if (invoices.length === 0 && quickSales.length === 0)
     return `<div class="empty-state"><div class="ic">📗</div>এখনো কোনো বিক্রয় হয়নি<br><span style="font-size:12px;">"বিক্রয়" থেকে প্রথম ইনভয়েস তৈরি করুন</span></div>`;
@@ -3199,7 +3179,7 @@ function renderSalesLedger() {
  </div>`;
 
   const catCards = `
- <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:16px;">
+ <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px;">
  <div class="stat-card" style="--accent:var(--green); cursor:pointer;" onclick="openSalesLedgerCategoryDetail('cash')">
  <div class="lbl">💵 নগদ বিক্রি</div><div class="val" style="font-size:16px;">${fmt(cashTotal)}</div>
  </div>
@@ -3209,95 +3189,10 @@ function renderSalesLedger() {
  <div class="stat-card" style="--accent:var(--amber); cursor:pointer;" onclick="openSalesLedgerCategoryDetail('quick')">
  <div class="lbl">⚡ দ্রুত বিক্রি</div><div class="val" style="font-size:16px;">${fmt(quickTotal)}</div>
  </div>
- </div>`;
-
-  let itemRows = [];
-  invoices.forEach((inv) => {
-    if (inv.cancelled) return;
-    if (!reportInRange(inv.date, range.from, range.to)) return;
-    inv.items.forEach((it) => {
-      itemRows.push({
-        date: inv.date,
-        invId: inv.id,
-        customer: inv.customer,
-        customerPhone: inv.customerPhone,
-        brand: it.brand,
-        mm: it.mm,
-        size: it.size,
-        qty: it.qty,
-        price: it.sellPrice,
-        total: it.qty * it.sellPrice,
-      });
-    });
-  });
-
-  const filtered = itemRows.filter((r) => {
-    if (q === "") return true;
-    const dateStr = new Date(r.date).toLocaleDateString("bn-BD", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    const hay = (
-      r.brand +
-      " " +
-      r.customer +
-      " " +
-      dateStr +
-      " " +
-      r.mm +
-      " " +
-      r.size
-    ).toLowerCase();
-    return hay.includes(q);
-  });
-
-  if (filtered.length === 0)
-    return (
-      presetTabs +
-      navBar +
-      totalHero +
-      catCards +
-      searchBar +
-      `<div class="no-match">🔍 এই সময়ে/সার্চে কোনো ফলাফল পাওয়া যায়নি</div>`
-    );
-
-  const totalQty = filtered.reduce((s, r) => s + r.qty, 0);
-  const totalAmt = filtered.reduce((s, r) => s + r.total, 0);
-
-  return (
-    presetTabs +
-    navBar +
-    totalHero +
-    catCards +
-    `
- <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px;">
- <div class="stat-card" style="--accent:var(--rust)"><div class="lbl">মোট বিক্রিত পিস</div><div class="val">${totalQty}</div></div>
- <div class="stat-card" style="--accent:var(--green)"><div class="lbl">পণ্যের বিক্রয় মূল্য</div><div class="val">${fmt(totalAmt)}</div></div>
- <div class="stat-card" style="--accent:var(--amber)"><div class="lbl">মোট এন্ট্রি</div><div class="val">${filtered.length}</div></div>
  </div>
- ${searchBar}
- <table class="tbl">
- <thead><tr><th>তারিখ</th><th>ইনভয়েস</th><th>ক্রেতা</th><th>পণ্য</th><th class="r">পরিমাণ</th><th class="r">দর</th><th class="r">মোট</th></tr></thead>
- <tbody>${filtered
-   .slice()
-   .sort((a, b) => new Date(b.date) - new Date(a.date))
-   .map(
-     (r) => `
- <tr>
- <td>${new Date(r.date).toLocaleDateString("bn-BD")}</td>
- <td class="num mono">#${r.invId}</td>
- <td>${esc(r.customer)}</td>
- <td>${esc(r.brand)} · ${r.mm}মি:লি: · ${r.size}ফুট</td>
- <td class="num r mono">${r.qty}</td>
- <td class="num r mono">${fmt(r.price)}</td>
- <td class="num r mono">${fmt(r.total)}</td>
- </tr>`,
-   )
-   .join("")}
- </tbody></table>`
-  );
+ <div style="font-size:11.5px;color:var(--steel-500);margin-top:10px;text-align:center;">যেকোনো কার্ডে ক্লিক করে সেই ভাগের বিস্তারিত লেনদেন দেখুন</div>`;
+
+  return presetTabs + navBar + totalHero + catCards;
 }
 function salesLedgerSearchInputFn(val) {
   salesLedgerSearch = val;
@@ -6124,15 +6019,17 @@ function renderProfit() {
  <button class="btn ${profitTab === "yearly" ? "btn-primary" : "btn-outline"}" onclick="profitSwitchTab('yearly')">📈 বার্ষিক</button>
  </div>`;
 
-  const totalQuickProfit = quickSales
-    .filter((q) => q.mode === "profit")
-    .reduce((s, q) => s + q.profit, 0);
+  const totalQuickProfit = quickSales.reduce((s, q) => s + (q.profit || 0), 0);
+  const totalQuickRevenue = quickSales.reduce(
+    (s, q) => s + (q.totalAmount || 0),
+    0,
+  );
   const quickProfitPanel =
-    totalQuickProfit > 0
+    totalQuickRevenue > 0
       ? `
  <div class="panel" style="margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
- <div style="font-size:13px;color:var(--steel-500);">⚡ দ্রুত বিক্রি থেকে (শুধু লাভ, ইনভয়েস ছাড়া) — সর্বমোট</div>
- <b class="mono" style="font-size:16px;color:var(--green);">${fmt(totalQuickProfit)}</b>
+ <div style="font-size:13px;color:var(--steel-500);">⚡ দ্রুত বিক্রি থেকে (ইনভয়েস ছাড়া) — বিক্রয় ${fmt(totalQuickRevenue)}</div>
+ <b class="mono" style="font-size:16px;color:var(--green);">লাভ ${fmt(totalQuickProfit)}</b>
  </div>`
       : "";
 
@@ -6370,16 +6267,15 @@ function renderCashbox() {
     });
   });
   quickSales.forEach((q) => {
-    if (q.mode !== "profit") return;
     if (!reportInRange(q.date, range.from, range.to)) return;
     txns.push({
       t: new Date(q.date).getTime(),
       date: q.date,
       dir: "in",
       cat: "quickprofit",
-      label: `দ্রুত বিক্রি — শুধু লাভ${q.name ? " (" + q.name + ")" : ""}`,
-      detail: `মোট বিক্রয় ${fmt(q.totalAmount)}`,
-      amount: q.profit,
+      label: `দ্রুত বিক্রি${q.name ? " — " + q.name : ""}`,
+      detail: q.profit > 0 ? `লাভ ${fmt(q.profit)}` : "ইনভয়েস ছাড়া বিক্রি",
+      amount: q.totalAmount,
     });
   });
 
@@ -6415,7 +6311,7 @@ function renderCashbox() {
     ["out", "ক্যাশ আউট"],
     ["sale", "বিক্রি"],
     ["due", "বাকি আদায়"],
-    ["quickprofit", "দ্রুত লাভ"],
+    ["quickprofit", "দ্রুত বিক্রি"],
     ["expense", "খরচ"],
     ["purchase", "কেনা"],
   ]
