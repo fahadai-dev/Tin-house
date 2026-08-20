@@ -154,7 +154,7 @@ let salesLedgerAnchor = new Date();
 let salesLedgerCatPreset = "month";
 let salesLedgerCatAnchor = new Date();
 let salesLedgerCatType = "cash";
-
+let salesLedgerCatSearch = "";
 let cashboxPreset = "month";
 let cashboxFrom = null;
 let cashboxTo = null;
@@ -812,6 +812,9 @@ function switchView(id, opts) {
     salesLedgerPreset = "month";
     salesLedgerAnchor = new Date();
   }
+  if (id === "salesLedgerCat") {
+    salesLedgerCatSearch = "";
+  }
   if (id === "invoices") {
     invoiceSearch = "";
   }
@@ -880,7 +883,10 @@ function switchView(id, opts) {
     staff: "স্টাফ ও লগ",
     settings: "দোকানের তথ্য",
   };
-  document.getElementById("pageTitle").textContent = titles[id];
+  document.getElementById("pageTitle").textContent =
+    id === "salesLedgerCat"
+      ? salesLedgerCatTitle(salesLedgerCatType)
+      : titles[id];
   const homeBtnEl = document.getElementById("homeBtn");
   if (homeBtnEl) homeBtnEl.classList.toggle("hidden", id === "dashboard");
   render();
@@ -934,6 +940,12 @@ window.addEventListener("popstate", (e) => {
     scrollContentTop();
     return;
   }
+  if (currentView === "salesLedger" && salesLedgerCatType) {
+    salesLedgerCatType = null;
+    render();
+    scrollContentTop();
+    return;
+  }
   if (currentView === "profit" && profitDrillPath.length > 0) {
     profitDrillPath.pop();
     render();
@@ -958,6 +970,8 @@ function render() {
   else if (currentView === "purchaseLedger")
     c.innerHTML = renderPurchaseLedger();
   else if (currentView === "salesLedger") c.innerHTML = renderSalesLedger();
+  else if (currentView === "salesLedgerCat")
+    c.innerHTML = renderSalesLedgerCatPage();
   else if (currentView === "ledger") c.innerHTML = renderLedger();
   else if (currentView === "dueSummary") c.innerHTML = renderDueSummary();
   else if (currentView === "employees") c.innerHTML = renderEmployees();
@@ -3178,19 +3192,20 @@ function renderSalesLedger() {
  <div class="dh-val">${fmt(grandTotal)}</div>
  </div>`;
 
+  const hoverAttrs = `onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 20px rgba(0,0,0,0.15)';" onmouseleave="this.style.transform='';this.style.boxShadow='';"`;
   const catCards = `
  <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px;">
- <div class="stat-card" style="--accent:var(--green); cursor:pointer;" onclick="openSalesLedgerCategoryDetail('cash')">
+ <div class="stat-card" style="--accent:var(--green); cursor:pointer; transition:transform .15s, box-shadow .15s;" ${hoverAttrs} onclick="openSalesLedgerCategoryDetail('cash')">
  <div class="lbl">💵 নগদ বিক্রি</div><div class="val" style="font-size:16px;">${fmt(cashTotal)}</div>
  </div>
- <div class="stat-card" style="--accent:var(--red); cursor:pointer;" onclick="openSalesLedgerCategoryDetail('due')">
+ <div class="stat-card" style="--accent:var(--red); cursor:pointer; transition:transform .15s, box-shadow .15s;" ${hoverAttrs} onclick="openSalesLedgerCategoryDetail('due')">
  <div class="lbl">📒 বাকি বিক্রি</div><div class="val" style="font-size:16px;">${fmt(dueTotal)}</div>
  </div>
- <div class="stat-card" style="--accent:var(--amber); cursor:pointer;" onclick="openSalesLedgerCategoryDetail('quick')">
+ <div class="stat-card" style="--accent:var(--amber); cursor:pointer; transition:transform .15s, box-shadow .15s;" ${hoverAttrs} onclick="openSalesLedgerCategoryDetail('quick')">
  <div class="lbl">⚡ দ্রুত বিক্রি</div><div class="val" style="font-size:16px;">${fmt(quickTotal)}</div>
  </div>
  </div>
- <div style="font-size:11.5px;color:var(--steel-500);margin-top:10px;text-align:center;">যেকোনো কার্ডে ক্লিক করে সেই ভাগের বিস্তারিত লেনদেন দেখুন</div>`;
+ <div style="font-size:11.5px;color:var(--steel-500);margin-top:10px;text-align:center;">যেকোনো কার্ডে ক্লিক করে সেই ভাগের বিস্তারিত পেজে যান</div>`;
 
   return presetTabs + navBar + totalHero + catCards;
 }
@@ -3247,7 +3262,10 @@ function openSalesLedgerCategoryDetail(type) {
   salesLedgerCatType = type;
   salesLedgerCatPreset = "month";
   salesLedgerCatAnchor = new Date();
-  renderSalesLedgerCatModal();
+  salesLedgerCatSearch = "";
+  render();
+  pushBackStep();
+  scrollContentTop();
 }
 function salesLedgerCatTitle(type) {
   if (type === "cash") return "💵 নগদ বিক্রি";
@@ -3286,60 +3304,115 @@ function salesLedgerCatNav(delta) {
     a.setFullYear(a.getFullYear() + delta);
   else return;
   salesLedgerCatAnchor = a;
-  renderSalesLedgerCatModal();
+  render();
 }
 function salesLedgerCatSetPreset(p) {
   salesLedgerCatPreset = p;
   salesLedgerCatAnchor = new Date();
-  renderSalesLedgerCatModal();
+  render();
 }
-function renderSalesLedgerCatModal() {
+function salesLedgerCatBackToList() {
+  salesLedgerCatType = null;
+  render();
+  scrollContentTop();
+}
+function salesLedgerCatSearchInputFn(val) {
+  salesLedgerCatSearch = val;
+  render();
+  const el = document.getElementById("salesLedgerCatSearchInput");
+  if (el) {
+    el.focus();
+    const p = el.value.length;
+    el.setSelectionRange(p, p);
+  }
+}
+function editQuickSalePrompt(id) {
+  const q = quickSales.find((x) => x.id === id);
+  if (!q) return;
+  openModal(
+    "দ্রুত বিক্রি এডিট করুন",
+    `
+ <div class="field"><label>ক্রেতার নাম (ঐচ্ছিক)</label><input type="text" id="editQsName" value="${esc(q.name || "")}" placeholder="ঐচ্ছিক"></div>
+ <div class="field"><label>ফোন নাম্বার (ঐচ্ছিক)</label><input type="text" id="editQsPhone" value="${esc(q.phone || "")}" placeholder="ঐচ্ছিক"></div>
+ <div class="field"><label>মোট কত টাকা বিক্রি হলো (৳)</label><input type="number" id="editQsAmount" min="0" value="${q.totalAmount}"></div>
+ <div class="field"><label>লাভ (৳) — ঐচ্ছিক</label><input type="number" id="editQsProfit" min="0" value="${q.profit || 0}"></div>
+ <div class="field"><label>তারিখ</label><input type="date" id="editQsDate" value="${toDateInputValue(q.date)}"></div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveQuickSaleEdit(${id})">সংরক্ষণ করুন</button>
+ `,
+  );
+}
+function saveQuickSaleEdit(id) {
+  const q = quickSales.find((x) => x.id === id);
+  if (!q) return;
+  q.name = document.getElementById("editQsName").value.trim();
+  q.phone = document.getElementById("editQsPhone").value.trim();
+  q.totalAmount = Math.max(
+    0,
+    parseInt(document.getElementById("editQsAmount").value) || 0,
+  );
+  q.profit = Math.max(
+    0,
+    parseInt(document.getElementById("editQsProfit").value) || 0,
+  );
+  q.date = dateFromInput(document.getElementById("editQsDate").value);
+  closeModal();
+  render();
+  showToast("দ্রুত বিক্রি আপডেট হয়েছে");
+  persistShopData();
+}
+function renderSalesLedgerCatDetail() {
   const type = salesLedgerCatType;
   const range = salesLedgerCatGetRange();
+  const q = salesLedgerCatSearch.trim().toLowerCase();
+
   let rows = [],
     total = 0;
 
-  if (type === "cash") {
+  if (type === "cash" || type === "due") {
     invoices.forEach((inv) => {
       if (inv.cancelled) return;
       if (!reportInRange(inv.date, range.from, range.to)) return;
-      if (inv.paid > 0) {
-        total += inv.paid;
-        rows.push({
-          t: new Date(inv.date).getTime(),
-          html: `
+      const amount = type === "cash" ? inv.paid : inv.due;
+      if (amount <= 0) return;
+      if (q !== "") {
+        const hay = (
+          inv.customer +
+          " " +
+          (inv.customerPhone || "") +
+          " #" +
+          inv.id
+        ).toLowerCase();
+        if (!hay.includes(q)) return;
+      }
+      total += amount;
+      rows.push({
+        t: new Date(inv.date).getTime(),
+        html: `
  <div class="day-tx">
  <div>
  <div class="txname">${esc(inv.customer)}</div>
  <div class="txmeta">ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
  </div>
- <div class="mono" style="font-weight:700;color:var(--green);">${fmt(inv.paid)}</div>
- </div>`,
-        });
-      }
-    });
-  } else if (type === "due") {
-    invoices.forEach((inv) => {
-      if (inv.cancelled) return;
-      if (!reportInRange(inv.date, range.from, range.to)) return;
-      if (inv.due > 0) {
-        total += inv.due;
-        rows.push({
-          t: new Date(inv.date).getTime(),
-          html: `
- <div class="day-tx">
- <div>
- <div class="txname">${esc(inv.customer)}</div>
- <div class="txmeta">ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
+ <div style="text-align:right;">
+ <div class="mono" style="font-weight:700;color:${type === "cash" ? "var(--green)" : "var(--red)"};">${fmt(amount)}</div>
+ <div style="display:flex;gap:6px;margin-top:5px;">
+ <button class="btn btn-outline" style="padding:3px 9px;font-size:11px;" onclick="openCashboxMemoDetail(${inv.id})">দেখুন/এডিট</button>
+ <button class="btn btn-outline" style="padding:3px 9px;font-size:11px;color:var(--red);" onclick="cancelInvoicePrompt(${inv.id})">মুছুন</button>
  </div>
- <div class="mono" style="font-weight:700;color:var(--red);">${fmt(inv.due)}</div>
+ </div>
  </div>`,
-        });
-      }
+      });
     });
   } else {
     quickSales.forEach((qs) => {
       if (!reportInRange(qs.date, range.from, range.to)) return;
+      if (q !== "") {
+        const hay = ((qs.name || "") + " " + (qs.phone || "")).toLowerCase();
+        if (!hay.includes(q)) return;
+      }
       total += qs.totalAmount;
       rows.push({
         t: new Date(qs.date).getTime(),
@@ -3349,7 +3422,13 @@ function renderSalesLedgerCatModal() {
  <div class="txname">${qs.name ? esc(qs.name) : "নাম নেই"}</div>
  <div class="txmeta">${new Date(qs.date).toLocaleDateString("bn-BD")}${qs.profit ? " · লাভ " + fmt(qs.profit) : ""}</div>
  </div>
+ <div style="text-align:right;">
  <div class="mono" style="font-weight:700;">${fmt(qs.totalAmount)}</div>
+ <div style="display:flex;gap:6px;margin-top:5px;">
+ <button class="btn btn-outline" style="padding:3px 9px;font-size:11px;" onclick="editQuickSalePrompt(${qs.id})">এডিট</button>
+ <button class="btn btn-outline" style="padding:3px 9px;font-size:11px;color:var(--red);" onclick="requestPasswordConfirm('দ্রুত বিক্রি এন্ট্রি মুছুন', () => deleteQuickSale(${qs.id}))">মুছুন</button>
+ </div>
+ </div>
  </div>`,
       });
     });
@@ -3357,42 +3436,49 @@ function renderSalesLedgerCatModal() {
 
   rows.sort((a, b) => b.t - a.t);
 
+  const backRow = `<div class="back-row">
+ <button class="btn btn-outline" onclick="salesLedgerCatBackToList()">← বেচার খাতা</button>
+ <div class="cur-brand">${salesLedgerCatTitle(type)}</div>
+ </div>`;
+
   const presetTabs = `
  <div class="tab-row" style="margin-bottom:10px;">
- <button class="btn ${salesLedgerCatPreset === "day" ? "btn-primary" : "btn-outline"}" style="padding:7px 12px;font-size:12px;" onclick="salesLedgerCatSetPreset('day')">দিন</button>
- <button class="btn ${salesLedgerCatPreset === "month" ? "btn-primary" : "btn-outline"}" style="padding:7px 12px;font-size:12px;" onclick="salesLedgerCatSetPreset('month')">মাস</button>
- <button class="btn ${salesLedgerCatPreset === "year" ? "btn-primary" : "btn-outline"}" style="padding:7px 12px;font-size:12px;" onclick="salesLedgerCatSetPreset('year')">বছর</button>
- <button class="btn ${salesLedgerCatPreset === "all" ? "btn-primary" : "btn-outline"}" style="padding:7px 12px;font-size:12px;" onclick="salesLedgerCatSetPreset('all')">সব সময়</button>
+ <button class="btn ${salesLedgerCatPreset === "day" ? "btn-primary" : "btn-outline"}" onclick="salesLedgerCatSetPreset('day')">দিন</button>
+ <button class="btn ${salesLedgerCatPreset === "month" ? "btn-primary" : "btn-outline"}" onclick="salesLedgerCatSetPreset('month')">মাস</button>
+ <button class="btn ${salesLedgerCatPreset === "year" ? "btn-primary" : "btn-outline"}" onclick="salesLedgerCatSetPreset('year')">বছর</button>
+ <button class="btn ${salesLedgerCatPreset === "all" ? "btn-primary" : "btn-outline"}" onclick="salesLedgerCatSetPreset('all')">সব সময়</button>
  </div>`;
 
   const navBar =
     salesLedgerCatPreset !== "all"
       ? `
- <div style="display:flex;align-items:center;justify-content:space-between;background:var(--steel-900);border-radius:9px;padding:9px 12px;margin-bottom:12px;">
- <button type="button" onclick="salesLedgerCatNav(-1)" style="background:none;border:none;color:white;font-size:18px;cursor:pointer;">←</button>
- <div style="color:white;font-size:13px;font-weight:600;">${salesLedgerCatRangeLabel()}</div>
- <button type="button" onclick="salesLedgerCatNav(1)" style="background:none;border:none;color:white;font-size:18px;cursor:pointer;">→</button>
+ <div style="display:flex;align-items:center;justify-content:space-between;background:var(--steel-900);border-radius:10px;padding:11px 16px;margin-bottom:14px;">
+ <button type="button" onclick="salesLedgerCatNav(-1)" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:4px 8px;">←</button>
+ <div style="color:white;font-size:14px;font-weight:700;">${salesLedgerCatRangeLabel()}</div>
+ <button type="button" onclick="salesLedgerCatNav(1)" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:4px 8px;">→</button>
  </div>`
-      : "";
+      : `<div style="margin-bottom:14px;"></div>`;
 
-  const totalBar = `
- <div style="background:var(--steel-100);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13.5px;display:flex;justify-content:space-between;">
- <span>এই সময়ে সর্বমোট</span><b class="mono">${fmt(total)}</b>
+  const totalHero = `
+ <div class="dash-hero" style="margin-bottom:14px;">
+ <div class="dh-label">${salesLedgerCatPreset === "all" ? "সর্বমোট" : salesLedgerCatRangeLabel() + " — মোট"}</div>
+ <div class="dh-val">${fmt(total)}</div>
  </div>`;
 
-  const body =
-    presetTabs +
-    navBar +
-    totalBar +
-    (rows.length === 0
-      ? `<div class="no-match">এই সময়ে কোনো লেনদেন নেই</div>`
-      : rows.map((r) => r.html).join(""));
+  const searchBar = `
+ <div class="search-bar ${q ? "has-val" : ""}">
+ <span class="sic">🔍</span>
+ <input type="text" id="salesLedgerCatSearchInput" value="${esc(salesLedgerCatSearch)}" placeholder="নাম, ফোন বা ইনভয়েস নম্বর দিয়ে সার্চ করুন..."
+ oninput="salesLedgerCatSearchInputFn(this.value)" autocomplete="off">
+ <span class="sclear" onclick="salesLedgerCatSearchInputFn('')">✕</span>
+ </div>`;
 
-  openModal(
-    salesLedgerCatTitle(type),
-    body,
-    `<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>`,
-  );
+  const listHtml =
+    rows.length === 0
+      ? `<div class="no-match">এই সময়ে/সার্চে কোনো লেনদেন নেই</div>`
+      : rows.map((r) => r.html).join("");
+
+  return backRow + presetTabs + navBar + totalHero + searchBar + listHtml;
 }
 
 /* ============================================================
@@ -6771,7 +6857,7 @@ function renderStaff() {
  <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--steel-100);font-size:13.5px;flex-wrap:wrap;gap:8px;">
  <div>
  <div style="font-weight:700;">${esc(s.full_name)}</div>
- </div>
+ </div> 
  <div style="display:flex;gap:8px;">
  <button class="btn btn-outline" onclick="editStaffPrompt('${s.id}')">পরিচালনা করুন</button>
  </div>
