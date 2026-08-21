@@ -1650,44 +1650,38 @@ function renderCartPage() {
       const eff = cartEffectiveQty(item);
       const ppb = piecesPerBan(item.size);
       const feetPerBanForSize = sellFeetPerBan(item.size);
-      const mode = item.qtyMode || (item.qtyBan != null ? "ban" : "piece");
+      const banDisplay = ppb > 0 ? Math.round((eff / ppb) * 100) / 100 : 0;
+      const totalAmtDisplay = eff * (item.sellPrice || 0);
       return `
  <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
  <div class="cart-item-top">
  <span style="font-weight:700;">${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}</span>
  <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
  </div>
- <div style="font-size:10.5px;color:var(--steel-500);margin-top:2px;">এক বানে (${feetPerBanForSize} ফুট) প্রায় ${ppb.toFixed(1)} পিস</div>
- <div class="cart-item-row" style="gap:8px;">
- <button type="button" class="btn ${mode === "ban" ? "btn-primary" : "btn-outline"}" style="flex:1;justify-content:center;padding:8px;" onclick="setCartQtyMode(${idx}, 'ban')">বান</button>
- <button type="button" class="btn ${mode === "piece" ? "btn-primary" : "btn-outline"}" style="flex:1;justify-content:center;padding:8px;" onclick="setCartQtyMode(${idx}, 'piece')">পিস</button>
+ <div style="font-size:10.5px;color:var(--steel-500);margin:2px 0 10px;">এক বানে (${feetPerBanForSize} ফুট) প্রায় ${ppb.toFixed(1)} পিস — যেকোনো ঘরে মান দিলে বাকিগুলো নিজে থেকেই হিসাব হয়ে যাবে</div>
+
+ <div style="background:#EAF2FB;border:1px solid #BFDBFE;border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+ <label style="color:#1D4ED8;font-weight:700;font-size:12.5px;">📦 বান</label>
+ <div style="display:flex;gap:8px;margin-top:4px;">
+ <input type="number" min="0" step="0.5" placeholder="বান সংখ্যা" value="${banDisplay || ""}" onchange="updateCartBan(${idx}, this.value)" style="flex:1;">
+ <input type="number" min="0" placeholder="বানের দর (৳)" onchange="updateCartBanPrice(${idx}, this.value)" style="flex:1;">
  </div>
- ${
-   mode === "ban"
-     ? `
- <div class="cart-item-row">
- <label>বান সংখ্যা</label>
- <input type="number" min="0" step="0.5" placeholder="—" value="${item.qtyBan !== null && item.qtyBan !== undefined ? item.qtyBan : ""}" onchange="updateCartBan(${idx}, this.value)">
  </div>
- <div class="cart-item-row">
- <label>বানের দর</label>
- <input type="number" min="0" placeholder="ঐচ্ছিক — পুরো বানের দাম দিন" onchange="updateCartBanPrice(${idx}, this.value)">
- </div>`
-     : `
- <div class="cart-item-row">
- <label>পিস সংখ্যা</label>
- <input type="number" min="0" placeholder="—" value="${item.qtyPieces !== null && item.qtyPieces !== undefined ? item.qtyPieces : ""}" onchange="updateCartPieces(${idx}, this.value)">
+
+ <div style="background:#EAF7EE;border:1px solid #BBE8C8;border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+ <label style="color:#15803D;font-weight:700;font-size:12.5px;">🔢 পিস</label>
+ <input type="number" min="0" placeholder="পিস সংখ্যা" value="${item.qtyPieces || ""}" onchange="updateCartPieces(${idx}, this.value)" style="width:100%;margin-top:4px;">
  </div>
- <div class="cart-item-row">
- <label>মোট টাকা</label>
- <input type="number" min="0" placeholder="ঐচ্ছিক — কত টাকার বিক্রি করবেন" onchange="updateCartTotalAmount(${idx}, this.value)">
- </div>`
- }
- <div class="cart-item-row">
- <label>দর (প্রতি পিস)</label>
- <input type="number" min="0" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)">
+
+ <div style="background:#FEF3E2;border:1px solid #FBD9A5;border-radius:8px;padding:10px 12px;">
+ <label style="color:#B45309;font-weight:700;font-size:12.5px;">৳ দাম</label>
+ <div style="display:flex;gap:8px;margin-top:4px;">
+ <input type="number" min="0" placeholder="দর/পিস" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)" style="flex:1;">
+ <input type="number" min="0" placeholder="মোট টাকা" value="${totalAmtDisplay || ""}" onchange="updateCartTotalAmount(${idx}, this.value)" style="flex:1;">
  </div>
- <div class="cart-sub" style="text-align:left;">মোট পিস: ${eff} · উপমোট: ${fmt(eff * item.sellPrice)}</div>
+ </div>
+
+ <div class="cart-sub" style="text-align:left;margin-top:8px;">মোট পিস: ${eff} · উপমোট: ${fmt(eff * item.sellPrice)}</div>
  </div>`;
     })
     .join("");
@@ -1906,16 +1900,12 @@ function addToCart(brand, mm, size) {
   if (existing) {
     const eff = cartEffectiveQty(existing);
     existing.qtyPieces = eff + 1;
-    existing.qtyBan = null;
-    existing.qtyMode = "piece";
   } else
     cart.push({
       brand,
       mm,
       size,
       qtyPieces: 1,
-      qtyBan: null,
-      qtyMode: "piece",
       sellPrice: item.sell,
       buyPrice: item.buy,
     });
@@ -1937,35 +1927,29 @@ function piecesPerBan(sizeFeet) {
   return sizeFeet > 0 ? feetPerBan / sizeFeet : 0;
 }
 function cartEffectiveQty(item) {
-  if (item.qtyBan !== null && item.qtyBan !== undefined && item.qtyBan !== "") {
-    return Math.round(piecesPerBan(item.size) * Number(item.qtyBan));
-  }
-  return Number(item.qtyPieces) || 0;
+  return Math.round(Number(item.qtyPieces) || 0);
 }
 function updateCartBan(idx, val) {
   const item = cart[idx];
   const maxStock = inventory[item.brand][item.mm][item.size].stock;
   if (val === "") {
-    item.qtyBan = null;
     render();
     return;
   }
-  let ban = Math.max(0, parseFloat(val) || 0);
-  item.qtyBan = ban;
-  item.qtyPieces = null;
-  let eff = cartEffectiveQty(item);
-  if (eff > maxStock) {
+  const ppb = piecesPerBan(item.size);
+  const ban = Math.max(0, parseFloat(val) || 0);
+  let qty = Math.round(ppb * ban);
+  if (qty > maxStock) {
+    qty = maxStock;
     showToast("স্টকে যতটুকু আছে তার বেশি বিক্রি করা যাবে না");
-    item.qtyPieces = maxStock;
-    item.qtyBan = null;
   }
+  item.qtyPieces = qty;
   render();
 }
 function updateCartPieces(idx, val) {
   const item = cart[idx];
   const maxStock = inventory[item.brand][item.mm][item.size].stock;
   if (val === "") {
-    item.qtyPieces = null;
     render();
     return;
   }
@@ -1975,7 +1959,6 @@ function updateCartPieces(idx, val) {
     showToast("স্টকে যতটুকু আছে তার বেশি বিক্রি করা যাবে না");
   }
   item.qtyPieces = qty;
-  item.qtyBan = null;
   render();
 }
 function updateCartPrice(idx, val) {
@@ -1985,16 +1968,38 @@ function updateCartPrice(idx, val) {
 function updateCartBanPrice(idx, val) {
   const item = cart[idx];
   const ppb = piecesPerBan(item.size);
-  if (val === "" || !ppb) return;
+  if (val === "" || !ppb) {
+    render();
+    return;
+  }
   const banPrice = Math.max(0, parseFloat(val) || 0);
   item.sellPrice = Math.round(banPrice / ppb);
   render();
 }
-function setCartQtyMode(idx, mode) {
+function updateCartTotalAmount(idx, val) {
   const item = cart[idx];
-  item.qtyMode = mode;
-  if (mode === "ban") item.qtyPieces = null;
-  else item.qtyBan = null;
+  const maxStock = inventory[item.brand][item.mm][item.size].stock;
+  if (val === "") {
+    render();
+    return;
+  }
+  const totalAmt = Math.max(0, parseFloat(val) || 0);
+  if (item.sellPrice > 0) {
+    let qty = Math.round(totalAmt / item.sellPrice);
+    if (qty > maxStock) {
+      qty = maxStock;
+      showToast("স্টকে যতটুকু আছে তার বেশি বিক্রি করা যাবে না");
+    }
+    item.qtyPieces = qty;
+  } else if (item.qtyPieces > 0) {
+    item.sellPrice = Math.round(totalAmt / item.qtyPieces);
+  } else {
+    showToast("আগে পিস সংখ্যা অথবা দর/পিস লিখুন");
+  }
+  render();
+}
+function setCartQtyMode(idx, mode) {
+  // আর ব্যবহার হচ্ছে না — এখন সব ঘর একসাথে দেখা যায়, রেখে দেওয়া নিরাপদ
   render();
 }
 function updateCartTotalAmount(idx, val) {
