@@ -1649,23 +1649,40 @@ function renderCartPage() {
     .map((item, idx) => {
       const eff = cartEffectiveQty(item);
       const ppb = piecesPerBan(item.size);
+      const feetPerBanForSize = sellFeetPerBan(item.size);
+      const mode = item.qtyMode || (item.qtyBan != null ? "ban" : "piece");
       return `
  <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
  <div class="cart-item-top">
-  <span style="font-weight:700;">${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}</span>
+ <span style="font-weight:700;">${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}</span>
  <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
  </div>
- <div style="font-size:10.5px;color:var(--steel-500);margin-top:2px;">এক বানে (৭২ ফুট) প্রায় ${ppb.toFixed(1)} পিস — বান বা পিস, যেকোনো একটিতে মান দিন</div>
+ <div style="font-size:10.5px;color:var(--steel-500);margin-top:2px;">এক বানে (${feetPerBanForSize} ফুট) প্রায় ${ppb.toFixed(1)} পিস</div>
+ <div class="cart-item-row" style="gap:8px;">
+ <button type="button" class="btn ${mode === "ban" ? "btn-primary" : "btn-outline"}" style="flex:1;justify-content:center;padding:8px;" onclick="setCartQtyMode(${idx}, 'ban')">বান</button>
+ <button type="button" class="btn ${mode === "piece" ? "btn-primary" : "btn-outline"}" style="flex:1;justify-content:center;padding:8px;" onclick="setCartQtyMode(${idx}, 'piece')">পিস</button>
+ </div>
+ ${
+   mode === "ban"
+     ? `
  <div class="cart-item-row">
- <label>বান</label>
+ <label>বান সংখ্যা</label>
  <input type="number" min="0" step="0.5" placeholder="—" value="${item.qtyBan !== null && item.qtyBan !== undefined ? item.qtyBan : ""}" onchange="updateCartBan(${idx}, this.value)">
- <label style="width:auto;margin-left:4px;">পিস</label>
- <input type="number" min="0" placeholder="—" value="${item.qtyPieces !== null && item.qtyPieces !== undefined ? item.qtyPieces : ""}" onchange="updateCartPieces(${idx}, this.value)">
  </div>
  <div class="cart-item-row">
  <label>বানের দর</label>
  <input type="number" min="0" placeholder="ঐচ্ছিক — পুরো বানের দাম দিন" onchange="updateCartBanPrice(${idx}, this.value)">
+ </div>`
+     : `
+ <div class="cart-item-row">
+ <label>পিস সংখ্যা</label>
+ <input type="number" min="0" placeholder="—" value="${item.qtyPieces !== null && item.qtyPieces !== undefined ? item.qtyPieces : ""}" onchange="updateCartPieces(${idx}, this.value)">
  </div>
+ <div class="cart-item-row">
+ <label>মোট টাকা</label>
+ <input type="number" min="0" placeholder="ঐচ্ছিক — কত টাকার বিক্রি করবেন" onchange="updateCartTotalAmount(${idx}, this.value)">
+ </div>`
+ }
  <div class="cart-item-row">
  <label>দর (প্রতি পিস)</label>
  <input type="number" min="0" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)">
@@ -1890,6 +1907,7 @@ function addToCart(brand, mm, size) {
     const eff = cartEffectiveQty(existing);
     existing.qtyPieces = eff + 1;
     existing.qtyBan = null;
+    existing.qtyMode = "piece";
   } else
     cart.push({
       brand,
@@ -1897,6 +1915,7 @@ function addToCart(brand, mm, size) {
       size,
       qtyPieces: 1,
       qtyBan: null,
+      qtyMode: "piece",
       sellPrice: item.sell,
       buyPrice: item.buy,
     });
@@ -1907,8 +1926,15 @@ function removeFromCart(idx) {
   cart.splice(idx, 1);
   render();
 }
+function sellFeetPerBan(sizeFeet) {
+  // বিক্রির সময় ৭ ফুট ও ১০ ফুট সাইজের ক্ষেত্রে ৭০ ফুটে এক বান ধরা হয় (বাকি ২ ফুট লাভ থেকে যায়)
+  const sz = Number(sizeFeet);
+  if (sz === 7 || sz === 10) return 70;
+  return FEET_PER_BAN;
+}
 function piecesPerBan(sizeFeet) {
-  return sizeFeet > 0 ? FEET_PER_BAN / sizeFeet : 0;
+  const feetPerBan = sellFeetPerBan(sizeFeet);
+  return sizeFeet > 0 ? feetPerBan / sizeFeet : 0;
 }
 function cartEffectiveQty(item) {
   if (item.qtyBan !== null && item.qtyBan !== undefined && item.qtyBan !== "") {
@@ -1962,6 +1988,35 @@ function updateCartBanPrice(idx, val) {
   if (val === "" || !ppb) return;
   const banPrice = Math.max(0, parseFloat(val) || 0);
   item.sellPrice = Math.round(banPrice / ppb);
+  render();
+}
+function setCartQtyMode(idx, mode) {
+  const item = cart[idx];
+  item.qtyMode = mode;
+  if (mode === "ban") item.qtyPieces = null;
+  else item.qtyBan = null;
+  render();
+}
+function updateCartTotalAmount(idx, val) {
+  const item = cart[idx];
+  const maxStock = inventory[item.brand][item.mm][item.size].stock;
+  if (val === "") {
+    render();
+    return;
+  }
+  const totalAmt = Math.max(0, parseFloat(val) || 0);
+  if (!item.sellPrice) {
+    showToast("আগে দর (প্রতি পিস) লিখুন");
+    return;
+  }
+  let qty = Math.round(totalAmt / item.sellPrice);
+  if (qty > maxStock) {
+    qty = maxStock;
+    showToast("স্টকে যতটুকু আছে তার বেশি বিক্রি করা যাবে না");
+  }
+  item.qtyMode = "piece";
+  item.qtyPieces = qty;
+  item.qtyBan = null;
   render();
 }
 
