@@ -841,6 +841,53 @@ function computeTotalStockPieces() {
  বিভিন্ন তালিকা পেজের জন্য দিন/মাস/বছর ফিল্টার (কেনার খাতা,
  বেচার খাতা, ইনভয়েস হিস্ট্রি, খরচের খাতা, রিটার্ন ইত্যাদিতে ব্যবহৃত)
  ============================================================ */
+let periodAnchor = {}; // pageKey -> Date (কোন তারিখ/মাস/বছর থেকে দেখানো হচ্ছে)
+function getPeriodAnchor(pageKey) {
+  if (!periodAnchor[pageKey]) periodAnchor[pageKey] = new Date();
+  return periodAnchor[pageKey];
+}
+function anchoredRange(period, anchor) {
+  if (period === "day") {
+    const k = dayKey(anchor);
+    return { from: k, to: k };
+  }
+  if (period === "month") {
+    const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    const last = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+    return { from: dayKey(first), to: dayKey(last) };
+  }
+  if (period === "year") {
+    return {
+      from: anchor.getFullYear() + "-01-01",
+      to: anchor.getFullYear() + "-12-31",
+    };
+  }
+  return { from: null, to: null };
+}
+function anchoredLabel(period, anchor) {
+  if (period === "day") return dayLabel(dayKey(anchor));
+  if (period === "month") return monthLabelOf(monthKeyOf(anchor));
+  if (period === "year") return bnDigits(anchor.getFullYear()) + " সাল";
+  return "সব সময়";
+}
+function inSelectedPeriodAnchored(dateVal, period, anchor) {
+  if (period === "all") return true;
+  const range = anchoredRange(period, anchor);
+  const k = dayKey(dateVal);
+  if (range.from && k < range.from) return false;
+  if (range.to && k > range.to) return false;
+  return true;
+}
+function navListPeriod(pageKey, delta) {
+  const period = listPeriod[pageKey] || "all";
+  const a = new Date(getPeriodAnchor(pageKey));
+  if (period === "day") a.setDate(a.getDate() + delta);
+  else if (period === "month") a.setMonth(a.getMonth() + delta);
+  else if (period === "year") a.setFullYear(a.getFullYear() + delta);
+  else return;
+  periodAnchor[pageKey] = a;
+  render();
+}
 let listPeriod = {
   purchaseLedger: "all",
   salesLedger: "all",
@@ -854,6 +901,7 @@ let listPeriod = {
 };
 function setListPeriod(pageKey, period) {
   listPeriod[pageKey] = period;
+  periodAnchor[pageKey] = new Date();
   render();
 }
 function inSelectedPeriod(date, period) {
@@ -873,9 +921,19 @@ function periodTabsHtml(pageKey) {
     ["year", "বছর"],
     ["all", "সব সময়"],
   ];
-  return `<div class="tab-row" style="margin-bottom:12px;">
+  const tabs = `<div class="tab-row" style="margin-bottom:12px;">
  ${opts.map(([key, label]) => `<button class="btn ${cur === key ? "btn-primary" : "btn-outline"}" style="padding:7px 14px;font-size:12.5px;" onclick="setListPeriod('${pageKey}','${key}')">${label}</button>`).join("")}
  </div>`;
+  const navBar =
+    cur !== "all"
+      ? `
+ <div style="display:flex;align-items:center;justify-content:space-between;background:var(--steel-900);border-radius:10px;padding:11px 16px;margin-bottom:14px;">
+ <button type="button" onclick="navListPeriod('${pageKey}',-1)" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:4px 8px;">←</button>
+ <div style="color:white;font-size:14px;font-weight:700;">${anchoredLabel(cur, getPeriodAnchor(pageKey))}</div>
+ <button type="button" onclick="navListPeriod('${pageKey}',1)" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:4px 8px;">→</button>
+ </div>`
+      : "";
+  return tabs + navBar;
 }
 
 /* ============================================================
@@ -3352,7 +3410,14 @@ function renderPurchaseLedger() {
     );
 
   const filtered = purchases.filter((p) => {
-    if (!inSelectedPeriod(p.date, period)) return false;
+    if (
+      !inSelectedPeriodAnchored(
+        p.date,
+        period,
+        getPeriodAnchor("purchaseLedger"),
+      )
+    )
+      return false;
     if (q === "") return true;
     const dateStr = new Date(p.date).toLocaleDateString("bn-BD", {
       weekday: "long",
@@ -3952,13 +4017,16 @@ function renderDueSummary() {
   const period = listPeriod.dueSummary || "day";
 
   // "বাকি দিয়েছি" = এই সময়ে বাকিতে যত টাকার পণ্য বিক্রি হয়েছে (ইনভয়েসের due অংশ)
+  const anchor = getPeriodAnchor("dueSummary");
   const dueGivenInvoices = invoices.filter(
     (inv) =>
-      !inv.cancelled && inv.due > 0 && inSelectedPeriod(inv.date, period),
+      !inv.cancelled &&
+      inv.due > 0 &&
+      inSelectedPeriodAnchored(inv.date, period, anchor),
   );
   // "বাকি পেয়েছি" = এই সময়ে বাকি থেকে যত টাকা আদায় হয়েছে
   const dueReceivedPayments = payments.filter((p) =>
-    inSelectedPeriod(p.date, period),
+    inSelectedPeriodAnchored(p.date, period, anchor),
   );
 
   const totalGiven = dueGivenInvoices.reduce((s, inv) => s + inv.due, 0);
@@ -4371,7 +4439,11 @@ function renderEmployeeDetail(id) {
 
   const period = listPeriod.employees || "month";
   const list = expenses
-    .filter((e) => e.personId === id && inSelectedPeriod(e.date, period))
+    .filter(
+      (e) =>
+        e.personId === id &&
+        inSelectedPeriodAnchored(e.date, period, getPeriodAnchor("employees")),
+    )
     .slice()
     .sort((a, b) => new Date(b.date) - new Date(a.date));
   const totalInPeriod = list.reduce((s, e) => s + e.amount, 0);
@@ -4737,7 +4809,15 @@ function renderSupplierDetail(id) {
   const period = listPeriod.suppliers || "all";
   const combined = [
     ...supplierDueEntries
-      .filter((d) => d.supplierId === id && inSelectedPeriod(d.date, period))
+      .filter(
+        (d) =>
+          d.supplierId === id &&
+          inSelectedPeriodAnchored(
+            d.date,
+            period,
+            getPeriodAnchor("suppliers"),
+          ),
+      )
       .map((d) => ({
         t: new Date(d.date).getTime(),
         html: `
@@ -4750,7 +4830,15 @@ function renderSupplierDetail(id) {
  </div>`,
       })),
     ...expenses
-      .filter((e) => e.supplierId === id && inSelectedPeriod(e.date, period))
+      .filter(
+        (e) =>
+          e.supplierId === id &&
+          inSelectedPeriodAnchored(
+            e.date,
+            period,
+            getPeriodAnchor("suppliers"),
+          ),
+      )
       .map((e) => ({
         t: new Date(e.date).getTime(),
         html: `
@@ -4851,7 +4939,13 @@ function renderCustomerDetail(id) {
   const period = listPeriod.customerDetail || "all";
   const combined = [
     ...custInvoices
-      .filter((inv) => inSelectedPeriod(inv.date, period))
+      .filter((inv) =>
+        inSelectedPeriodAnchored(
+          inv.date,
+          period,
+          getPeriodAnchor("customerDetail"),
+        ),
+      )
       .map((inv) => ({
         t: new Date(inv.date).getTime(),
         html: `
@@ -4864,7 +4958,13 @@ function renderCustomerDetail(id) {
  </div>`,
       })),
     ...custPayments
-      .filter((p) => inSelectedPeriod(p.date, period))
+      .filter((p) =>
+        inSelectedPeriodAnchored(
+          p.date,
+          period,
+          getPeriodAnchor("customerDetail"),
+        ),
+      )
       .map((p) => ({
         t: new Date(p.date).getTime(),
         html: `
@@ -5409,7 +5509,9 @@ function renderExpenseEntriesTab() {
 
   const q = expenseSearch.trim().toLowerCase();
   const period = listPeriod.expenses || "all";
-  let list = expenses.filter((e) => inSelectedPeriod(e.date, period));
+  let list = expenses.filter((e) =>
+    inSelectedPeriodAnchored(e.date, period, getPeriodAnchor("expenses")),
+  );
   if (expensePersonFilter !== null)
     list = list.filter((e) => e.personId === expensePersonFilter);
   if (q !== "") {
@@ -5878,7 +5980,10 @@ function renderInvoices() {
     return `<div class="empty-state"><div class="ic">🗂️</div>এখনো কোনো ইনভয়েস তৈরি হয়নি<br><span style="font-size:12px;">"বিক্রয়" থেকে প্রথম ইনভয়েস তৈরি করুন</span></div>`;
 
   const filtered = invoices.filter((inv) => {
-    if (!inSelectedPeriod(inv.date, period)) return false;
+    if (
+      !inSelectedPeriodAnchored(inv.date, period, getPeriodAnchor("invoices"))
+    )
+      return false;
     if (q === "") return true;
     const dateStr = new Date(inv.date).toLocaleDateString("bn-BD", {
       weekday: "long",
@@ -6074,7 +6179,7 @@ function renderReturns() {
     return `<div class="empty-state"><div class="ic">↩️</div>এখনো কোনো রিটার্ন হয়নি<br><span style="font-size:12px;">"ইনভয়েস হিস্ট্রি" পেজে গিয়ে যেকোনো ইনভয়েসে "রিটার্ন" বাটনে চাপুন</span></div>`;
   const period = listPeriod.returns || "all";
   const filteredReturns = returns.filter((r) =>
-    inSelectedPeriod(r.date, period),
+    inSelectedPeriodAnchored(r.date, period, getPeriodAnchor("returns")),
   );
   if (filteredReturns.length === 0)
     return (
