@@ -306,6 +306,8 @@ let SHOP_PHONE = "";
 let SHOP_ADDRESS = "";
 let SHOP_EMAIL = "";
 let SHOP_LOGO = "";
+let SHOP_MOBILE_BANKING_TYPE = ""; // বিকাশ/নগদ/রকেট
+let SHOP_MOBILE_BANKING_NUMBER = "";
 let staffList = []; // এই দোকানের স্টাফদের তালিকা (owner এর জন্য)
 
 // owner-only সার্ভারলেস API কল করার হেল্পার (/api/create-staff, /api/delete-staff, /api/reset-password)
@@ -656,6 +658,8 @@ function collectState(isNewShop) {
     shopAddress: SHOP_ADDRESS,
     shopEmail: SHOP_EMAIL,
     shopLogo: SHOP_LOGO,
+    shopMobileBankingType: SHOP_MOBILE_BANKING_TYPE,
+    shopMobileBankingNumber: SHOP_MOBILE_BANKING_NUMBER,
     lastBackupAt,
   };
 }
@@ -698,6 +702,8 @@ function applyState(s) {
   SHOP_ADDRESS = s.shopAddress || "";
   SHOP_EMAIL = s.shopEmail || "";
   SHOP_LOGO = s.shopLogo || "";
+  SHOP_MOBILE_BANKING_TYPE = s.shopMobileBankingType || "";
+  SHOP_MOBILE_BANKING_NUMBER = s.shopMobileBankingNumber || "";
   lastBackupAt = s.lastBackupAt || null;
   PRODUCT_CATEGORIES =
     s.PRODUCT_CATEGORIES && s.PRODUCT_CATEGORIES.length
@@ -1257,8 +1263,9 @@ function buildThermalInvoiceHtml(inv, widthMm) {
     inv.itemsSubtotal != null ? inv.itemsSubtotal : inv.total;
   return `
  <div class="thermal-box" style="width:${widthMm}mm;">
- <div class="th-center th-bold th-lg">${esc(SHOP_NAME)}</div>
+  <div class="th-center th-bold th-lg">${esc(SHOP_NAME)}</div>
  ${SHOP_PHONE ? `<div class="th-center">ফোনঃ ${esc(SHOP_PHONE)}</div>` : ""}
+ ${SHOP_MOBILE_BANKING_NUMBER ? `<div class="th-center">${esc(SHOP_MOBILE_BANKING_TYPE || "মোবাইল ব্যাংকিং")}ঃ ${esc(SHOP_MOBILE_BANKING_NUMBER)}</div>` : ""}
  ${SHOP_ADDRESS ? `<div class="th-center">${esc(SHOP_ADDRESS)}</div>` : ""}
  <div class="th-line"></div>
  <div>ইনভয়েস #${inv.id}</div>
@@ -1404,7 +1411,16 @@ function renderSettings() {
  <div class="field"><label>দোকানের নাম</label><input type="text" id="setShopName" value="${esc(SHOP_NAME)}" placeholder="যেমনঃ টিন হাউস"></div>
  <div class="field"><label>ফোন নাম্বার (না থাকলে ফাঁকা রাখুন)</label><input type="text" id="setShopPhone" value="${esc(SHOP_PHONE)}" placeholder="01xxx-xxxxxx"></div>
  <div class="field"><label>ঠিকানা</label><input type="text" id="setShopAddress" value="${esc(SHOP_ADDRESS)}" placeholder="যেমনঃ বাজার রোড, সাভার, ঢাকা"></div>
- <div class="field"><label>ইমেইল (ঐচ্ছিক)</label><input type="text" id="setShopEmail" value="${esc(SHOP_EMAIL)}" placeholder="shop@example.com"></div>
+  <div class="field"><label>ইমেইল (ঐচ্ছিক)</label><input type="text" id="setShopEmail" value="${esc(SHOP_EMAIL)}" placeholder="shop@example.com"></div>
+ <div class="field"><label>মোবাইল ব্যাংকিং (ঐচ্ছিক)</label>
+ <select id="setShopMobBankType">
+ <option value="" ${!SHOP_MOBILE_BANKING_TYPE ? "selected" : ""}>— বাছুন —</option>
+ <option value="বিকাশ" ${SHOP_MOBILE_BANKING_TYPE === "বিকাশ" ? "selected" : ""}>বিকাশ</option>
+ <option value="নগদ" ${SHOP_MOBILE_BANKING_TYPE === "নগদ" ? "selected" : ""}>নগদ</option>
+ <option value="রকেট" ${SHOP_MOBILE_BANKING_TYPE === "রকেট" ? "selected" : ""}>রকেট</option>
+ </select>
+ </div>
+ <div class="field"><label>মোবাইল ব্যাংকিং নাম্বার (ঐচ্ছিক)</label><input type="text" id="setShopMobBankNumber" value="${esc(SHOP_MOBILE_BANKING_NUMBER)}" placeholder="01xxx-xxxxxx"></div>
  <button class="btn btn-primary" onclick="saveShopSettings()">সংরক্ষণ করুন</button>
  </div>`;
 }
@@ -1440,6 +1456,11 @@ async function saveShopSettings() {
   SHOP_PHONE = document.getElementById("setShopPhone").value.trim();
   SHOP_ADDRESS = document.getElementById("setShopAddress").value.trim();
   SHOP_EMAIL = document.getElementById("setShopEmail").value.trim();
+  SHOP_MOBILE_BANKING_TYPE =
+    document.getElementById("setShopMobBankType").value;
+  SHOP_MOBILE_BANKING_NUMBER = document
+    .getElementById("setShopMobBankNumber")
+    .value.trim();
   if (name && name !== SHOP_NAME) {
     SHOP_NAME = name;
     try {
@@ -1642,14 +1663,13 @@ function renderSales() {
         : `<div class="search-results">` +
           results
             .map((r, i) => {
-              const out = r.v.stock === 0;
-              return `<div class="result-row ${out ? "out" : ""}">
+              return `<div class="result-row">
  <div class="result-serial">${i + 1}</div>
  <div class="result-info">
   <div class="rname">${esc(posBrand)} <span class="rdim">· ${r.mm} ${esc(lbl.unitLabel)} · ${r.sz} ${esc(lbl.sizeLabel)}</span></div>
  <div class="rmeta">ক্রয়ঃ <b>${fmt(r.v.buy)}</b> &nbsp;বিক্রয়ঃ <b>${fmt(r.v.sell)}</b> &nbsp;স্টকঃ <b class="${r.v.stock <= 3 ? "stock-low" : ""}">${r.v.stock} পিস</b></div>
  </div>
- <button class="result-add" ${out ? "disabled" : ""} onclick="addToCart('${jsq(posBrand)}', ${r.mm}, ${r.sz})">${out ? "স্টক নেই" : "+ যোগ করুন"}</button>
+  <button class="result-add" onclick="addToCart('${jsq(posBrand)}', ${r.mm}, ${r.sz})">+ যোগ করুন</button>
  </div>`;
             })
             .join("") +
@@ -1950,11 +1970,6 @@ function addToCart(brand, mm, size) {
   const existing = cart.find(
     (c) => c.brand === brand && c.mm === mm && c.size === size,
   );
-  const inCart = existing ? cartEffectiveQty(existing) : 0;
-  if (inCart >= item.stock) {
-    showToast("এই পণ্যের স্টকে যতটুকু আছে তার বেশি যোগ করা যাবে না");
-    return;
-  }
   if (existing) {
     const eff = cartEffectiveQty(existing);
     existing.qtyPieces = eff + 1;
@@ -1967,7 +1982,14 @@ function addToCart(brand, mm, size) {
       sellPrice: item.sell,
       buyPrice: item.buy,
     });
-  showToast(`${brand} ${itemLabelText(brand, mm, size)} কার্টে যোগ হয়েছে`);
+  const eff2 = cartEffectiveQty(
+    cart.find((c) => c.brand === brand && c.mm === mm && c.size === size),
+  );
+  showToast(
+    eff2 > item.stock
+      ? `${brand} ${itemLabelText(brand, mm, size)} কার্টে যোগ হয়েছে — স্টক মাইনাসে যাবে`
+      : `${brand} ${itemLabelText(brand, mm, size)} কার্টে যোগ হয়েছে`,
+  );
   render();
 }
 function removeFromCart(idx) {
@@ -1989,34 +2011,22 @@ function cartEffectiveQty(item) {
 }
 function updateCartBan(idx, val) {
   const item = cart[idx];
-  const maxStock = inventory[item.brand][item.mm][item.size].stock;
   if (val === "") {
     render();
     return;
   }
   const ppb = piecesPerBan(item.size);
   const ban = Math.max(0, parseFloat(val) || 0);
-  let qty = Math.round(ppb * ban);
-  if (qty > maxStock) {
-    qty = maxStock;
-    showToast("স্টকে যতটুকু আছে তার বেশি বিক্রি করা যাবে না");
-  }
-  item.qtyPieces = qty;
+  item.qtyPieces = Math.round(ppb * ban);
   render();
 }
 function updateCartPieces(idx, val) {
   const item = cart[idx];
-  const maxStock = inventory[item.brand][item.mm][item.size].stock;
   if (val === "") {
     render();
     return;
   }
-  let qty = Math.max(0, parseInt(val) || 0);
-  if (qty > maxStock) {
-    qty = maxStock;
-    showToast("স্টকে যতটুকু আছে তার বেশি বিক্রি করা যাবে না");
-  }
-  item.qtyPieces = qty;
+  item.qtyPieces = Math.max(0, parseInt(val) || 0);
   render();
 }
 function updateCartPrice(idx, val) {
@@ -2036,19 +2046,13 @@ function updateCartBanPrice(idx, val) {
 }
 function updateCartTotalAmount(idx, val) {
   const item = cart[idx];
-  const maxStock = inventory[item.brand][item.mm][item.size].stock;
   if (val === "") {
     render();
     return;
   }
   const totalAmt = Math.max(0, parseFloat(val) || 0);
   if (item.sellPrice > 0) {
-    let qty = Math.round(totalAmt / item.sellPrice);
-    if (qty > maxStock) {
-      qty = maxStock;
-      showToast("স্টকে যতটুকু আছে তার বেশি বিক্রি করা যাবে না");
-    }
-    item.qtyPieces = qty;
+    item.qtyPieces = Math.round(totalAmt / item.sellPrice);
   } else if (item.qtyPieces > 0) {
     item.sellPrice = Math.round(totalAmt / item.qtyPieces);
   } else {
@@ -2173,8 +2177,8 @@ function renderCheckout() {
  <div class="field"><label>অন্যান্য খরচের বিবরণ (ঐচ্ছিক)</label><input type="text" id="invExpenseLabel" placeholder="যেমনঃ লেবার খরচ, লোড-আনলোড"></div>
  <div class="field"><label>অন্যান্য খরচের পরিমাণ (৳)</label><input type="number" id="invExpenseAmt" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
  <div class="field"><label>ছাড়/ডিসকাউন্ট (৳)</label><input type="number" id="invDiscount" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
- <div class="field">
- <label>পরিশোধিত পরিমাণ</label>
+  <div class="field">
+ <label>জমার পরিমাণ</label>
  <input type="number" id="invPaid" value="${itemsSubtotal}" min="0" oninput="checkoutRecalc(${itemsSubtotal})">
  </div>
  <div style="background:var(--steel-100); border-radius:8px; padding:12px 14px; font-size:13.5px;">
@@ -2513,8 +2517,8 @@ function buildInvoiceHtml(inv) {
       (it, idx) => `
  <tr>
  <td><span class="si-serial">${idx + 1}</span></td>
-  <td>${esc(it.brand)} · ${itemLabelText(it.brand, it.mm, it.size)}${it.banQty ? " · " + it.banQty + " বান" : ""}</td>
- <td class="r num">${it.qty}</td>
+   <td>${esc(it.brand)} · ${itemLabelText(it.brand, it.mm, it.size)}${it.banQty ? ` <span style="font-size:10px;color:#6B7A82;">(${it.banQty} বান)</span>` : ""}</td>
+ <td class="r num" style="text-align:center;">${it.qty}</td>
  <td class="r num">${fmt(it.sellPrice)}</td>
  <td class="r num">${fmt(it.qty * it.sellPrice)}</td>
  </tr>`,
@@ -2526,8 +2530,11 @@ function buildInvoiceHtml(inv) {
   const itemsSubtotal =
     inv.itemsSubtotal != null ? inv.itemsSubtotal : inv.total;
   const shopMetaLines = [
-    SHOP_PHONE ? `ফোন: ${esc(SHOP_PHONE)}` : "",
     SHOP_EMAIL ? `ইমেইল: ${esc(SHOP_EMAIL)}` : "",
+    SHOP_PHONE ? `ফোন: ${esc(SHOP_PHONE)}` : "",
+    SHOP_MOBILE_BANKING_NUMBER
+      ? `${esc(SHOP_MOBILE_BANKING_TYPE || "মোবাইল ব্যাংকিং")}: ${esc(SHOP_MOBILE_BANKING_NUMBER)}`
+      : "",
   ]
     .filter(Boolean)
     .map((l) => `<div>${l}</div>`)
@@ -2559,7 +2566,7 @@ function buildInvoiceHtml(inv) {
  ${inv.salesBy ? `<div class="si-cust-row"><span class="si-lbl">বিক্রয়কারী:</span><span>${esc(inv.salesBy)}</span></div>` : ""}
  </div>
  <table class="si-tbl">
- <thead><tr><th>ক্রম</th><th>আইটেম নাম</th><th class="r">পরিমাণ</th><th class="r">মূল্য</th><th class="r">মোট মূল্য</th></tr></thead>
+  <thead><tr><th>ক্রম</th><th>আইটেম নাম</th><th class="r" style="text-align:center;">পরিমাণ</th><th class="r">মূল্য</th><th class="r">মোট মূল্য</th></tr></thead>
  <tbody>${rows}</tbody>
  </table>
  <div class="si-summary-wrap">
@@ -2616,9 +2623,133 @@ function renderInvoicePreview() {
  <button class="btn btn-outline" onclick="downloadThermal(${inv.id},58)">⬇ থার্মাল ডাউনলোড (৫৮mm)</button>
  <button class="btn btn-outline" onclick="printThermal(${inv.id},80)">🧾 থার্মাল প্রিন্ট (৮০mm)</button>
  <button class="btn btn-outline" onclick="downloadThermal(${inv.id},80)">⬇ থার্মাল ডাউনলোড (৮০mm)</button>
+  ${!inv.cancelled ? `<button class="btn btn-outline" onclick="editInvoicePrompt(${inv.id})">✏️ ইনভয়েস এডিট করুন</button>` : ""}
  ${!inv.cancelled ? `<button class="btn btn-outline" style="color:var(--red);border-color:var(--red);" onclick="cancelInvoicePrompt(${inv.id})">❌ ইনভয়েস বাতিল করুন</button>` : ""}
  </div>
  </div>`;
+}
+
+function editInvoicePrompt(invId) {
+  const inv = invoices.find((x) => x.id === invId);
+  if (!inv || inv.cancelled) return;
+  const itemsHtml = inv.items
+    .map(
+      (it, idx) => `
+ <div style="border:1px solid var(--steel-100);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+ <div style="font-weight:600;font-size:13px;margin-bottom:6px;">${esc(it.brand)} · ${itemLabelText(it.brand, it.mm, it.size)}</div>
+ <div style="display:flex;gap:8px;">
+ <div style="flex:1;"><label style="font-size:11px;">পরিমাণ (পিস)</label><input type="number" min="0" id="editInvQty${idx}" value="${it.qty}"></div>
+ <div style="flex:1;"><label style="font-size:11px;">দর/পিস (৳)</label><input type="number" min="0" id="editInvPrice${idx}" value="${it.sellPrice}"></div>
+ </div>
+ </div>`,
+    )
+    .join("");
+  openModal(
+    `ইনভয়েস #${inv.id} এডিট করুন`,
+    `
+ <div class="field"><label>ক্রেতার নাম</label><input type="text" id="editInvCustName" value="${esc(inv.customer)}"></div>
+ <div class="field"><label>মোবাইল নাম্বার</label><input type="text" id="editInvCustPhone" value="${esc(inv.customerPhone || "")}"></div>
+ <div class="field"><label>ঠিকানা</label><input type="text" id="editInvCustAddress" value="${esc(inv.customerAddress || "")}"></div>
+ <div style="font-weight:600;font-size:13px;margin:14px 0 8px;">পণ্যের তালিকা</div>
+ ${itemsHtml}
+ <div class="field"><label>ডেলিভারি চার্জ (৳)</label><input type="number" min="0" id="editInvDelivery" value="${inv.delivery || 0}"></div>
+ <div class="field"><label>অন্যান্য খরচের পরিমাণ (৳)</label><input type="number" min="0" id="editInvExpenseAmt" value="${inv.expenseAmt || 0}"></div>
+ <div class="field"><label>ছাড়/ডিসকাউন্ট (৳)</label><input type="number" min="0" id="editInvDiscount" value="${inv.discount || 0}"></div>
+ <div class="field"><label>জমার পরিমাণ (৳)</label><input type="number" min="0" id="editInvPaid" value="${inv.paid}"></div>
+ <div style="font-size:11px;color:var(--steel-500);">সংরক্ষণ করলে স্টক ও বাকির হিসাব স্বয়ংক্রিয়ভাবে সমন্বয় হয়ে যাবে।</div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveInvoiceEdit(${invId})">সংরক্ষণ করুন</button>
+ `,
+  );
+}
+function saveInvoiceEdit(invId) {
+  const inv = invoices.find((x) => x.id === invId);
+  if (!inv) return;
+
+  const newItems = inv.items.map((it, idx) => {
+    const qtyEl = document.getElementById("editInvQty" + idx);
+    const priceEl = document.getElementById("editInvPrice" + idx);
+    const newQty = Math.max(0, parseInt(qtyEl.value) || 0);
+    const newPrice = Math.max(0, parseInt(priceEl.value) || 0);
+    const delta = newQty - it.qty;
+    if (
+      inventory[it.brand] &&
+      inventory[it.brand][it.mm] &&
+      inventory[it.brand][it.mm][it.size]
+    ) {
+      inventory[it.brand][it.mm][it.size].stock -= delta;
+    }
+    return { ...it, qty: newQty, sellPrice: newPrice };
+  });
+
+  const itemsSubtotal = newItems.reduce(
+    (s, it) => s + it.qty * it.sellPrice,
+    0,
+  );
+  const delivery = Math.max(
+    0,
+    parseInt(document.getElementById("editInvDelivery").value) || 0,
+  );
+  const expenseAmt = Math.max(
+    0,
+    parseInt(document.getElementById("editInvExpenseAmt").value) || 0,
+  );
+  const discount = Math.max(
+    0,
+    parseInt(document.getElementById("editInvDiscount").value) || 0,
+  );
+  const grandTotal = Math.max(
+    0,
+    itemsSubtotal + delivery + expenseAmt - discount,
+  );
+  const paid = Math.min(
+    grandTotal,
+    Math.max(0, parseInt(document.getElementById("editInvPaid").value) || 0),
+  );
+  const newDue = grandTotal - paid;
+
+  const oldDue = inv.due;
+  const oldTotal = inv.total;
+
+  inv.items = newItems;
+  inv.itemsSubtotal = itemsSubtotal;
+  inv.delivery = delivery;
+  inv.expenseAmt = expenseAmt;
+  inv.discount = discount;
+  inv.total = grandTotal;
+  inv.paid = paid;
+  inv.due = newDue;
+  inv.customer =
+    document.getElementById("editInvCustName").value.trim() || inv.customer;
+  inv.customerPhone = document.getElementById("editInvCustPhone").value.trim();
+  inv.customerAddress = document
+    .getElementById("editInvCustAddress")
+    .value.trim();
+
+  if (inv.custId != null) {
+    if (inv.isCash) {
+      const cc = cashCustomers.find((c) => c.id === inv.custId);
+      if (cc)
+        cc.totalSpent = Math.max(0, cc.totalSpent + (grandTotal - oldTotal));
+    } else {
+      const cust = ledger.find((l) => l.id === inv.custId);
+      if (cust) {
+        cust.due = Math.max(0, cust.due + (newDue - oldDue));
+        inv.dueTotalAfter = cust.due;
+      }
+    }
+  }
+
+  logActivity(
+    "ইনভয়েস এডিট করা হয়েছে",
+    `#${inv.id} · নতুন মোট ${fmt(grandTotal)}`,
+  );
+  closeModal();
+  showToast("ইনভয়েস আপডেট হয়েছে");
+  persistShopData();
+  render();
 }
 
 function cancelInvoicePrompt(id) {
@@ -6026,7 +6157,7 @@ function renderInvoices() {
  <td>${inv.items.length} টি</td>
  <td class="num mono">${fmt(inv.total)}</td>
  <td class="num mono" style="color:${inv.due > 0 ? "var(--red)" : "var(--green)"}">${fmt(inv.due)}</td>
- <td class="tbl-actions"><button onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">প্রিন্ট/ডাউনলোড</button>${!inv.cancelled ? `<button style="margin-left:10px;" onclick="returnPrompt(${inv.id})">↩️ রিটার্ন</button><button style="margin-left:10px;color:var(--red);" onclick="cancelInvoicePrompt(${inv.id})">❌ বাতিল</button>` : ""}</td>
+  <td class="tbl-actions"><button onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">প্রিন্ট/ডাউনলোড</button>${!inv.cancelled ? `<button style="margin-left:10px;" onclick="editInvoicePrompt(${inv.id})">✏️ এডিট</button><button style="margin-left:10px;" onclick="returnPrompt(${inv.id})">↩️ রিটার্ন</button><button style="margin-left:10px;color:var(--red);" onclick="cancelInvoicePrompt(${inv.id})">❌ বাতিল</button>` : ""}</td>
  </tr>`,
    )
    .join("")}
@@ -7033,6 +7164,7 @@ function openCashboxMemoDetail(invId) {
 
   const footer = `
  <button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>
+ ${!inv.cancelled ? `<button class="btn btn-outline" onclick="closeModal(); editInvoicePrompt(${inv.id});">✏️ এডিট করুন</button>` : ""}
  <button class="btn btn-outline" onclick="closeModal(); returnPrompt(${inv.id});">↩️ রিটার্ন করুন</button>
  ${!inv.cancelled ? `<button class="btn btn-outline" style="color:var(--red);border-color:var(--red);" onclick="closeModal(); cancelInvoicePrompt(${inv.id});">🗑️ ইনভয়েস ডিলিট/বাতিল</button>` : ""}
  <button class="btn btn-primary" onclick="closeModal(); printInvoice(invoices.find(x=>x.id===${inv.id}));">🖨️ প্রিন্ট/ডাউনলোড</button>
