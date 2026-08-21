@@ -4161,7 +4161,8 @@ function addEmployeePrompt() {
   openModal(
     "নতুন কর্মচারী যুক্ত করুন",
     `
- <div class="field"><label>নাম</label><input type="text" id="empName" placeholder="যেমনঃ মোঃ রহিম"></div>
+  <div class="field"><label>নাম</label><input type="text" id="empName" placeholder="যেমনঃ মোঃ রহিম"></div>
+ <div class="field"><label>ঠিকানা (ঐচ্ছিক)</label><input type="text" id="empAddress" placeholder="যেমনঃ বাজার রোড, সাভার"></div>
  <div class="field"><label>মোবাইল নাম্বার (ঐচ্ছিক)</label><input type="text" id="empPhone" placeholder="01xxx-xxxxxx"></div>
  <div class="field"><label>মাসিক বেতন (৳) — না জানলে ০ রাখুন</label><input type="number" id="empSalary" min="0" value="0"></div>
  `,
@@ -4177,6 +4178,7 @@ function saveNewEmployee() {
     showToast("নাম আবশ্যক");
     return;
   }
+  const address = document.getElementById("empAddress").value.trim();
   const phone = document.getElementById("empPhone").value.trim();
   const salary = Math.max(
     0,
@@ -4185,6 +4187,7 @@ function saveNewEmployee() {
   const emp = {
     id: expensePersonNextId++,
     name,
+    address,
     phone,
     note: "",
     role: "employee",
@@ -4206,7 +4209,8 @@ function editEmployeePrompt(id) {
   openModal(
     `কর্মচারীর তথ্য — ${esc(p.name)}`,
     `
- <div class="field"><label>নাম</label><input type="text" id="empEditName" value="${esc(p.name)}"></div>
+  <div class="field"><label>নাম</label><input type="text" id="empEditName" value="${esc(p.name)}"></div>
+ <div class="field"><label>ঠিকানা</label><input type="text" id="empEditAddress" value="${esc(p.address || "")}"></div>
  <div class="field"><label>মোবাইল নাম্বার</label><input type="text" id="empEditPhone" value="${esc(p.phone || "")}"></div>
  <div class="field"><label>মাসিক বেতন (৳)</label><input type="number" id="empEditSalary" min="0" value="${p.monthlySalary || 0}"></div>
  `,
@@ -4226,6 +4230,7 @@ function saveEmployeeEdit(id) {
     return;
   }
   p.name = name;
+  p.address = document.getElementById("empEditAddress").value.trim();
   p.phone = document.getElementById("empEditPhone").value.trim();
   p.role = "employee";
   p.monthlySalary = Math.max(
@@ -4288,7 +4293,7 @@ function renderEmployees() {
  <div class="ledger-serial">${idx + 1}</div>
  <div class="ledger-info" style="cursor:pointer;" onclick="openEmployeeDetail(${p.id})">
  <div class="lname">${esc(p.name)}</div>
- <div class="lmeta">${[telHtml(p.phone), salary > 0 ? "মাসিক বেতনঃ " + fmt(salary) : "বেতন নির্ধারিত নয়"].filter(Boolean).join(" · ")}</div>
+  <div class="lmeta">${[esc(p.address), telHtml(p.phone), salary > 0 ? "মাসিক বেতনঃ " + fmt(salary) : "বেতন নির্ধারিত নয়"].filter(Boolean).join(" · ")}</div>
  </div>
  <div class="ledger-due">
  <div class="amt" style="color:var(--rust);">${fmt(takenThisMonth)}</div>
@@ -4330,7 +4335,7 @@ function renderEmployeeDetail(id) {
  <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--rust),var(--amber));display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:0 4px 10px rgba(190,74,34,0.35);">👷</div>
  <div>
  <div style="font-weight:700; font-size:17px;">${esc(p.name)}</div>
- <div style="font-size:12.5px; color:rgba(255,255,255,0.7); margin-top:3px;">${p.phone ? esc(p.phone) : "ফোন নাম্বার নেই"}</div>
+  <div style="font-size:12.5px; color:rgba(255,255,255,0.7); margin-top:3px;">${p.phone ? esc(p.phone) : "ফোন নাম্বার নেই"}${p.address ? " · " + esc(p.address) : ""}</div>
  </div>
  </div>
  <button class="btn btn-outline" style="background:rgba(255,255,255,0.12); color:white; border-color:rgba(255,255,255,0.35);" onclick="editEmployeePrompt(${id})">✏️ এডিট</button>
@@ -5503,7 +5508,7 @@ function renderExpensePeopleTab() {
  <div class="ledger-serial">${idx + 1}</div>
  <div class="ledger-info">
  <div class="lname">${esc(p.name)}</div>
- <div class="lmeta">${[telHtml(p.phone), esc(p.note)].filter(Boolean).join(" · ") || "কোনো তথ্য নেই"} · ${cnt} টি খরচ এন্ট্রি</div>
+   <div class="lmeta">${[esc(p.address), telHtml(p.phone), esc(p.note)].filter(Boolean).join(" · ") || "কোনো তথ্য নেই"} · ${cnt} টি খরচ এন্ট্রি</div>
  </div>
  <div class="ledger-due">
  <div class="amt" style="color:var(--steel-900);">${fmt(total)}</div>
@@ -5553,7 +5558,8 @@ function addPersonPrompt() {
   openModal(
     "নতুন মানুষ যুক্ত করুন",
     `
- <div class="field"><label>নাম</label><input type="text" id="newPersonName" placeholder="যেমনঃ মোঃ রহিম"></div>
+  <div class="field"><label>নাম</label><input type="text" id="newPersonName" placeholder="যেমনঃ মোঃ রহিম"></div>
+ <div class="field"><label>ঠিকানা (ঐচ্ছিক)</label><input type="text" id="newPersonAddress" placeholder="যেমনঃ বাজার রোড, সাভার"></div>
  <div class="field"><label>মোবাইল নাম্বার (ঐচ্ছিক)</label><input type="text" id="newPersonPhone" placeholder="01xxx-xxxxxx"></div>
  <div class="field"><label>পরিচয়/নোট (ঐচ্ছিক)</label><input type="text" id="newPersonNote" placeholder="যেমনঃ কর্মচারী, সাপ্লায়ার, দোকান মালিক"></div>
  `,
@@ -5572,6 +5578,7 @@ function saveNewPerson() {
   expensePeople.push({
     id: expensePersonNextId++,
     name,
+    address: document.getElementById("newPersonAddress").value.trim(),
     phone: document.getElementById("newPersonPhone").value.trim(),
     note: document.getElementById("newPersonNote").value.trim(),
   });
