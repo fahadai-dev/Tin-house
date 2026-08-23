@@ -92,9 +92,35 @@ function getBrandLabels(brand) {
   return {
     unitLabel: brandUnitLabel[brand] || cat.unitLabel,
     sizeLabel: brandSizeLabel[brand] || cat.sizeLabel,
+    qtyMode: cat.qtyMode || "measure",
   };
 }
+function formatQtyByMode(qtyMode, grams) {
+  if (qtyMode === "weight") {
+    if (grams >= 1000)
+      return (grams / 1000).toFixed(3).replace(/\.?0+$/, "") + " কেজি";
+    return grams + " গ্রাম";
+  }
+  return grams + " পিস";
+}
+function isWeightBrand(brand) {
+  return getBrandLabels(brand).qtyMode === "weight";
+}
+function isCountBrand(brand) {
+  return getBrandLabels(brand).qtyMode === "count";
+}
+function cartQtyMode(brand) {
+  const m = getBrandLabels(brand).qtyMode;
+  if (m === "weight") return "weight";
+  if (m === "count") return "count";
+  return "measure";
+}
+function formatItemQty(brand, qty) {
+  if (isWeightBrand(brand)) return formatQtyByMode("weight", qty);
+  return String(qty);
+}
 function itemLabelText(brand, mm, size) {
+  if (isWeightBrand(brand)) return "ওজন অনুযায়ী";
   const lbl = getBrandLabels(brand);
   return `${mm} ${lbl.unitLabel} · ${size} ${lbl.sizeLabel}`;
 }
@@ -1251,13 +1277,20 @@ function tryPrint() {
 }
 function buildThermalInvoiceHtml(inv, widthMm) {
   const rows = inv.items
-    .map(
-      (it) => `
+    .map((it) => {
+      const weight = isWeightBrand(it.brand);
+      const nameLine = weight
+        ? `${esc(it.brand)} (ওজন)`
+        : `${esc(it.brand)} ${itemLabelText(it.brand, it.mm, it.size)}`;
+      const priceLine = weight
+        ? fmt(it.sellPrice * 1000) + "/কেজি"
+        : fmt(it.sellPrice);
+      return `
  <div class="th-item">
-  <div>${esc(it.brand)} ${itemLabelText(it.brand, it.mm, it.size)}</div>
- <div class="th-row"><span>${it.qty} × ${fmt(it.sellPrice)}</span><span>${fmt(it.qty * it.sellPrice)}</span></div>
- </div>`,
-    )
+ <div>${nameLine}</div>
+ <div class="th-row"><span>${formatItemQty(it.brand, it.qty)} × ${priceLine}</span><span>${fmt(it.qty * it.sellPrice)}</span></div>
+ </div>`;
+    })
     .join("");
   const itemsSubtotal =
     inv.itemsSubtotal != null ? inv.itemsSubtotal : inv.total;
@@ -1667,9 +1700,9 @@ function renderSales() {
  <div class="result-serial">${i + 1}</div>
  <div class="result-info">
   <div class="rname">${esc(posBrand)} <span class="rdim">· ${r.mm} ${esc(lbl.unitLabel)} · ${r.sz} ${esc(lbl.sizeLabel)}</span></div>
- <div class="rmeta">ক্রয়ঃ <b>${fmt(r.v.buy)}</b> &nbsp;বিক্রয়ঃ <b>${fmt(r.v.sell)}</b> &nbsp;স্টকঃ <b class="${r.v.stock <= 3 ? "stock-low" : ""}">${r.v.stock} পিস</b></div>
+  <div class="rmeta">ক্রয়ঃ <b>${lbl.qtyMode === "weight" ? fmt(r.v.buy * 1000) + "/কেজি" : fmt(r.v.buy)}</b> &nbsp;বিক্রয়ঃ <b>${lbl.qtyMode === "weight" ? fmt(r.v.sell * 1000) + "/কেজি" : fmt(r.v.sell)}</b> &nbsp;স্টকঃ <b class="${r.v.stock <= 3 ? "stock-low" : ""}">${lbl.qtyMode === "weight" ? formatQtyByMode("weight", r.v.stock) : r.v.stock + " পিস"}</b></div>
  </div>
-  <button class="result-add" onclick="addToCart('${jsq(posBrand)}', ${r.mm}, ${r.sz})">+ যোগ করুন</button>
+   <button class="result-add" onclick="addToCart('${jsq(posBrand)}','${jsq(r.mm)}','${jsq(r.sz)}')">+ যোগ করুন</button>
  </div>`;
             })
             .join("") +
@@ -1726,16 +1759,50 @@ function renderCartPage() {
   const rows = cart
     .map((item, idx) => {
       const eff = cartEffectiveQty(item);
-      const ppb = piecesPerBan(item.size);
-      const feetPerBanForSize = sellFeetPerBan(item.size);
-      const banDisplay = ppb > 0 ? Math.round((eff / ppb) * 100) / 100 : 0;
+      const mode = cartQtyMode(item.brand);
       const totalAmtDisplay = eff * (item.sellPrice || 0);
-      return `
- <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
- <div class="cart-item-top">
- <span style="font-weight:700;">${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}</span>
- <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
+      const itemName =
+        mode === "weight"
+          ? `${esc(item.brand)} <span style="font-size:11px;color:var(--steel-500);">(ওজন অনুযায়ী)</span>`
+          : mode === "count"
+            ? `${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}`
+            : `${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}`;
+
+      let measureBoxes;
+      if (mode === "weight") {
+        measureBoxes = `
+ <div style="background:#F3E8FF;border:1px solid #DDC6FA;border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+ <label style="color:#7C3AED;font-weight:700;font-size:12.5px;">⚖️ ওজন</label>
+ <div style="display:flex;gap:8px;margin-top:4px;">
+ <input type="number" min="0" step="0.001" id="wqKg${idx}" placeholder="কেজি" value="${Math.floor(eff / 1000) || ""}" onchange="updateCartWeight(${idx})" style="flex:1;">
+ <input type="number" min="0" step="1" id="wqG${idx}" placeholder="গ্রাম" value="${eff % 1000 || ""}" onchange="updateCartWeight(${idx})" style="flex:1;">
  </div>
+ </div>
+ <div style="background:#FEF3E2;border:1px solid #FBD9A5;border-radius:8px;padding:10px 12px;">
+ <label style="color:#B45309;font-weight:700;font-size:12.5px;">৳ দর/কেজি</label>
+ <div style="display:flex;gap:8px;margin-top:4px;">
+ <input type="number" min="0" placeholder="দর/কেজি" value="${Math.round((item.sellPrice || 0) * 1000) || ""}" onchange="updateCartPricePerKg(${idx}, this.value)" style="flex:1;">
+ <input type="number" min="0" placeholder="মোট টাকা" value="${totalAmtDisplay || ""}" onchange="updateCartTotalAmount(${idx}, this.value)" style="flex:1;">
+ </div>
+ </div>`;
+      } else if (mode === "count") {
+        measureBoxes = `
+ <div style="background:#EAF7EE;border:1px solid #BBE8C8;border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+ <label style="color:#15803D;font-weight:700;font-size:12.5px;">🔢 পিস</label>
+ <input type="number" min="0" placeholder="পিস সংখ্যা" value="${item.qtyPieces || ""}" onchange="updateCartPieces(${idx}, this.value)" style="width:100%;margin-top:4px;">
+ </div>
+ <div style="background:#FEF3E2;border:1px solid #FBD9A5;border-radius:8px;padding:10px 12px;">
+ <label style="color:#B45309;font-weight:700;font-size:12.5px;">৳ দাম</label>
+ <div style="display:flex;gap:8px;margin-top:4px;">
+ <input type="number" min="0" placeholder="দর/পিস" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)" style="flex:1;">
+ <input type="number" min="0" placeholder="মোট টাকা" value="${totalAmtDisplay || ""}" onchange="updateCartTotalAmount(${idx}, this.value)" style="flex:1;">
+ </div>
+ </div>`;
+      } else {
+        const ppb = piecesPerBan(item.size);
+        const feetPerBanForSize = sellFeetPerBan(item.size);
+        const banDisplay = ppb > 0 ? Math.round((eff / ppb) * 100) / 100 : 0;
+        measureBoxes = `
  <div style="font-size:10.5px;color:var(--steel-500);margin:2px 0 10px;">এক বানে (${feetPerBanForSize} ফুট) প্রায় ${ppb.toFixed(1)} পিস — যেকোনো ঘরে মান দিলে বাকিগুলো নিজে থেকেই হিসাব হয়ে যাবে</div>
 
  <div style="background:#EAF2FB;border:1px solid #BFDBFE;border-radius:8px;padding:10px 12px;margin-bottom:8px;">
@@ -1757,9 +1824,17 @@ function renderCartPage() {
  <input type="number" min="0" placeholder="দর/পিস" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)" style="flex:1;">
  <input type="number" min="0" placeholder="মোট টাকা" value="${totalAmtDisplay || ""}" onchange="updateCartTotalAmount(${idx}, this.value)" style="flex:1;">
  </div>
- </div>
+ </div>`;
+      }
 
- <div class="cart-sub" style="text-align:left;margin-top:8px;">মোট পিস: ${eff} · উপমোট: ${fmt(eff * item.sellPrice)}</div>
+      return `
+ <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
+ <div class="cart-item-top">
+ <span style="font-weight:700;">${itemName}</span>
+ <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
+ </div>
+ ${measureBoxes}
+ <div class="cart-sub" style="text-align:left;margin-top:8px;">মোট: ${formatItemQty(item.brand, eff)} · উপমোট: ${fmt(eff * item.sellPrice)}</div>
  </div>`;
     })
     .join("");
@@ -1967,28 +2042,34 @@ function posItemSearchInput(val) {
 
 function addToCart(brand, mm, size) {
   const item = inventory[brand][mm][size];
+  const weight = isWeightBrand(brand);
+  const increment = weight ? 1000 : 1;
   const existing = cart.find(
     (c) => c.brand === brand && c.mm === mm && c.size === size,
   );
   if (existing) {
     const eff = cartEffectiveQty(existing);
-    existing.qtyPieces = eff + 1;
+    existing.qtyPieces = eff + increment;
   } else
     cart.push({
       brand,
       mm,
       size,
-      qtyPieces: 1,
+      qtyPieces: increment,
       sellPrice: item.sell,
       buyPrice: item.buy,
     });
-  const eff2 = cartEffectiveQty(
-    cart.find((c) => c.brand === brand && c.mm === mm && c.size === size),
+  const updated = cart.find(
+    (c) => c.brand === brand && c.mm === mm && c.size === size,
   );
+  const eff2 = cartEffectiveQty(updated);
+  const label = weight
+    ? `${brand} — ${formatQtyByMode("weight", eff2)}`
+    : `${brand} ${itemLabelText(brand, mm, size)}`;
   showToast(
     eff2 > item.stock
-      ? `${brand} ${itemLabelText(brand, mm, size)} কার্টে যোগ হয়েছে — স্টক মাইনাসে যাবে`
-      : `${brand} ${itemLabelText(brand, mm, size)} কার্টে যোগ হয়েছে`,
+      ? `${label} কার্টে যোগ হয়েছে — স্টক মাইনাসে যাবে`
+      : `${label} কার্টে যোগ হয়েছে`,
   );
   render();
 }
@@ -2049,6 +2130,25 @@ function updateCartTotalAmount(idx, val) {
   if (val === "") {
     render();
     return;
+  }
+  function updateCartWeight(idx) {
+    const item = cart[idx];
+    const kgEl = document.getElementById("wqKg" + idx);
+    const gEl = document.getElementById("wqG" + idx);
+    const kg = kgEl ? Math.max(0, parseFloat(kgEl.value) || 0) : 0;
+    const g = gEl ? Math.max(0, parseFloat(gEl.value) || 0) : 0;
+    item.qtyPieces = Math.round(kg * 1000 + g);
+    render();
+  }
+  function updateCartPricePerKg(idx, val) {
+    const item = cart[idx];
+    if (val === "") {
+      render();
+      return;
+    }
+    const perKg = Math.max(0, parseFloat(val) || 0);
+    item.sellPrice = perKg / 1000;
+    render();
   }
   const totalAmt = Math.max(0, parseFloat(val) || 0);
   if (item.sellPrice > 0) {
@@ -2137,8 +2237,12 @@ function renderCheckout() {
   const cartSummaryRows = cart
     .map((item) => {
       const eff = cartEffectiveQty(item);
+      const weight = isWeightBrand(item.brand);
+      const nameHtml = weight
+        ? esc(item.brand)
+        : `${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}`;
       return `<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--steel-100);">
-  <span>${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)} <span class="mono" style="color:var(--steel-500);">× ${eff}</span></span>
+ <span>${nameHtml} <span class="mono" style="color:var(--steel-500);">× ${formatItemQty(item.brand, eff)}</span></span>
  <b class="mono">${fmt(eff * item.sellPrice)}</b>
  </div>`;
     })
@@ -2513,16 +2617,23 @@ function amountToBengaliWords(num) {
 }
 function buildInvoiceHtml(inv) {
   const rows = inv.items
-    .map(
-      (it, idx) => `
+    .map((it, idx) => {
+      const weight = isWeightBrand(it.brand);
+      const nameHtml = weight
+        ? `${esc(it.brand)} <span style="font-size:10px;color:#6B7A82;">(ওজন অনুযায়ী)</span>`
+        : `${esc(it.brand)} · ${itemLabelText(it.brand, it.mm, it.size)}${it.banQty ? ` <span style="font-size:10px;color:#6B7A82;">(${it.banQty} বান)</span>` : ""}`;
+      const priceHtml = weight
+        ? fmt(it.sellPrice * 1000) + "/কেজি"
+        : fmt(it.sellPrice);
+      return `
  <tr>
  <td><span class="si-serial">${idx + 1}</span></td>
-   <td>${esc(it.brand)} · ${itemLabelText(it.brand, it.mm, it.size)}${it.banQty ? ` <span style="font-size:10px;color:#6B7A82;">(${it.banQty} বান)</span>` : ""}</td>
- <td class="r num" style="text-align:center;">${it.qty}</td>
- <td class="r num">${fmt(it.sellPrice)}</td>
+ <td>${nameHtml}</td>
+ <td class="r num" style="text-align:center;">${formatItemQty(it.brand, it.qty)}</td>
+ <td class="r num">${priceHtml}</td>
  <td class="r num">${fmt(it.qty * it.sellPrice)}</td>
- </tr>`,
-    )
+ </tr>`;
+    })
     .join("");
   const delivery = inv.delivery || 0;
   const expenseAmt = inv.expenseAmt || 0;
@@ -2900,11 +3011,12 @@ function renderStock() {
             v.banPrice != null
               ? v.banPrice
               : Math.round((v.buy * FEET_PER_BAN) / sz);
+          const isWeight = lbl.qtyMode === "weight";
           rows += `<tr>
- <td class="num mono">${mm} ${esc(lbl.unitLabel)}</td><td class="num mono">${sz} ${esc(lbl.sizeLabel)}</td>
- <td class="num mono">${fmt(banVal)}</td>
- <td class="num mono">${fmt(v.buy)}</td><td class="num mono">${fmt(v.sell)}</td>
- <td class="num mono">${v.stock}</td>
+ <td class="num mono">${isWeight ? "—" : mm + " " + esc(lbl.unitLabel)}</td><td class="num mono">${isWeight ? "—" : sz + " " + esc(lbl.sizeLabel)}</td>
+ <td class="num mono">${isWeight ? "—" : fmt(banVal)}</td>
+ <td class="num mono">${isWeight ? fmt(v.buy * 1000) + "/কেজি" : fmt(v.buy)}</td><td class="num mono">${isWeight ? fmt(v.sell * 1000) + "/কেজি" : fmt(v.sell)}</td>
+ <td class="num mono">${isWeight ? formatQtyByMode("weight", v.stock) : v.stock}</td>
  <td>${v.stock <= 3 ? `<span class="pill low">কম স্টক</span>` : `<span class="pill ok">স্বাভাবিক</span>`}</td>
  <td class="tbl-actions"><button onclick="editStockPrompt('${jsq(stockBrand)}',${mm},${sz})">এডিট</button></td>
  </tr>`;
@@ -3045,8 +3157,19 @@ function editCategoryPrompt(id) {
     `
  <div class="field"><label>ক্যাটাগরির নাম</label><input type="text" id="editCatName2" value="${esc(cat.name)}"></div>
  <div class="field"><label>আইকন (ইমোজি)</label><input type="text" id="editCatIcon2" value="${esc(cat.icon)}"></div>
- <div class="field"><label>প্রথম মাপের লেবেল</label><input type="text" id="editCatUnitLabel" value="${esc(cat.unitLabel)}"></div>
+  <div class="field"><label>প্রথম মাপের লেবেল</label><input type="text" id="editCatUnitLabel" value="${esc(cat.unitLabel)}"></div>
  <div class="field"><label>দ্বিতীয় মাপের লেবেল</label><input type="text" id="editCatSizeLabel" value="${esc(cat.sizeLabel)}"></div>
+ ${
+   !cat.hasBrands
+     ? `<div class="field"><label>পরিমাণ কীভাবে হিসাব হবে</label>
+ <select id="editCatQtyMode">
+ <option value="measure" ${cat.qtyMode !== "weight" && cat.qtyMode !== "count" ? "selected" : ""}>মাপ অনুযায়ী (বান/পিস)</option>
+ <option value="weight" ${cat.qtyMode === "weight" ? "selected" : ""}>ওজন (কেজি/গ্রাম)</option>
+ <option value="count" ${cat.qtyMode === "count" ? "selected" : ""}>সংখ্যা (বান ছাড়া, শুধু পিস)</option>
+ </select>
+ </div>`
+     : ""
+ }
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -3078,6 +3201,8 @@ function saveCategoryEdit(id) {
     document.getElementById("editCatUnitLabel").value.trim() || cat.unitLabel;
   cat.sizeLabel =
     document.getElementById("editCatSizeLabel").value.trim() || cat.sizeLabel;
+  const qtyModeEl = document.getElementById("editCatQtyMode");
+  if (qtyModeEl) cat.qtyMode = qtyModeEl.value;
   closeModal();
   render();
   showToast("ক্যাটাগরি আপডেট হয়েছে");
@@ -3228,6 +3353,22 @@ function setStockAddUnitMode(mode) {
 }
 let stockSellManualOverride = false;
 function addStockRecalc() {
+  const weightQtyEl = document.getElementById("newWeightQty");
+  if (weightQtyEl) {
+    const unit = document.getElementById("newWeightUnit").value;
+    const qty = Math.max(0, parseFloat(weightQtyEl.value) || 0);
+    const grams = Math.round(unit === "kg" ? qty * 1000 : qty);
+    const buyPerKg = Math.max(
+      0,
+      parseFloat(document.getElementById("newWeightBuyPrice").value) || 0,
+    );
+    const stockEl2 = document.getElementById("newStock");
+    const infoEl2 = document.getElementById("newWeightInfo");
+    if (stockEl2) stockEl2.value = grams;
+    if (infoEl2)
+      infoEl2.textContent = `মোট ${formatQtyByMode("weight", grams)} স্টকে যোগ হবে · প্রতি গ্রাম ক্রয়মূল্য ৳${(buyPerKg / 1000).toFixed(3)}`;
+    return;
+  }
   const szEl = document.getElementById("newSize");
   if (!szEl) return;
   const sz = parseFloat(szEl.value) || 0;
@@ -3311,6 +3452,7 @@ function addStockPrompt() {
   const catInfo = getCategoryOf(stockBrand);
   const firstFieldDefault = catInfo.hasBrands ? MM_LIST[0] : "";
   const secondFieldDefault = catInfo.hasBrands ? SIZE_LIST[0] : "";
+  const qtyMode = cat.qtyMode;
   const mmOptions = MM_LIST.map((m) => `<option value="${m}">`).join("");
   const szOptions = SIZE_LIST.map((s) => `<option value="${s}">`).join("");
   openModal(
@@ -3324,6 +3466,29 @@ function addStockPrompt() {
    <input type="text" id="newSize" list="sizeSuggestList" value="${secondFieldDefault}" placeholder="${catInfo.hasBrands ? "যেমনঃ 8" : "যেমনঃ ৫ পিস"}" oninput="addStockRecalc()">
  <datalist id="sizeSuggestList">${szOptions}</datalist>
  </div>
+  ${
+    qtyMode === "weight"
+      ? `
+ <div class="field"><label>পরিমাণ</label>
+ <div style="display:flex;gap:8px;">
+ <input type="number" id="newWeightQty" min="0" step="0.001" placeholder="যেমনঃ 5" oninput="addStockRecalc()" style="flex:1;">
+ <select id="newWeightUnit" onchange="addStockRecalc()" style="width:110px;">
+ <option value="kg">কেজি</option>
+ <option value="g">গ্রাম</option>
+ </select>
+ </div>
+ </div>
+ <div class="field"><label>ক্রয়মূল্য (প্রতি কেজি, ৳)</label><input type="number" id="newWeightBuyPrice" min="0" value="0" oninput="addStockRecalc()"></div>
+ <div class="field"><label>বিক্রয়মূল্য (প্রতি কেজি, ৳)</label><input type="number" id="newSell" value="0" min="0"></div>
+ <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;" id="newWeightInfo">মোট ০ গ্রাম স্টকে যোগ হবে</div>
+ <div class="field"><label>স্টক (গ্রামে, স্বয়ংক্রিয়) </label><input type="number" id="newStock" value="0" min="0"></div>`
+      : qtyMode === "count"
+        ? `
+ <div class="field"><label>কত পিস স্টকে যোগ করবেন</label><input type="number" id="newPieceQty" value="0" min="0" oninput="addStockRecalc()"></div>
+ <div class="field"><label>প্রতি পিস ক্রয়মূল্য (৳)</label><input type="number" id="newPieceBuyPrice" value="0" min="0" oninput="addStockRecalc()"></div>
+ <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="newSell" value="0" min="0"></div>
+ <div class="field"><label>স্টক (পিস, স্বয়ংক্রিয়)</label><input type="number" id="newStock" value="0" min="0"></div>`
+        : `
  <div class="field">
  <label>কীভাবে স্টক যোগ করবেন</label>
  <div style="display:flex;gap:8px;">
@@ -3331,13 +3496,22 @@ function addStockPrompt() {
  <button type="button" id="unitModePieceBtn" class="btn btn-outline" style="flex:1;justify-content:center;" onclick="setStockAddUnitMode('piece')">🔢 পিস হিসেবে</button>
  </div>
  </div>
-  <div id="banFieldsWrap" style="display:block;">
+ <div id="banFieldsWrap" style="display:block;">
  <div class="field"><label>বানের দাম (৳) — ৭২ ফুট = ১ বান</label><input type="number" id="newBanPrice" value="4000" min="0" oninput="addStockRecalc()"></div>
  <div class="field"><label>কয় বান কিনলেন</label><input type="number" id="newBanQty" value="1" min="0" step="0.5" oninput="addStockRecalc()"></div>
  <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;">
  <div id="newPiecesInfo">এক বানে (৭২ ফুট) প্রায় — পিস আসে</div>
  <div id="newTotalPiecesInfo" style="margin-top:4px;font-weight:600;">০ বানে মোট প্রায় ০ পিস আসবে</div>
  <div style="display:flex;justify-content:space-between;margin-top:6px;"><span>প্রতি পিস ক্রয়মূল্য (স্বয়ংক্রিয়)</span><b class="mono" id="newBuyComputed">৳০</b></div>
+ </div>
+ </div>
+ <div id="pieceFieldsWrap" style="display:none;">
+ <div class="field"><label>কত পিস স্টকে যোগ করবেন</label><input type="number" id="newPieceQty" value="0" min="0" oninput="addStockRecalc()"></div>
+ <div class="field"><label>প্রতি পিস ক্রয়মূল্য (৳)</label><input type="number" id="newPieceBuyPrice" value="0" min="0" oninput="addStockRecalc()"></div>
+ </div>
+ <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="newSell" value="570" min="0"></div>
+ <div class="field"><label>স্টক (পিস) — উপরের হিসাব অনুযায়ী স্বয়ংক্রিয়ভাবে বসেছে, চাইলে হাতে ঠিক করে নিন</label><input type="number" id="newStock" value="0" min="0"></div>`
+  }
  </div>
  </div>
   <div id="pieceFieldsWrap" style="display:none;">
@@ -3355,6 +3529,47 @@ function addStockPrompt() {
   addStockRecalc();
 }
 function saveNewStock() {
+  const weightQtyEl = document.getElementById("newWeightQty");
+  if (weightQtyEl) {
+    const unit = document.getElementById("newWeightUnit").value;
+    const qty = Math.max(0, parseFloat(weightQtyEl.value) || 0);
+    const grams = Math.round(unit === "kg" ? qty * 1000 : qty);
+    const buyPerKg = Math.max(
+      0,
+      parseFloat(document.getElementById("newWeightBuyPrice").value) || 0,
+    );
+    const sellPerKg = Math.max(
+      0,
+      parseFloat(document.getElementById("newSell").value) || 0,
+    );
+    const buyPerGram = buyPerKg / 1000;
+    const sellPerGram = sellPerKg / 1000;
+    const mmKey = "ওজন";
+    const szKey = "প্রতিটি";
+    if (!inventory[stockBrand][mmKey]) inventory[stockBrand][mmKey] = {};
+    inventory[stockBrand][mmKey][szKey] = {
+      buy: buyPerGram,
+      sell: sellPerGram,
+      stock: grams,
+    };
+    if (grams > 0 && buyPerKg > 0) {
+      recordPurchase(
+        stockBrand,
+        mmKey,
+        szKey,
+        0,
+        buyPerGram,
+        grams,
+        buyPerGram,
+        grams * buyPerGram,
+      );
+    }
+    closeModal();
+    render();
+    showToast("নতুন মাল যোগ হয়েছে");
+    persistShopData();
+    return;
+  }
   const mm = document.getElementById("newMM").value;
   const sz = document.getElementById("newSize").value;
   if (!mm || !sz) {
