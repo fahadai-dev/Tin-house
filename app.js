@@ -181,7 +181,8 @@ let supplierNextId = 1;
 let supplierDueEntries = []; // সাপ্লায়ারের কাছ থেকে ক্রয়/বাকি যোগ হওয়ার এন্ট্রি
 let supplierDueNextId = 1;
 let supplierDetailId = null;
-
+let customerDueEntries = []; // গ্রাহককে ইনভয়েস ছাড়া সরাসরি বাকি দেওয়ার এন্ট্রি
+let customerDueNextId = 1;
 let cart = [];
 
 let expenseCategories = [
@@ -668,6 +669,8 @@ function collectState(isNewShop) {
     purchaseCounter,
     suppliers,
     supplierNextId,
+    customerDueEntries,
+    customerDueNextId,
     supplierDueEntries,
     supplierDueNextId,
     expenseCategories,
@@ -708,6 +711,8 @@ function applyState(s) {
   purchases = s.purchases || [];
   purchaseCounter = s.purchaseCounter || 1;
   suppliers = s.suppliers || [];
+  customerDueEntries = s.customerDueEntries || [];
+  customerDueNextId = s.customerDueNextId || 1;
   supplierNextId = s.supplierNextId || 1;
   supplierDueEntries = s.supplierDueEntries || [];
   supplierDueNextId = s.supplierDueNextId || 1;
@@ -4383,9 +4388,10 @@ function renderLedger() {
  <button class="btn btn-outline" onclick="callCustomer(${l.id})">📞 কল</button>`
      : ""
  }
- <button class="btn btn-outline" onclick="editCustomerPrompt(${l.id})">✏️ এডিট</button>
+  <button class="btn btn-outline" onclick="editCustomerPrompt(${l.id})">✏️ এডিট</button>
  <button class="btn btn-outline" onclick="openCustomerDetail(${l.id})">📋 বিস্তারিত</button>
- <button class="btn btn-primary" onclick="paymentPrompt(${l.id})">পেমেন্ট</button>
+ <button class="btn btn-outline" style="color:var(--red);border-color:var(--red);" onclick="addCustomerDuePrompt(${l.id})">➕ বাকি দিচ্ছি</button>
+ <button class="btn btn-primary" onclick="paymentPrompt(${l.id})">💵 জমা নিচ্ছি</button>
  </div>`,
    )
    .join("")}
@@ -5157,7 +5163,10 @@ function renderSuppliers() {
  <div class="amt ${!s.due ? "clear" : ""}" style="color:${s.due > 0 ? "var(--red)" : "var(--green)"};">${s.due > 0 ? fmt(s.due) : "পরিশোধিত"}</div>
  <div class="lbl">${s.due > 0 ? "বকেয়া" : "কোনো বাকি নেই"}</div>
  </div>
- <button class="btn btn-primary" onclick="openSupplierDetail(${s.id})">বিস্তারিত</button>
+  <button class="btn btn-outline" onclick="editSupplierPrompt(${s.id})">✏️ এডিট</button>
+ <button class="btn btn-outline" onclick="openSupplierDetail(${s.id})">📋 বিস্তারিত</button>
+ <button class="btn btn-outline" style="color:var(--red);border-color:var(--red);" onclick="addSupplierDuePrompt(${s.id})">➕ বাকি নিয়েছি</button>
+ <button class="btn btn-primary" onclick="supplierPaymentPrompt(${s.id})">💵 জমা দিয়েছি</button>
  </div>`,
     )
     .join("");
@@ -5212,9 +5221,9 @@ function renderSupplierDetail(id) {
  ${emCard("var(--green)", "সর্বমোট পরিশোধ করেছেন", fmt(totalPaid))}
  ${emCard(s.due > 0 ? "var(--red)" : "var(--green)", "বর্তমান বাকি", `<span style="color:${s.due > 0 ? "var(--red)" : "var(--green)"}">${fmt(s.due || 0)}</span>`)}
  </div>
- <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
- <button class="btn btn-outline" onclick="addSupplierDuePrompt(${id})">📦 নতুন ক্রয়/বাকি যোগ করুন</button>
- <button class="btn btn-primary" onclick="supplierPaymentPrompt(${id})">💵 পরিশোধ করুন</button>
+  <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
+ <button class="btn btn-outline" onclick="addSupplierDuePrompt(${id})">➕ বাকি নিয়েছি</button>
+ <button class="btn btn-primary" onclick="supplierPaymentPrompt(${id})">💵 জমা দিয়েছি</button>
  </div>
  <div style="font-size:11px;color:var(--steel-500);margin-top:12px;line-height:1.6;">💡 "ক্রয়/বাকি যোগ করুন" দিয়ে শুধু বাকি বাড়ে (খরচ হিসেবে গণনা হয় না)। "পরিশোধ করুন" দিয়ে টাকা দিলে সেটা স্বয়ংক্রিয়ভাবে আপনার খরচের খাতা ও রিপোর্টে যোগ হয়ে যায়।</div>
  </div>`;
@@ -5345,8 +5354,9 @@ function renderCustomerDetail(id) {
  ${emCard("var(--green)", "সর্বমোট পরিশোধ করেছেন", fmt(totalPaidAllTime))}
  ${emCard(cust.due > 0 ? "var(--red)" : "var(--green)", "বর্তমান বাকি", `<span style="color:${cust.due > 0 ? "var(--red)" : "var(--green)"}">${fmt(cust.due || 0)}</span>`)}
  </div>
- <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
- <button class="btn btn-primary" onclick="paymentPrompt(${id})">💵 পেমেন্ট নিন</button>
+  <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
+ <button class="btn btn-outline" onclick="addCustomerDuePrompt(${id})">➕ বাকি দিচ্ছি</button>
+ <button class="btn btn-primary" onclick="paymentPrompt(${id})">💵 জমা নিচ্ছি</button>
  </div>
  </div>`;
 
@@ -5388,6 +5398,27 @@ function renderCustomerDetail(id) {
  <div class="txmeta">জমা ${fmt(p.amount)}${p.discount > 0 ? " · ছাড় " + fmt(p.discount) : ""} · মাধ্যমঃ ${esc(p.method || "ক্যাশ")}</div>
  </div>
  <button class="btn btn-outline" onclick="viewPaymentReceipt(${p.id})">দেখুন</button>
+ </div>`,
+      })),
+    ...customerDueEntries
+      .filter(
+        (d) =>
+          d.custId === id &&
+          inSelectedPeriodAnchored(
+            d.date,
+            period,
+            getPeriodAnchor("customerDetail"),
+          ),
+      )
+      .map((d) => ({
+        t: new Date(d.date).getTime(),
+        html: `
+ <div class="day-tx">
+ <div>
+ <div class="txname"><span class="tx-tag expense">বাকি দিলাম</span>${new Date(d.date).toLocaleDateString("bn-BD")}</div>
+ <div class="txmeta">${esc(d.note) || "কোনো বিবরণ নেই"}</div>
+ </div>
+ <div class="mono" style="font-weight:700; color:var(--red);">+ ${fmt(d.amount)}</div>
  </div>`,
       })),
   ].sort((a, b) => b.t - a.t);
@@ -5530,6 +5561,53 @@ function saveCustomerEdit(id) {
   closeModal();
   render();
   showToast("গ্রাহকের তথ্য আপডেট হয়েছে");
+  persistShopData();
+}
+function addCustomerDuePrompt(id) {
+  const cust = ledger.find((l) => l.id === id);
+  if (!cust) return;
+  openModal(
+    `বাকি দিচ্ছি — ${esc(cust.name)}`,
+    `
+ <div style="font-size:12px;color:var(--steel-500);margin-bottom:12px;line-height:1.6;">এই গ্রাহককে ইনভয়েস ছাড়া বাকিতে মাল দিয়েছেন — সেই পরিমাণ এখানে লিখুন। এটা গ্রাহকের বর্তমান বকেয়ার সাথে যোগ হয়ে যাবে।</div>
+ <div class="field"><label>পরিমাণ (৳)</label><input type="number" id="custDueAddAmount" min="0" placeholder="যেমনঃ ২,০০০"></div>
+ <div class="field"><label>তারিখ</label><input type="date" id="custDueAddDate" value="${toDateInputValue(new Date())}"></div>
+ <div class="field"><label>বিবরণ (ঐচ্ছিক)</label><input type="text" id="custDueAddNote" placeholder="যেমনঃ ৫ বস্তা সিমেন্ট বাকিতে দেওয়া হয়েছে"></div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveCustomerDueAdd(${id})">যোগ করুন</button>
+ `,
+  );
+}
+function saveCustomerDueAdd(id) {
+  const cust = ledger.find((l) => l.id === id);
+  if (!cust) return;
+  const amount = Math.max(
+    0,
+    parseInt(document.getElementById("custDueAddAmount").value) || 0,
+  );
+  if (amount <= 0) {
+    showToast("সঠিক পরিমাণ লিখুন");
+    return;
+  }
+  const date = dateFromInput(document.getElementById("custDueAddDate").value);
+  const note = document.getElementById("custDueAddNote").value.trim();
+  cust.due = (cust.due || 0) + amount;
+  customerDueEntries.push({
+    id: customerDueNextId++,
+    custId: id,
+    date,
+    amount,
+    note,
+  });
+  logActivity(
+    "গ্রাহককে নতুন বাকি দেওয়া হয়েছে",
+    `${cust.name} · ${fmt(amount)}${note ? " · " + note : ""}`,
+  );
+  closeModal();
+  render();
+  showToast("বাকি যোগ হয়েছে");
   persistShopData();
 }
 function deleteCustomerPrompt(id) {
