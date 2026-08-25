@@ -252,6 +252,9 @@ let stockSearch = "";
 let stockAddUnitMode = "ban"; // 'ban' | 'piece'
 let invoiceSearch = "";
 let ledgerSearch = "";
+let ledgerMinDue = "";
+let ledgerMaxDue = "";
+let ledgerSort = "default"; // 'default' | 'newest' | 'oldest' | 'dueHigh' | 'dueLow'
 let cashSearch = "";
 let dailySelectedDate = null;
 let dailyOverviewPreset = "all"; // 'day' | 'month' | 'year' | 'all'
@@ -1012,6 +1015,9 @@ function switchView(id, opts) {
   if (id === "ledger") {
     ledgerSearch = "";
     ledgerDetailId = null;
+    ledgerMinDue = "";
+    ledgerMaxDue = "";
+    ledgerSort = "default";
   }
   if (id === "employees") {
     employeeDetailId = null;
@@ -4296,7 +4302,29 @@ function renderLedger() {
  <span class="sclear" onclick="ledgerSearchInputFn('')">✕</span>
  </div>`;
 
-  const filtered = ledger
+  const filterBar = `
+ <div class="panel" style="margin-bottom:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+ <div class="field" style="margin-bottom:0; flex:1; min-width:130px;">
+ <label>সর্বনিম্ন বাকি (৳)</label>
+ <input type="number" id="ledgerMinDueInput" min="0" placeholder="যেমনঃ ৫০০" value="${ledgerMinDue}" onchange="ledgerMinDueInputFn(this.value)">
+ </div>
+ <div class="field" style="margin-bottom:0; flex:1; min-width:130px;">
+ <label>সর্বোচ্চ বাকি (৳)</label>
+ <input type="number" id="ledgerMaxDueInput" min="0" placeholder="যেমনঃ ৫০০০" value="${ledgerMaxDue}" onchange="ledgerMaxDueInputFn(this.value)">
+ </div>
+ <div class="field" style="margin-bottom:0; flex:1; min-width:170px;">
+ <label>সাজান</label>
+ <select id="ledgerSortSelect" onchange="ledgerSortChange(this.value)">
+ <option value="default" ${ledgerSort === "default" ? "selected" : ""}>সিরিয়াল অনুযায়ী</option>
+ <option value="newest" ${ledgerSort === "newest" ? "selected" : ""}>নতুন কাস্টমার আগে</option>
+ <option value="oldest" ${ledgerSort === "oldest" ? "selected" : ""}>পুরাতন কাস্টমার আগে</option>
+ <option value="dueHigh" ${ledgerSort === "dueHigh" ? "selected" : ""}>বেশি বাকি আগে</option>
+ <option value="dueLow" ${ledgerSort === "dueLow" ? "selected" : ""}>কম বাকি আগে</option>
+ </select>
+ </div>
+ </div>`;
+
+  let filtered = ledger
     .map((l, idx) => ({ l, serial: idx + 1 }))
     .filter(
       ({ l }) =>
@@ -4306,9 +4334,34 @@ function renderLedger() {
           .includes(q),
     );
 
+  const minDueVal = ledgerMinDue !== "" ? parseFloat(ledgerMinDue) : null;
+  const maxDueVal = ledgerMaxDue !== "" ? parseFloat(ledgerMaxDue) : null;
+  if (minDueVal !== null)
+    filtered = filtered.filter(({ l }) => l.due >= minDueVal);
+  if (maxDueVal !== null)
+    filtered = filtered.filter(({ l }) => l.due <= maxDueVal);
+
+  if (ledgerSort === "newest") {
+    filtered = filtered
+      .slice()
+      .sort(
+        (a, b) => new Date(b.l.addedDate || 0) - new Date(a.l.addedDate || 0),
+      );
+  } else if (ledgerSort === "oldest") {
+    filtered = filtered
+      .slice()
+      .sort(
+        (a, b) => new Date(a.l.addedDate || 0) - new Date(b.l.addedDate || 0),
+      );
+  } else if (ledgerSort === "dueHigh") {
+    filtered = filtered.slice().sort((a, b) => b.l.due - a.l.due);
+  } else if (ledgerSort === "dueLow") {
+    filtered = filtered.slice().sort((a, b) => a.l.due - b.l.due);
+  }
+
   const list =
     filtered.length === 0
-      ? `<div class="no-match">🔍 "${ledgerSearch}" এর সাথে মিলে এমন কোনো গ্রাহক পাওয়া যায়নি</div>`
+      ? `<div class="no-match">🔍 এই সার্চ/ফিল্টারে কোনো গ্রাহক পাওয়া যায়নি</div>`
       : `<div class="ledger-list">
  ${filtered
    .map(
@@ -4317,7 +4370,7 @@ function renderLedger() {
  <div class="ledger-serial">${serial}</div>
  <div class="ledger-info">
  <div class="lname">${esc(l.name)}</div>
- <div class="lmeta">${esc(l.address) || ""}${l.address && l.phone ? " · " : ""}${l.phone ? `<b style="color:var(--rust); font-weight:700; letter-spacing:0.02em;">${telHtml(l.phone)}</b>` : l.address ? "" : "কোনো তথ্য নেই"}</div>
+ <div class="lmeta">${esc(l.address) || ""}${l.address && l.phone ? " · " : ""}${l.phone ? `<b style="color:var(--rust); font-weight:700; letter-spacing:0.02em;">${telHtml(l.phone)}</b>` : l.address ? "" : "কোনো তথ্য নেই"}${l.addedDate ? " · যুক্তঃ " + new Date(l.addedDate).toLocaleDateString("bn-BD") : ""}</div>
  </div>
  <div class="ledger-due">
  <div class="amt ${l.due === 0 ? "clear" : ""}">${l.due === 0 ? "পরিশোধিত" : fmt(l.due)}</div>
@@ -4330,6 +4383,7 @@ function renderLedger() {
  <button class="btn btn-outline" onclick="callCustomer(${l.id})">📞 কল</button>`
      : ""
  }
+ <button class="btn btn-outline" onclick="editCustomerPrompt(${l.id})">✏️ এডিট</button>
  <button class="btn btn-outline" onclick="openCustomerDetail(${l.id})">📋 বিস্তারিত</button>
  <button class="btn btn-primary" onclick="paymentPrompt(${l.id})">পেমেন্ট</button>
  </div>`,
@@ -4343,6 +4397,7 @@ function renderLedger() {
  <button class="btn btn-primary" onclick="addCustomerPrompt()">+ নতুন গ্রাহক</button>
  </div>
  ${searchBar}
+ ${filterBar}
  ${list}`;
 }
 function ledgerSearchInputFn(val) {
@@ -4354,6 +4409,18 @@ function ledgerSearchInputFn(val) {
     const p = el.value.length;
     el.setSelectionRange(p, p);
   }
+}
+function ledgerMinDueInputFn(val) {
+  ledgerMinDue = val;
+  render();
+}
+function ledgerMaxDueInputFn(val) {
+  ledgerMaxDue = val;
+  render();
+}
+function ledgerSortChange(val) {
+  ledgerSort = val;
+  render();
 }
 
 /* ============================================================
@@ -5256,7 +5323,8 @@ function renderCustomerDetail(id) {
  ${cust.address ? `<div style="font-size:12.5px; color:rgba(255,255,255,0.75); margin-top:3px;">📍 ${esc(cust.address)}</div>` : ""}
  </div>
  </div>
- <div style="display:flex; gap:8px;">
+  <div style="display:flex; gap:8px;">
+ <button class="btn btn-outline" style="background:rgba(255,255,255,0.12); color:white; border-color:rgba(255,255,255,0.35);" onclick="editCustomerPrompt(${id})">✏️</button>
  ${cust.due > 0 ? `<button class="btn btn-outline" style="background:#25D366; color:white; border-color:#25D366;" onclick="sendDueReminder(${id})">📱</button>` : ""}
  ${cust.phone ? `<button class="btn btn-outline" style="background:rgba(255,255,255,0.12); color:white; border-color:rgba(255,255,255,0.35);" onclick="callCustomer(${id})">📞</button>` : ""}
  </div>
@@ -5388,6 +5456,7 @@ function addCustomerPrompt() {
  <div class="field"><label>ঠিকানা</label><input type="text" id="custAddr" placeholder="যেমনঃ বাজার রোড, সাভার"></div>
  <div class="field"><label>মোবাইল নাম্বার</label><input type="text" id="custPhone" placeholder="01xxx-xxxxxx"></div>
  <div class="field"><label>শুরুর বাকি (থাকলে)</label><input type="number" id="custDue" value="0" min="0"></div>
+ <div class="field"><label>তারিখ (চাইলে আগের কোনো তারিখ দিতে পারেন — ব্যাকডেটেড)</label><input type="date" id="custDate" value="${toDateInputValue(new Date())}"></div>
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -5402,6 +5471,7 @@ function saveNewCustomer() {
     return;
   }
   const startDue = parseInt(document.getElementById("custDue").value) || 0;
+  const custDate = dateFromInput(document.getElementById("custDate").value);
   ledger.push({
     id: ledgerNextId++,
     name,
@@ -5410,6 +5480,7 @@ function saveNewCustomer() {
     due: startDue,
     paidTotal: 0,
     discountTotal: 0,
+    addedDate: custDate,
   });
   logActivity(
     "নতুন গ্রাহক যুক্ত",
@@ -5419,6 +5490,71 @@ function saveNewCustomer() {
   render();
   showToast("গ্রাহক যুক্ত হয়েছে");
   persistShopData();
+}
+function editCustomerPrompt(id) {
+  const cust = ledger.find((l) => l.id === id);
+  if (!cust) return;
+  openModal(
+    `গ্রাহকের তথ্য এডিট — ${esc(cust.name)}`,
+    `
+ <div class="field"><label>নাম</label><input type="text" id="custEditName" value="${esc(cust.name)}"></div>
+ <div class="field"><label>ঠিকানা</label><input type="text" id="custEditAddr" value="${esc(cust.address || "")}"></div>
+ <div class="field"><label>মোবাইল নাম্বার</label><input type="text" id="custEditPhone" value="${esc(cust.phone || "")}"></div>
+ <div class="field"><label>বর্তমান বাকি (৳)</label><input type="number" id="custEditDue" min="0" value="${cust.due}"></div>
+ <div class="field"><label>যুক্ত হওয়ার তারিখ</label><input type="date" id="custEditDate" value="${toDateInputValue(cust.addedDate || new Date())}"></div>
+ <div style="font-size:11px;color:var(--steel-500);">বাকির পরিমাণ এখান থেকে সরাসরি বদলালে সেটা কোনো ইনভয়েস/পেমেন্টের হিসাবের সাথে যুক্ত হবে না — শুধু বর্তমান বকেয়ার সংখ্যাটাই বদলে যাবে।</div>
+ `,
+    `
+ <button class="btn btn-outline" style="color:var(--red);" onclick="deleteCustomerPrompt(${id})">🗑️ মুছুন</button>
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveCustomerEdit(${id})">সংরক্ষণ করুন</button>
+ `,
+  );
+}
+function saveCustomerEdit(id) {
+  const cust = ledger.find((l) => l.id === id);
+  if (!cust) return;
+  const name = document.getElementById("custEditName").value.trim();
+  if (!name) {
+    showToast("নাম আবশ্যক");
+    return;
+  }
+  cust.name = name;
+  cust.address = document.getElementById("custEditAddr").value.trim();
+  cust.phone = document.getElementById("custEditPhone").value.trim();
+  cust.due = Math.max(
+    0,
+    parseInt(document.getElementById("custEditDue").value) || 0,
+  );
+  cust.addedDate = dateFromInput(document.getElementById("custEditDate").value);
+  closeModal();
+  render();
+  showToast("গ্রাহকের তথ্য আপডেট হয়েছে");
+  persistShopData();
+}
+function deleteCustomerPrompt(id) {
+  const cust = ledger.find((l) => l.id === id);
+  if (!cust) return;
+  openModal(
+    "গ্রাহক মুছবেন?",
+    `
+ <p style="font-size:13.5px;line-height:1.7;">"${esc(cust.name)}" কে বাকির খাতা থেকে স্থায়ীভাবে মুছে ফেলা হবে। এই গ্রাহকের আগের ইনভয়েস/পেমেন্ট রেকর্ডে নাম থেকে যাবে, শুধু এই তালিকা থেকে বাদ যাবেন।</p>
+ <p style="font-size:12px;color:var(--red);">এই কাজ ফিরিয়ে নেওয়া যাবে না।</p>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('গ্রাহক মুছুন', () => deleteCustomerConfirmed(${id}))">হ্যাঁ, মুছুন</button>
+ `,
+  );
+}
+function deleteCustomerConfirmed(id) {
+  ledger = ledger.filter((x) => x.id !== id);
+  ledgerDetailId = null;
+  closeModal();
+  render();
+  showToast("গ্রাহক মুছে ফেলা হয়েছে");
+  persistShopData();
+  switchView("ledger");
 }
 function paymentPrompt(id) {
   const cust = ledger.find((l) => l.id === id);
