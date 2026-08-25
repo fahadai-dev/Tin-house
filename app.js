@@ -23,6 +23,7 @@ let PRODUCT_CATEGORIES = [
     hasBrands: true,
     unitLabel: "মিলিমিটার",
     sizeLabel: "ফুট",
+    usesBan: true,
   },
   {
     id: "tua",
@@ -31,6 +32,7 @@ let PRODUCT_CATEGORIES = [
     hasBrands: false,
     unitLabel: "পণ্যের নাম",
     sizeLabel: "পরিমাণ",
+    usesBan: false,
   },
   {
     id: "plainsheet",
@@ -39,6 +41,7 @@ let PRODUCT_CATEGORIES = [
     hasBrands: false,
     unitLabel: "পণ্যের নাম",
     sizeLabel: "পরিমাণ",
+    usesBan: false,
   },
   {
     id: "hardware",
@@ -47,6 +50,7 @@ let PRODUCT_CATEGORIES = [
     hasBrands: false,
     unitLabel: "পণ্যের নাম",
     sizeLabel: "পরিমাণ",
+    usesBan: false,
   },
   {
     id: "wood",
@@ -55,6 +59,7 @@ let PRODUCT_CATEGORIES = [
     hasBrands: false,
     unitLabel: "পণ্যের নাম",
     sizeLabel: "পরিমাণ",
+    usesBan: false,
   },
   {
     id: "plasticset",
@@ -63,6 +68,7 @@ let PRODUCT_CATEGORIES = [
     hasBrands: false,
     unitLabel: "পণ্যের নাম",
     sizeLabel: "পরিমাণ",
+    usesBan: false,
   },
 ];
 let categoryNextId = 7;
@@ -126,7 +132,50 @@ function itemLabelText(brand, mm, size) {
 }
 const MM_LIST = [12, 13, 14, 15, 16, 17, 18, 19, 20];
 const SIZE_LIST = [6, 7, 8, 9, 10, 11, 12];
-const FEET_PER_BAN = 72; // ৭২ ফুটে এক বান
+const FEET_PER_BAN = 72; // ৭২ ফুটে এক
+const UNIT_OPTIONS = [
+  "ফুট",
+  "বান",
+  "পিস",
+  "প্যাকেট",
+  "কেজি",
+  "গ্রাম",
+  "সেট",
+  "বক্স",
+  "বান্ডেল",
+  "রোল",
+  "স্কয়ার ফুট",
+  "ইঞ্চি",
+  "মিটার",
+];
+function unitSelectHtml(fieldId, currentValue) {
+  const cur = currentValue || "";
+  const isCustom = cur !== "" && !UNIT_OPTIONS.includes(cur);
+  const opts = UNIT_OPTIONS.map(
+    (u) => `<option value="${u}" ${cur === u ? "selected" : ""}>${u}</option>`,
+  ).join("");
+  return `
+ <select id="${fieldId}Select" onchange="unitSelectChange('${fieldId}', this.value)">
+ <option value="">— বাছুন —</option>
+ ${opts}
+ <option value="__custom__" ${isCustom ? "selected" : ""}>✏️ নিজে লিখুন (অন্য কিছু)</option>
+ </select>
+ <input type="text" id="${fieldId}" value="${esc(cur)}" placeholder="যেমনঃ প্যাক, বোতল" style="margin-top:6px; ${isCustom || cur === "" ? "" : "display:none;"}">`;
+}
+function unitSelectChange(fieldId, val) {
+  const input = document.getElementById(fieldId);
+  if (!input) return;
+  if (val === "__custom__" || val === "") {
+    input.style.display = "";
+    if (val === "__custom__") {
+      input.value = "";
+      input.focus();
+    }
+  } else {
+    input.style.display = "none";
+    input.value = val;
+  }
+}
 
 function seededRand(seed) {
   let x = Math.sin(seed) * 10000;
@@ -744,6 +793,9 @@ function applyState(s) {
       ? s.PRODUCT_CATEGORIES
       : PRODUCT_CATEGORIES;
   categoryNextId = s.categoryNextId || categoryNextId;
+  PRODUCT_CATEGORIES.forEach((c) => {
+    if (c.usesBan === undefined) c.usesBan = c.id === "tin";
+  });
   brandCategory = s.brandCategory || {};
   brandUnitLabel = s.brandUnitLabel || {};
   brandSizeLabel = s.brandSizeLabel || {};
@@ -2967,7 +3019,7 @@ function openReceiptModal(kind, id) {
 
 /* ============================================================
  স্টক তালিকা (ম্যানেজমেন্ট)
- ============================================================ */
+ ============================================================ *
 function renderStock() {
   if (stockStep === 0) return categoryCardsHtml("stock");
 
@@ -3006,6 +3058,7 @@ function renderStock() {
   }
 
   const cat = getCategoryOf(stockBrand);
+  const usesBan = !!cat.usesBan;
   const lbl = getBrandLabels(stockBrand);
   const q = stockSearch.trim().toLowerCase();
   let rows = "";
@@ -3018,25 +3071,30 @@ function renderStock() {
           if (q !== "" && !(String(mm).includes(q) || String(sz).includes(q)))
             return;
           const v = inventory[stockBrand][mm][sz];
-          const banVal =
-            v.banPrice != null
-              ? v.banPrice
-              : Math.round((v.buy * FEET_PER_BAN) / sz);
-          const isWeight = lbl.qtyMode === "weight";
+          const totalVal = v.buy * v.stock;
+          const banCell = usesBan
+            ? `<td class="num mono">${fmt(
+                v.banPrice != null
+                  ? v.banPrice
+                  : Math.round((v.buy * FEET_PER_BAN) / sz),
+              )}</td>`
+            : "";
           rows += `<tr>
- <td class="num mono">${isWeight ? "—" : mm + " " + esc(lbl.unitLabel)}</td><td class="num mono">${isWeight ? "—" : sz + " " + esc(lbl.sizeLabel)}</td>
- <td class="num mono">${isWeight ? "—" : fmt(banVal)}</td>
- <td class="num mono">${isWeight ? fmt(v.buy * 1000) + "/কেজি" : fmt(v.buy)}</td><td class="num mono">${isWeight ? fmt(v.sell * 1000) + "/কেজি" : fmt(v.sell)}</td>
- <td class="num mono">${isWeight ? formatQtyByMode("weight", v.stock) : v.stock}</td>
+ <td class="num mono">${mm} ${esc(lbl.unitLabel)}</td><td class="num mono">${sz} ${esc(lbl.sizeLabel)}</td>
+ ${banCell}
+ <td class="num mono">${fmt(v.buy)}</td><td class="num mono">${fmt(v.sell)}</td>
+ <td class="num mono">${v.stock}</td>
+ <td class="num mono">${fmt(totalVal)}</td>
  <td>${v.stock <= 3 ? `<span class="pill low">কম স্টক</span>` : `<span class="pill ok">স্বাভাবিক</span>`}</td>
  <td class="tbl-actions"><button onclick="editStockPrompt('${jsq(stockBrand)}',${mm},${sz})">এডিট</button></td>
  </tr>`;
         });
     });
   const isBrandEmpty = Object.keys(inventory[stockBrand] || {}).length === 0;
+  const colSpan = usesBan ? 9 : 8;
   const emptyMsg = isBrandEmpty
-    ? `<tr><td colspan="8" class="no-match">📦 ${esc(stockBrand)}-এ এখনো কোনো মাল যোগ করা হয়নি — উপরের "+ নতুন মাল যোগ করুন" চেপে শুরু করুন</td></tr>`
-    : `<tr><td colspan="8" class="no-match">🔍 কোনো ফলাফল পাওয়া যায়নি</td></tr>`;
+    ? `<tr><td colspan="${colSpan}" class="no-match">📦 ${esc(stockBrand)}-এ এখনো কোনো মাল যোগ করা হয়নি — উপরের "+ নতুন মাল যোগ করুন" চেপে শুরু করুন</td></tr>`
+    : `<tr><td colspan="${colSpan}" class="no-match">🔍 কোনো ফলাফল পাওয়া যায়নি</td></tr>`;
   return `
  <div class="back-row">
  <button class="btn btn-outline" onclick="stockGoStep(${cat.hasBrands ? 1 : 0})">← পেছনে যান</button>
@@ -3054,7 +3112,7 @@ function renderStock() {
  <span class="sclear" onclick="stockSearchInputFn('')">✕</span>
  </div>
  <table class="tbl">
-  <thead><tr><th>${esc(lbl.unitLabel)}</th><th>${esc(lbl.sizeLabel)}</th><th>বানের দাম</th><th>ক্রয়মূল্য/পিস</th><th>বিক্রয়মূল্য</th><th>স্টক</th><th>অবস্থা</th><th></th></tr></thead>
+  <thead><tr><th>${esc(lbl.unitLabel)}</th><th>${esc(lbl.sizeLabel)}</th>${usesBan ? "<th>বানের দাম</th>" : ""}<th>ক্রয়মূল্য</th><th>বিক্রয়মূল্য</th><th>স্টক</th><th>মোট মূল্য</th><th>অবস্থা</th><th></th></tr></thead>
  <tbody>${rows || emptyMsg}</tbody>
  </table>`;
 }
@@ -3120,8 +3178,9 @@ function addCategoryPrompt() {
  <div class="field"><label>ক্যাটাগরির নাম</label><input type="text" id="newCatName2" placeholder="যেমনঃ পাইপ"></div>
  <div class="field"><label>আইকন (ইমোজি)</label><input type="text" id="newCatIcon2" value="📦"></div>
  <div class="field"><label><input type="checkbox" id="newCatHasBrands" style="width:auto;margin-right:6px;"> এই ক্যাটাগরিতে একাধিক ব্র্যান্ড থাকবে (টিনের মতো)</label></div>
-  <div class="field"><label>প্রথম ঘরের লেবেল (যেমনঃ পণ্যের নাম)</label><input type="text" id="newCatUnitLabel" value="পণ্যের নাম"></div>
- <div class="field"><label>দ্বিতীয় ঘরের লেবেল (যেমনঃ পরিমাণ)</label><input type="text" id="newCatSizeLabel" value="পরিমাণ"></div>
+    <div class="field"><label>প্রথম ঘরের একক/লেবেল</label>${unitSelectHtml("newCatUnitLabel", "পণ্যের নাম")}</div>
+ <div class="field"><label>দ্বিতীয় ঘরের একক/লেবেল (পরিমাণের একক)</label>${unitSelectHtml("newCatSizeLabel", "পরিমাণ")}</div>
+ <div class="field"><label><input type="checkbox" id="newCatUsesBan" style="width:auto;margin-right:6px;"> বান (bundle) হিসেবে স্টক ও দাম হিসাব হবে — শুধু টিনের মতো পণ্যের জন্য টিক দিন, বাকি সাধারণ পণ্যের জন্য খালি রাখুন</label></div>
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -3145,6 +3204,7 @@ function saveNewCategory() {
     document.getElementById("newCatUnitLabel").value.trim() || "পণ্যের নাম";
   const sizeLabel =
     document.getElementById("newCatSizeLabel").value.trim() || "পরিমাণ";
+  const usesBan = document.getElementById("newCatUsesBan").checked;
   const cat = {
     id: "cat" + categoryNextId++,
     name,
@@ -3152,6 +3212,7 @@ function saveNewCategory() {
     hasBrands,
     unitLabel,
     sizeLabel,
+    usesBan,
   };
   PRODUCT_CATEGORIES.push(cat);
   ensureCategoryPseudoBrand(cat);
@@ -3168,19 +3229,9 @@ function editCategoryPrompt(id) {
     `
  <div class="field"><label>ক্যাটাগরির নাম</label><input type="text" id="editCatName2" value="${esc(cat.name)}"></div>
  <div class="field"><label>আইকন (ইমোজি)</label><input type="text" id="editCatIcon2" value="${esc(cat.icon)}"></div>
-  <div class="field"><label>প্রথম মাপের লেবেল</label><input type="text" id="editCatUnitLabel" value="${esc(cat.unitLabel)}"></div>
- <div class="field"><label>দ্বিতীয় মাপের লেবেল</label><input type="text" id="editCatSizeLabel" value="${esc(cat.sizeLabel)}"></div>
- ${
-   !cat.hasBrands
-     ? `<div class="field"><label>পরিমাণ কীভাবে হিসাব হবে</label>
- <select id="editCatQtyMode">
- <option value="measure" ${cat.qtyMode !== "weight" && cat.qtyMode !== "count" ? "selected" : ""}>মাপ অনুযায়ী (বান/পিস)</option>
- <option value="weight" ${cat.qtyMode === "weight" ? "selected" : ""}>ওজন (কেজি/গ্রাম)</option>
- <option value="count" ${cat.qtyMode === "count" ? "selected" : ""}>সংখ্যা (বান ছাড়া, শুধু পিস)</option>
- </select>
- </div>`
-     : ""
- }
+  <div class="field"><label>প্রথম মাপের একক/লেবেল</label>${unitSelectHtml("editCatUnitLabel", cat.unitLabel)}</div>
+ <div class="field"><label>দ্বিতীয় মাপের একক/লেবেল (পরিমাণের একক)</label>${unitSelectHtml("editCatSizeLabel", cat.sizeLabel)}</div>
+ <div class="field"><label><input type="checkbox" id="editCatUsesBan" ${cat.usesBan ? "checked" : ""} style="width:auto;margin-right:6px;"> বান (bundle) হিসেবে স্টক ও দাম হিসাব হবে (যেমন টিন)</label></div>
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -3212,8 +3263,7 @@ function saveCategoryEdit(id) {
     document.getElementById("editCatUnitLabel").value.trim() || cat.unitLabel;
   cat.sizeLabel =
     document.getElementById("editCatSizeLabel").value.trim() || cat.sizeLabel;
-  const qtyModeEl = document.getElementById("editCatQtyMode");
-  if (qtyModeEl) cat.qtyMode = qtyModeEl.value;
+  cat.usesBan = document.getElementById("editCatUsesBan").checked;
   closeModal();
   render();
   showToast("ক্যাটাগরি আপডেট হয়েছে");
@@ -3263,8 +3313,8 @@ function editBrandPrompt(name) {
     `ব্র্যান্ড এডিট — ${esc(name)}`,
     `
  <div class="field"><label>ব্র্যান্ডের নাম পরিবর্তন করুন</label><input type="text" id="editBrandName" value="${esc(name)}"></div>
- <div class="field"><label>প্রথম ঘরের টাইটেল (যেমনঃ মিলিমিটার / পণ্যের নাম)</label><input type="text" id="editBrandUnitLabel" value="${esc(lbl.unitLabel)}"></div>
- <div class="field"><label>দ্বিতীয় ঘরের টাইটেল (যেমনঃ ফুট / পরিমাণ)</label><input type="text" id="editBrandSizeLabel" value="${esc(lbl.sizeLabel)}"></div>
+  <div class="field"><label>প্রথম ঘরের একক/টাইটেল</label>${unitSelectHtml("editBrandUnitLabel", lbl.unitLabel)}</div>
+ <div class="field"><label>দ্বিতীয় ঘরের একক/টাইটেল (পরিমাণের একক)</label>${unitSelectHtml("editBrandSizeLabel", lbl.sizeLabel)}</div>
  <div style="font-size:11px;color:var(--steel-500);">এই টাইটেল স্টক, কার্ট, ইনভয়েস — সব জায়গায় দেখাবে।</div>
  `,
     `
@@ -3458,14 +3508,40 @@ function editAddBanToStock(brand, mm, sz) {
 }
 
 function addStockPrompt() {
-  stockAddUnitMode = "ban";
+  stockSellManualOverride = false;
   const cat = getBrandLabels(stockBrand);
   const catInfo = getCategoryOf(stockBrand);
+  const usesBan = !!catInfo.usesBan;
+  stockAddUnitMode = usesBan ? "ban" : "piece";
   const firstFieldDefault = catInfo.hasBrands ? MM_LIST[0] : "";
   const secondFieldDefault = catInfo.hasBrands ? SIZE_LIST[0] : "";
-  const qtyMode = cat.qtyMode;
   const mmOptions = MM_LIST.map((m) => `<option value="${m}">`).join("");
   const szOptions = SIZE_LIST.map((s) => `<option value="${s}">`).join("");
+  const modeToggleHtml = usesBan
+    ? `
+ <div class="field">
+ <label>কীভাবে স্টক যোগ করবেন</label>
+ <div style="display:flex;gap:8px;">
+ <button type="button" id="unitModeBanBtn" class="btn btn-primary" style="flex:1;justify-content:center;" onclick="setStockAddUnitMode('ban')">📦 বান হিসেবে</button>
+ <button type="button" id="unitModePieceBtn" class="btn btn-outline" style="flex:1;justify-content:center;" onclick="setStockAddUnitMode('piece')">🔢 পিস হিসেবে</button>
+ </div>
+ </div>
+  <div id="banFieldsWrap" style="display:block;">
+ <div class="field"><label>বানের দাম (৳) — ৭২ ফুট = ১ বান</label><input type="number" id="newBanPrice" value="4000" min="0" oninput="addStockRecalc()"></div>
+ <div class="field"><label>কয় বান কিনলেন</label><input type="number" id="newBanQty" value="1" min="0" step="0.5" oninput="addStockRecalc()"></div>
+ <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;">
+ <div id="newPiecesInfo">এক বানে (৭২ ফুট) প্রায় — পিস আসে</div>
+ <div id="newTotalPiecesInfo" style="margin-top:4px;font-weight:600;">০ বানে মোট প্রায় ০ পিস আসবে</div>
+ <div style="display:flex;justify-content:space-between;margin-top:6px;"><span>প্রতি পিস ক্রয়মূল্য (স্বয়ংক্রিয়)</span><b class="mono" id="newBuyComputed">৳০</b></div>
+ </div>
+ </div>
+  <div id="pieceFieldsWrap" style="display:none;">
+ <div class="field"><label>কত ${esc(cat.sizeLabel)} স্টকে যোগ করবেন</label><input type="number" id="newPieceQty" value="0" min="0" oninput="addStockRecalc()"></div>
+ <div class="field"><label>প্রতি ${esc(cat.sizeLabel)} ক্রয়মূল্য (৳)</label><input type="number" id="newPieceBuyPrice" value="0" min="0" oninput="addStockRecalc()"></div>
+ </div>`
+    : `
+ <div class="field"><label>পরিমাণ (${esc(cat.sizeLabel)})</label><input type="number" id="newPieceQty" value="0" min="0" oninput="addStockRecalc()"></div>
+ <div class="field"><label>ক্রয়মূল্য (৳ — প্রতি ${esc(cat.sizeLabel)})</label><input type="number" id="newPieceBuyPrice" value="0" min="0" oninput="addStockRecalc()"></div>`;
   openModal(
     `নতুন মাল যোগ করুন — ${esc(stockBrand)}`,
     `
@@ -3477,60 +3553,9 @@ function addStockPrompt() {
    <input type="text" id="newSize" list="sizeSuggestList" value="${secondFieldDefault}" placeholder="${catInfo.hasBrands ? "যেমনঃ 8" : "যেমনঃ ৫ পিস"}" oninput="addStockRecalc()">
  <datalist id="sizeSuggestList">${szOptions}</datalist>
  </div>
-  ${
-    qtyMode === "weight"
-      ? `
- <div class="field"><label>পরিমাণ</label>
- <div style="display:flex;gap:8px;">
- <input type="number" id="newWeightQty" min="0" step="0.001" placeholder="যেমনঃ 5" oninput="addStockRecalc()" style="flex:1;">
- <select id="newWeightUnit" onchange="addStockRecalc()" style="width:110px;">
- <option value="kg">কেজি</option>
- <option value="g">গ্রাম</option>
- </select>
- </div>
- </div>
- <div class="field"><label>ক্রয়মূল্য (প্রতি কেজি, ৳)</label><input type="number" id="newWeightBuyPrice" min="0" value="0" oninput="addStockRecalc()"></div>
- <div class="field"><label>বিক্রয়মূল্য (প্রতি কেজি, ৳)</label><input type="number" id="newSell" value="0" min="0"></div>
- <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;" id="newWeightInfo">মোট ০ গ্রাম স্টকে যোগ হবে</div>
- <div class="field"><label>স্টক (গ্রামে, স্বয়ংক্রিয়) </label><input type="number" id="newStock" value="0" min="0"></div>`
-      : qtyMode === "count"
-        ? `
- <div class="field"><label>কত পিস স্টকে যোগ করবেন</label><input type="number" id="newPieceQty" value="0" min="0" oninput="addStockRecalc()"></div>
- <div class="field"><label>প্রতি পিস ক্রয়মূল্য (৳)</label><input type="number" id="newPieceBuyPrice" value="0" min="0" oninput="addStockRecalc()"></div>
- <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="newSell" value="0" min="0"></div>
- <div class="field"><label>স্টক (পিস, স্বয়ংক্রিয়)</label><input type="number" id="newStock" value="0" min="0"></div>`
-        : `
- <div class="field">
- <label>কীভাবে স্টক যোগ করবেন</label>
- <div style="display:flex;gap:8px;">
- <button type="button" id="unitModeBanBtn" class="btn btn-primary" style="flex:1;justify-content:center;" onclick="setStockAddUnitMode('ban')">📦 বান হিসেবে</button>
- <button type="button" id="unitModePieceBtn" class="btn btn-outline" style="flex:1;justify-content:center;" onclick="setStockAddUnitMode('piece')">🔢 পিস হিসেবে</button>
- </div>
- </div>
- <div id="banFieldsWrap" style="display:block;">
- <div class="field"><label>বানের দাম (৳) — ৭২ ফুট = ১ বান</label><input type="number" id="newBanPrice" value="4000" min="0" oninput="addStockRecalc()"></div>
- <div class="field"><label>কয় বান কিনলেন</label><input type="number" id="newBanQty" value="1" min="0" step="0.5" oninput="addStockRecalc()"></div>
- <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;">
- <div id="newPiecesInfo">এক বানে (৭২ ফুট) প্রায় — পিস আসে</div>
- <div id="newTotalPiecesInfo" style="margin-top:4px;font-weight:600;">০ বানে মোট প্রায় ০ পিস আসবে</div>
- <div style="display:flex;justify-content:space-between;margin-top:6px;"><span>প্রতি পিস ক্রয়মূল্য (স্বয়ংক্রিয়)</span><b class="mono" id="newBuyComputed">৳০</b></div>
- </div>
- </div>
- <div id="pieceFieldsWrap" style="display:none;">
- <div class="field"><label>কত পিস স্টকে যোগ করবেন</label><input type="number" id="newPieceQty" value="0" min="0" oninput="addStockRecalc()"></div>
- <div class="field"><label>প্রতি পিস ক্রয়মূল্য (৳)</label><input type="number" id="newPieceBuyPrice" value="0" min="0" oninput="addStockRecalc()"></div>
- </div>
- <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="newSell" value="570" min="0"></div>
- <div class="field"><label>স্টক (পিস) — উপরের হিসাব অনুযায়ী স্বয়ংক্রিয়ভাবে বসেছে, চাইলে হাতে ঠিক করে নিন</label><input type="number" id="newStock" value="0" min="0"></div>`
-  }
- </div>
- </div>
-  <div id="pieceFieldsWrap" style="display:none;">
- <div class="field"><label>কত পিস স্টকে যোগ করবেন</label><input type="number" id="newPieceQty" value="0" min="0" oninput="addStockRecalc()"></div>
- <div class="field"><label>প্রতি পিস ক্রয়মূল্য (৳)</label><input type="number" id="newPieceBuyPrice" value="0" min="0" oninput="addStockRecalc()"></div>
- </div>
- <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="newSell" value="570" min="0"></div>
- <div class="field"><label>স্টক (পিস) — উপরের হিসাব অনুযায়ী স্বয়ংক্রিয়ভাবে বসেছে, চাইলে হাতে ঠিক করে নিন</label><input type="number" id="newStock" value="0" min="0"></div>
+ ${modeToggleHtml}
+ <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="newSell" value="570" min="0" oninput="stockSellManualOverride=true;"></div>
+ <div class="field"><label>স্টক (${usesBan ? "পিস" : esc(cat.sizeLabel)}) — উপরের হিসাব অনুযায়ী স্বয়ংক্রিয়ভাবে বসেছে, চাইলে হাতে ঠিক করে নিন</label><input type="number" id="newStock" value="0" min="0"></div>
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -3643,23 +3668,23 @@ function saveNewStock() {
 function editStockPrompt(brand, mm, sz) {
   const v = inventory[brand][mm][sz];
   const cat = getBrandLabels(brand);
+  const catInfo = getCategoryOf(brand);
+  const usesBan = !!catInfo.usesBan;
   const banStart =
     v.banPrice != null ? v.banPrice : Math.round((v.buy * FEET_PER_BAN) / sz);
-  openModal(
-    `এডিট — ${esc(brand)} · ${mm}মি:লি: · ${sz}ফুট`,
-    `
- <div style="font-size:11.5px;color:var(--red);margin-bottom:10px;line-height:1.5;">ভুল করে মি:লি: বা ফুট ভুল দিয়ে থাকলে এখানে ঠিক করে নিন।</div>
-  <div style="display:flex; gap:10px;">
-  <div class="field" style="flex:1;"><label>${esc(cat.unitLabel)}</label><input type="text" id="editMM" value="${mm}"></div>
- <div class="field" style="flex:1;"><label>${esc(cat.sizeLabel)}</label><input type="text" id="editSize" value="${sz}"></div>
- </div>
+
+  const banSectionHtml = usesBan
+    ? `
  <div class="field"><label>বানের দাম (৳) — ৭২ ফুট = ১ বান</label><input type="number" id="editBanPrice" value="${banStart}" min="0" oninput="editStockRecalc(${sz})"></div>
  <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;">
  <div style="display:flex;justify-content:space-between;"><span>এক বানে (৭২ ফুট) প্রায়</span><b class="mono">${(FEET_PER_BAN / sz).toFixed(1)} পিস</b></div>
  <div style="display:flex;justify-content:space-between;margin-top:6px;"><span>প্রতি পিস ক্রয়মূল্য (স্বয়ংক্রিয়)</span><b class="mono" id="editBuyComputed">${fmt(v.buy)}</b></div>
- </div>
- <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="editSell" value="${v.sell}" min="0"></div>
- <div class="field"><label>স্টক (পিস)</label><input type="number" id="editStock" value="${v.stock}" min="0"></div>
+ </div>`
+    : `
+ <div class="field"><label>ক্রয়মূল্য (৳ — প্রতি ${esc(cat.sizeLabel)})</label><input type="number" id="editBuyDirect" value="${v.buy}" min="0"></div>`;
+
+  const banAddSectionHtml = usesBan
+    ? `
  <div style="border-top:1px dashed var(--steel-300); padding-top:12px; margin-top:4px;">
  <div style="font-size:12.5px;font-weight:600;color:var(--steel-700);margin-bottom:8px;">নতুন করে বান কিনলে এখানে যোগ করুন</div>
  <div class="field"><label>নতুন কেনা বান সংখ্যা</label><input type="number" id="editNewBanQty" value="" min="0" step="0.5" placeholder="যেমনঃ ২" oninput="editNewBanRecalc(${sz})"></div>
@@ -3667,7 +3692,21 @@ function editStockPrompt(brand, mm, sz) {
  <div id="editNewBanInfo">০ বানে প্রায় ০ পিস আসবে</div>
  </div>
  <button type="button" class="btn btn-outline" style="width:100%; justify-content:center;" onclick="editAddBanToStock('${jsq(brand)}', ${mm}, ${sz})">+ উপরের স্টকে যোগ করুন</button>
+ </div>`
+    : "";
+
+  openModal(
+    `এডিট — ${esc(brand)} · ${esc(cat.unitLabel)} ${mm} · ${esc(cat.sizeLabel)} ${sz}`,
+    `
+ <div style="font-size:11.5px;color:var(--red);margin-bottom:10px;line-height:1.5;">ভুল করে তথ্য ভুল দিয়ে থাকলে এখানে ঠিক করে নিন।</div>
+  <div style="display:flex; gap:10px;">
+  <div class="field" style="flex:1;"><label>${esc(cat.unitLabel)}</label><input type="text" id="editMM" value="${mm}"></div>
+ <div class="field" style="flex:1;"><label>${esc(cat.sizeLabel)}</label><input type="text" id="editSize" value="${sz}"></div>
  </div>
+ ${banSectionHtml}
+ <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="editSell" value="${v.sell}" min="0"></div>
+ <div class="field"><label>স্টক (${usesBan ? "পিস" : esc(cat.sizeLabel)})</label><input type="number" id="editStock" value="${v.stock}" min="0"></div>
+ ${banAddSectionHtml}
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -3680,12 +3719,18 @@ function saveStockEdit(brand, mm, sz) {
   const newMM = document.getElementById("editMM").value;
   const newSize = document.getElementById("editSize").value;
   if (!newMM || !newSize) {
-    showToast("মি:লি: ও ফুট আবশ্যক");
+    showToast("তথ্য আবশ্যক");
     return;
   }
-  const banPrice = parseInt(document.getElementById("editBanPrice").value) || 0;
-  v.banPrice = banPrice;
-  v.buy = calcBuyFromBan(banPrice, parseFloat(newSize)) || v.buy;
+  const banPriceEl = document.getElementById("editBanPrice");
+  if (banPriceEl) {
+    const banPrice = parseInt(banPriceEl.value) || 0;
+    v.banPrice = banPrice;
+    v.buy = calcBuyFromBan(banPrice, parseFloat(newSize)) || v.buy;
+  } else {
+    const buyDirectEl = document.getElementById("editBuyDirect");
+    if (buyDirectEl) v.buy = Math.max(0, parseInt(buyDirectEl.value) || 0);
+  }
   v.sell = parseInt(document.getElementById("editSell").value) || v.sell;
   v.stock = parseInt(document.getElementById("editStock").value) ?? v.stock;
 
@@ -3695,7 +3740,7 @@ function saveStockEdit(brand, mm, sz) {
     const collision =
       inventory[brand][newMM] && inventory[brand][newMM][newSize];
     if (collision) {
-      showToast("এই মি:লি: ও ফুটের আইটেম আগে থেকেই আছে — অন্য মান দিন");
+      showToast("এই তথ্যের আইটেম আগে থেকেই আছে — অন্য মান দিন");
       return;
     }
     delete inventory[brand][mm][sz];
@@ -3704,8 +3749,8 @@ function saveStockEdit(brand, mm, sz) {
     if (!inventory[brand][newMM]) inventory[brand][newMM] = {};
     inventory[brand][newMM][newSize] = v;
     logActivity(
-      "স্টক আইটেমের মি:লি:/ফুট সংশোধন",
-      `${brand} · ${mm}মি:লি:→${newMM}মি:লি:, ${sz}ফুট→${newSize}ফুট`,
+      "স্টক আইটেমের তথ্য সংশোধন",
+      `${brand} · ${mm}→${newMM}, ${sz}→${newSize}`,
     );
   }
   closeModal();
