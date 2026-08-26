@@ -29,7 +29,7 @@ let PRODUCT_CATEGORIES = [
     id: "tua",
     name: "টুয়া",
     icon: "🔩",
-    hasBrands: false,
+    hasBrands: true,
     unitLabel: "পণ্যের নাম",
     sizeLabel: "পরিমাণ",
     usesBan: false,
@@ -38,7 +38,7 @@ let PRODUCT_CATEGORIES = [
     id: "plainsheet",
     name: "প্লেন সিট",
     icon: "🧱",
-    hasBrands: false,
+    hasBrands: true,
     unitLabel: "পণ্যের নাম",
     sizeLabel: "পরিমাণ",
     usesBan: false,
@@ -47,7 +47,7 @@ let PRODUCT_CATEGORIES = [
     id: "hardware",
     name: "হার্ডওয়্যার",
     icon: "🛠️",
-    hasBrands: false,
+    hasBrands: true,
     unitLabel: "পণ্যের নাম",
     sizeLabel: "পরিমাণ",
     usesBan: false,
@@ -56,7 +56,7 @@ let PRODUCT_CATEGORIES = [
     id: "wood",
     name: "কাঠ",
     icon: "🪵",
-    hasBrands: false,
+    hasBrands: true,
     unitLabel: "পণ্যের নাম",
     sizeLabel: "পরিমাণ",
     usesBan: false,
@@ -65,7 +65,7 @@ let PRODUCT_CATEGORIES = [
     id: "plasticset",
     name: "প্লাস্টিক সেট",
     icon: "🧴",
-    hasBrands: false,
+    hasBrands: true,
     unitLabel: "পণ্যের নাম",
     sizeLabel: "পরিমাণ",
     usesBan: false,
@@ -825,8 +825,10 @@ function applyState(s) {
       ? s.PRODUCT_CATEGORIES
       : PRODUCT_CATEGORIES;
   categoryNextId = s.categoryNextId || categoryNextId;
+
   PRODUCT_CATEGORIES.forEach((c) => {
     if (c.usesBan === undefined) c.usesBan = c.id === "tin";
+    c.hasBrands = true;
   });
   brandCategory = s.brandCategory || {};
   brandUnitLabel = s.brandUnitLabel || {};
@@ -3218,7 +3220,6 @@ function addCategoryPrompt() {
     `
  <div class="field"><label>ক্যাটাগরির নাম</label><input type="text" id="newCatName2" placeholder="যেমনঃ পাইপ"></div>
  <div class="field"><label>আইকন (ইমোজি)</label><input type="text" id="newCatIcon2" value="📦"></div>
- <div class="field"><label><input type="checkbox" id="newCatHasBrands" style="width:auto;margin-right:6px;"> এই ক্যাটাগরিতে একাধিক ব্র্যান্ড থাকবে (টিনের মতো)</label></div>
     <div class="field"><label>প্রথম ঘরের একক/লেবেল</label>${unitSelectHtml("newCatUnitLabel", "পণ্যের নাম")}</div>
  <div class="field"><label>দ্বিতীয় ঘরের একক/লেবেল (পরিমাণের একক)</label>${unitSelectHtml("newCatSizeLabel", "পরিমাণ")}</div>
  <div class="field"><label><input type="checkbox" id="newCatUsesBan" style="width:auto;margin-right:6px;"> বান (bundle) হিসেবে স্টক ও দাম হিসাব হবে — শুধু টিনের মতো পণ্যের জন্য টিক দিন, বাকি সাধারণ পণ্যের জন্য খালি রাখুন</label></div>
@@ -3240,7 +3241,7 @@ function saveNewCategory() {
     return;
   }
   const icon = document.getElementById("newCatIcon2").value.trim() || "📦";
-  const hasBrands = document.getElementById("newCatHasBrands").checked;
+  const hasBrands = true; // এখন থেকে সব ক্যাটাগরিতেই সবসময় আগে ব্র্যান্ড যোগ করতে হবে (টিনের মতো)
   const unitLabel =
     document.getElementById("newCatUnitLabel").value.trim() || "পণ্যের নাম";
   const sizeLabel =
