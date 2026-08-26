@@ -1463,7 +1463,7 @@ function downloadPrintArea(filename) {
  .itotal{display:flex;justify-content:space-between;padding-top:8px;border-top:2px solid #161B1F;font-size:16px;font-weight:700;font-family:monospace;}
  .idiscount{display:flex;justify-content:space-between;font-size:12.5px;color:#3C7A54;margin-top:4px;}
  .isubrow{display:flex;justify-content:space-between;font-size:12.5px;color:#3A464E;margin-top:4px;}
- .mono{font-family:'JetBrains Mono',monospace;}
+ .mono{font-family:'JetBrains Mono','Hind Siliguri',monospace;font-weight:600;}
  .si-box{background:#fff;border:1px solid #E9ECED;border-radius:16px;padding:30px 32px;max-width:640px;margin:0 auto;-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:0 4px 24px rgba(0,0,0,0.06);}
  .si-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding-bottom:18px;border-bottom:3px solid #BE4A22;flex-wrap:wrap;}
  .si-top-left{display:flex;gap:12px;align-items:flex-start;}
@@ -5156,6 +5156,142 @@ function saveSupplierDue(id) {
   showToast("বাকি যোগ হয়েছে");
   persistShopData();
 }
+function editSupplierDuePrompt(id) {
+  const d = supplierDueEntries.find((x) => x.id === id);
+  if (!d) return;
+  openModal(
+    "ক্রয়/বাকির এন্ট্রি এডিট করুন",
+    `
+ <div class="field"><label>পরিমাণ (৳)</label><input type="number" id="editSupDueAmount" min="0" value="${d.amount}"></div>
+ <div class="field"><label>তারিখ</label><input type="date" id="editSupDueDate" value="${toDateInputValue(d.date)}"></div>
+ <div class="field"><label>বিবরণ (ঐচ্ছিক)</label><input type="text" id="editSupDueNote" value="${esc(d.note || "")}"></div>
+ `,
+    `
+ <button class="btn btn-outline" style="color:var(--red);" onclick="deleteSupplierDuePrompt(${id})">মুছুন</button>
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveSupplierDueEdit(${id})">সংরক্ষণ করুন</button>
+ `,
+  );
+}
+function saveSupplierDueEdit(id) {
+  const d = supplierDueEntries.find((x) => x.id === id);
+  if (!d) return;
+  const s = suppliers.find((x) => x.id === d.supplierId);
+  const newAmount = Math.max(
+    0,
+    parseInt(document.getElementById("editSupDueAmount").value) || 0,
+  );
+  if (newAmount <= 0) {
+    showToast("সঠিক পরিমাণ লিখুন");
+    return;
+  }
+  const diff = newAmount - d.amount;
+  if (s) s.due = Math.max(0, (s.due || 0) + diff);
+  d.amount = newAmount;
+  d.date = dateFromInput(document.getElementById("editSupDueDate").value);
+  d.note = document.getElementById("editSupDueNote").value.trim();
+  closeModal();
+  render();
+  showToast("আপডেট হয়েছে");
+  persistShopData();
+}
+function deleteSupplierDuePrompt(id) {
+  const d = supplierDueEntries.find((x) => x.id === id);
+  if (!d) return;
+  openModal(
+    "ক্রয়/বাকির এন্ট্রি মুছবেন?",
+    `
+ <p style="font-size:13.5px;line-height:1.7;">${fmt(d.amount)} টাকার এই এন্ট্রিটি মুছে ফেলা হবে, এবং সাপ্লায়ারের বর্তমান বাকি থেকে এই পরিমাণ বাদ যাবে।</p>
+ <p style="font-size:12px;color:var(--red);">এই কাজ ফিরিয়ে নেওয়া যাবে না।</p>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('ক্রয়/বাকির এন্ট্রি মুছুন', () => deleteSupplierDueConfirmed(${id}))">হ্যাঁ, মুছুন</button>
+ `,
+  );
+}
+function deleteSupplierDueConfirmed(id) {
+  const d = supplierDueEntries.find((x) => x.id === id);
+  if (!d) return;
+  const s = suppliers.find((x) => x.id === d.supplierId);
+  if (s) s.due = Math.max(0, (s.due || 0) - d.amount);
+  supplierDueEntries = supplierDueEntries.filter((x) => x.id !== id);
+  closeModal();
+  render();
+  showToast("মুছে ফেলা হয়েছে");
+  persistShopData();
+}
+function editSupplierPaymentPrompt(id) {
+  const e = expenses.find((x) => x.id === id);
+  if (!e) return;
+  openModal(
+    "পরিশোধের এন্ট্রি এডিট করুন",
+    `
+ <div class="field"><label>পরিমাণ (৳)</label><input type="number" id="editSupPayAmount" min="0" value="${e.amount}"></div>
+ <div class="field"><label>তারিখ</label><input type="date" id="editSupPayDate" value="${toDateInputValue(e.date)}"></div>
+ <div class="field"><label>নোট</label><input type="text" id="editSupPayNote" value="${esc(e.note || "")}"></div>
+ `,
+    `
+ <button class="btn btn-outline" style="color:var(--red);" onclick="deleteSupplierPaymentPrompt(${id})">মুছুন</button>
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveSupplierPaymentEdit(${id})">সংরক্ষণ করুন</button>
+ `,
+  );
+}
+function saveSupplierPaymentEdit(id) {
+  const e = expenses.find((x) => x.id === id);
+  if (!e) return;
+  const s = suppliers.find((x) => x.id === e.supplierId);
+  const newAmount = Math.max(
+    0,
+    parseInt(document.getElementById("editSupPayAmount").value) || 0,
+  );
+  if (newAmount <= 0) {
+    showToast("সঠিক পরিমাণ লিখুন");
+    return;
+  }
+  const diff = newAmount - e.amount;
+  if (s) {
+    s.due = Math.max(0, (s.due || 0) - diff);
+    s.paidTotal = Math.max(0, (s.paidTotal || 0) + diff);
+  }
+  e.amount = newAmount;
+  e.date = dateFromInput(document.getElementById("editSupPayDate").value);
+  e.note = document.getElementById("editSupPayNote").value.trim();
+  closeModal();
+  render();
+  showToast("আপডেট হয়েছে");
+  persistShopData();
+}
+function deleteSupplierPaymentPrompt(id) {
+  const e = expenses.find((x) => x.id === id);
+  if (!e) return;
+  openModal(
+    "পরিশোধের এন্ট্রি মুছবেন?",
+    `
+ <p style="font-size:13.5px;line-height:1.7;">${fmt(e.amount)} টাকার এই পরিশোধের এন্ট্রিটি মুছে ফেলা হবে — এই পরিমাণ আবার সাপ্লায়ারের বাকিতে যোগ হয়ে যাবে।</p>
+ <p style="font-size:12px;color:var(--red);">এই কাজ ফিরিয়ে নেওয়া যাবে না।</p>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('পরিশোধের এন্ট্রি মুছুন', () => deleteSupplierPaymentConfirmed(${id}))">হ্যাঁ, মুছুন</button>
+ `,
+  );
+}
+function deleteSupplierPaymentConfirmed(id) {
+  const e = expenses.find((x) => x.id === id);
+  if (!e) return;
+  const s = suppliers.find((x) => x.id === e.supplierId);
+  if (s) {
+    s.due = (s.due || 0) + e.amount;
+    s.paidTotal = Math.max(0, (s.paidTotal || 0) - e.amount);
+  }
+  expenses = expenses.filter((x) => x.id !== id);
+  closeModal();
+  render();
+  showToast("মুছে ফেলা হয়েছে");
+  persistShopData();
+}
 
 function supplierPaymentPrompt(id) {
   const s = suppliers.find((x) => x.id === id);
@@ -5334,7 +5470,13 @@ function renderSupplierDetail(id) {
  <div class="txname"><span class="tx-tag expense">ক্রয়/বাকি</span>${new Date(d.date).toLocaleDateString("bn-BD")}</div>
  <div class="txmeta">${esc(d.note) || "কোনো বিবরণ নেই"}</div>
  </div>
+ <div style="text-align:right;">
  <div class="mono" style="font-weight:700; color:var(--red);">+ ${fmt(d.amount)}</div>
+ <div style="display:flex;gap:6px;margin-top:5px;">
+ <button class="btn btn-outline" style="padding:3px 9px;font-size:11px;" onclick="editSupplierDuePrompt(${d.id})">এডিট</button>
+ <button class="btn btn-outline" style="padding:3px 9px;font-size:11px;color:var(--red);" onclick="deleteSupplierDuePrompt(${d.id})">মুছুন</button>
+ </div>
+ </div>
  </div>`,
       })),
     ...expenses
@@ -5357,7 +5499,11 @@ function renderSupplierDetail(id) {
  </div>
  <div style="text-align:right;">
  <div class="mono" style="font-weight:700; color:var(--green);">− ${fmt(e.amount)}</div>
- <button class="btn btn-outline" style="margin-top:4px;padding:3px 8px;font-size:11px;" onclick="openReceiptModal('expense', ${e.id})">রশিদ</button>
+ <div style="display:flex;gap:6px;margin-top:5px;">
+ <button class="btn btn-outline" style="padding:3px 9px;font-size:11px;" onclick="openReceiptModal('expense', ${e.id})">রশিদ</button>
+ <button class="btn btn-outline" style="padding:3px 9px;font-size:11px;" onclick="editSupplierPaymentPrompt(${e.id})">এডিট</button>
+ <button class="btn btn-outline" style="padding:3px 9px;font-size:11px;color:var(--red);" onclick="deleteSupplierPaymentPrompt(${e.id})">মুছুন</button>
+ </div>
  </div>
  </div>`,
       })),
