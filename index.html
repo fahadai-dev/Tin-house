@@ -352,6 +352,17 @@ input, select{ font-family:inherit; }
 .si-sign{ display:flex; justify-content:space-between; margin-top:48px; }
 .si-sign div{ text-align:center; font-size:12px; border-top:1px solid var(--steel-500); padding-top:6px; width:170px; }
 @media print{ .si-box{ border:none; max-width:100%; padding:0 14px; box-shadow:none; } }
+.cart-box{border-radius:8px;padding:10px 12px;margin-bottom:8px;box-sizing:border-box;width:100%;}
+.cart-box-ban{background:#EAF2FB;border:1px solid #BFDBFE;}
+.cart-box-piece{background:#EAF7EE;border:1px solid #BBE8C8;}
+.cart-box-price{background:#FEF3E2;border:1px solid #FBD9A5;}
+.cart-box-label{font-weight:700;font-size:12.5px;display:block;margin-bottom:4px;}
+.cart-box-ban .cart-box-label{color:#1D4ED8;}
+.cart-box-piece .cart-box-label{color:#15803D;}
+.cart-box-price .cart-box-label{color:#B45309;}
+.cart-box-row{display:flex;gap:8px;flex-wrap:wrap;}
+.cart-box input{width:100%;box-sizing:border-box;min-width:0;}
+.cart-box-row input{flex:1 1 120px;min-width:0;}
  
 /* ---- থার্মাল প্রিন্ট (৫৮mm/৮০mm) ---- */
 .thermal-box{ font-family:'JetBrains Mono', monospace; font-size:11px; color:#000; background:#fff; padding:6px 4px; margin:0 auto; line-height:1.5; }

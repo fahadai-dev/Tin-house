@@ -1860,83 +1860,71 @@ function renderCartPage() {
   }
   const rows = cart
     .map((item, idx) => {
+      const cat = getCategoryOf(item.brand);
+      const usesBan = !!cat.usesBan;
+      const lbl = getBrandLabels(item.brand);
       const eff = cartEffectiveQty(item);
-      const mode = cartQtyMode(item.brand);
       const totalAmtDisplay = eff * (item.sellPrice || 0);
-      const itemName =
-        mode === "weight"
-          ? `${esc(item.brand)} <span style="font-size:11px;color:var(--steel-500);">(ওজন অনুযায়ী)</span>`
-          : mode === "count"
-            ? `${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}`
-            : `${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}`;
 
-      let measureBoxes;
-      if (mode === "weight") {
-        measureBoxes = `
- <div style="background:#F3E8FF;border:1px solid #DDC6FA;border-radius:8px;padding:10px 12px;margin-bottom:8px;">
- <label style="color:#7C3AED;font-weight:700;font-size:12.5px;">⚖️ ওজন</label>
- <div style="display:flex;gap:8px;margin-top:4px;">
- <input type="number" min="0" step="0.001" id="wqKg${idx}" placeholder="কেজি" value="${Math.floor(eff / 1000) || ""}" onchange="updateCartWeight(${idx})" style="flex:1;">
- <input type="number" min="0" step="1" id="wqG${idx}" placeholder="গ্রাম" value="${eff % 1000 || ""}" onchange="updateCartWeight(${idx})" style="flex:1;">
- </div>
- </div>
- <div style="background:#FEF3E2;border:1px solid #FBD9A5;border-radius:8px;padding:10px 12px;">
- <label style="color:#B45309;font-weight:700;font-size:12.5px;">৳ দর/কেজি</label>
- <div style="display:flex;gap:8px;margin-top:4px;">
- <input type="number" min="0" placeholder="দর/কেজি" value="${Math.round((item.sellPrice || 0) * 1000) || ""}" onchange="updateCartPricePerKg(${idx}, this.value)" style="flex:1;">
- <input type="number" min="0" placeholder="মোট টাকা" value="${totalAmtDisplay || ""}" onchange="updateCartTotalAmount(${idx}, this.value)" style="flex:1;">
- </div>
- </div>`;
-      } else if (mode === "count") {
-        measureBoxes = `
- <div style="background:#EAF7EE;border:1px solid #BBE8C8;border-radius:8px;padding:10px 12px;margin-bottom:8px;">
- <label style="color:#15803D;font-weight:700;font-size:12.5px;">🔢 পিস</label>
- <input type="number" min="0" placeholder="পিস সংখ্যা" value="${item.qtyPieces || ""}" onchange="updateCartPieces(${idx}, this.value)" style="width:100%;margin-top:4px;">
- </div>
- <div style="background:#FEF3E2;border:1px solid #FBD9A5;border-radius:8px;padding:10px 12px;">
- <label style="color:#B45309;font-weight:700;font-size:12.5px;">৳ দাম</label>
- <div style="display:flex;gap:8px;margin-top:4px;">
- <input type="number" min="0" placeholder="দর/পিস" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)" style="flex:1;">
- <input type="number" min="0" placeholder="মোট টাকা" value="${totalAmtDisplay || ""}" onchange="updateCartTotalAmount(${idx}, this.value)" style="flex:1;">
- </div>
- </div>`;
-      } else {
+      if (usesBan) {
         const ppb = piecesPerBan(item.size);
         const feetPerBanForSize = sellFeetPerBan(item.size);
         const banDisplay = ppb > 0 ? Math.round((eff / ppb) * 100) / 100 : 0;
-        measureBoxes = `
+        return `
+ <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
+ <div class="cart-item-top">
+ <span style="font-weight:700;">${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}</span>
+ <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
+ </div>
  <div style="font-size:10.5px;color:var(--steel-500);margin:2px 0 10px;">এক বানে (${feetPerBanForSize} ফুট) প্রায় ${ppb.toFixed(1)} পিস — যেকোনো ঘরে মান দিলে বাকিগুলো নিজে থেকেই হিসাব হয়ে যাবে</div>
 
- <div style="background:#EAF2FB;border:1px solid #BFDBFE;border-radius:8px;padding:10px 12px;margin-bottom:8px;">
- <label style="color:#1D4ED8;font-weight:700;font-size:12.5px;">📦 বান</label>
- <div style="display:flex;gap:8px;margin-top:4px;">
- <input type="number" min="0" step="0.5" placeholder="বান সংখ্যা" value="${banDisplay || ""}" onchange="updateCartBan(${idx}, this.value)" style="flex:1;">
- <input type="number" min="0" placeholder="বানের দর (৳)" onchange="updateCartBanPrice(${idx}, this.value)" style="flex:1;">
+ <div class="cart-box cart-box-ban">
+ <label class="cart-box-label">📦 বান</label>
+ <div class="cart-box-row">
+ <input type="number" min="0" step="0.5" placeholder="বান সংখ্যা" value="${banDisplay || ""}" onchange="updateCartBan(${idx}, this.value)">
+ <input type="number" min="0" placeholder="বানের দর (৳)" onchange="updateCartBanPrice(${idx}, this.value)">
  </div>
  </div>
 
- <div style="background:#EAF7EE;border:1px solid #BBE8C8;border-radius:8px;padding:10px 12px;margin-bottom:8px;">
- <label style="color:#15803D;font-weight:700;font-size:12.5px;">🔢 পিস</label>
- <input type="number" min="0" placeholder="পিস সংখ্যা" value="${item.qtyPieces || ""}" onchange="updateCartPieces(${idx}, this.value)" style="width:100%;margin-top:4px;">
+ <div class="cart-box cart-box-piece">
+ <label class="cart-box-label">🔢 পিস</label>
+ <input type="number" min="0" placeholder="পিস সংখ্যা" value="${item.qtyPieces || ""}" onchange="updateCartPieces(${idx}, this.value)">
  </div>
 
- <div style="background:#FEF3E2;border:1px solid #FBD9A5;border-radius:8px;padding:10px 12px;">
- <label style="color:#B45309;font-weight:700;font-size:12.5px;">৳ দাম</label>
- <div style="display:flex;gap:8px;margin-top:4px;">
- <input type="number" min="0" placeholder="দর/পিস" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)" style="flex:1;">
- <input type="number" min="0" placeholder="মোট টাকা" value="${totalAmtDisplay || ""}" onchange="updateCartTotalAmount(${idx}, this.value)" style="flex:1;">
+ <div class="cart-box cart-box-price">
+ <label class="cart-box-label">৳ দাম</label>
+ <div class="cart-box-row">
+ <input type="number" min="0" placeholder="দর/পিস" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)">
+ <input type="number" min="0" placeholder="মোট টাকা" value="${totalAmtDisplay || ""}" onchange="updateCartTotalAmount(${idx}, this.value)">
  </div>
+ </div>
+
+ <div class="cart-sub" style="text-align:left;margin-top:8px;">মোট পিস: ${eff} · উপমোট: ${fmt(eff * item.sellPrice)}</div>
  </div>`;
       }
 
+      // বান ছাড়া সাধারণ পণ্য (পিস/কেজি/গ্রাম/মিটার/ইঞ্চি/ফুট/প্যাকেট ইত্যাদি) — সরাসরি পরিমাণ ও দর
       return `
  <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
  <div class="cart-item-top">
- <span style="font-weight:700;">${itemName}</span>
+ <span style="font-weight:700;">${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}</span>
  <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
  </div>
- ${measureBoxes}
- <div class="cart-sub" style="text-align:left;margin-top:8px;">মোট: ${formatItemQty(item.brand, eff)} · উপমোট: ${fmt(eff * item.sellPrice)}</div>
+
+ <div class="cart-box cart-box-piece">
+ <label class="cart-box-label">🔢 পরিমাণ (${esc(lbl.sizeLabel)})</label>
+ <input type="number" min="0" step="any" placeholder="যেমনঃ ২.৫" value="${item.qtyPieces || ""}" onchange="updateCartPieces(${idx}, this.value)">
+ </div>
+
+ <div class="cart-box cart-box-price">
+ <label class="cart-box-label">৳ দাম</label>
+ <div class="cart-box-row">
+ <input type="number" min="0" placeholder="দর/প্রতি ${esc(lbl.sizeLabel)}" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)">
+ <input type="number" min="0" placeholder="মোট টাকা" value="${totalAmtDisplay || ""}" onchange="updateCartTotalAmount(${idx}, this.value)">
+ </div>
+ </div>
+
+ <div class="cart-sub" style="text-align:left;margin-top:8px;">মোট ${esc(lbl.sizeLabel)}: ${eff} · উপমোট: ${fmt(eff * item.sellPrice)}</div>
  </div>`;
     })
     .join("");
@@ -1952,7 +1940,7 @@ function renderCartPage() {
  </div>
  ${rows}
  <div class="panel" style="max-width:420px;margin-top:6px;">
- <div class="cart-total-row"><span>মোট পিস</span><span class="mono">${totalPieces}</span></div>
+ <div class="cart-total-row"><span>মোট পরিমাণ</span><span class="mono">${totalPieces}</span></div>
  <div class="cart-total-row grand"><span>সর্বমোট</span><span>${fmt(totalAmt)}</span></div>
  <button class="checkout-btn" onclick="goToCheckout()">ইনভয়েস তৈরি করুন →</button>
  </div>`;
@@ -2190,7 +2178,7 @@ function piecesPerBan(sizeFeet) {
   return sizeFeet > 0 ? feetPerBan / sizeFeet : 0;
 }
 function cartEffectiveQty(item) {
-  return Math.round(Number(item.qtyPieces) || 0);
+  return Math.round((Number(item.qtyPieces) || 0) * 100) / 100;
 }
 function updateCartBan(idx, val) {
   const item = cart[idx];
@@ -2209,7 +2197,7 @@ function updateCartPieces(idx, val) {
     render();
     return;
   }
-  item.qtyPieces = Math.max(0, parseInt(val) || 0);
+  item.qtyPieces = Math.max(0, parseFloat(val) || 0);
   render();
 }
 function updateCartPrice(idx, val) {
