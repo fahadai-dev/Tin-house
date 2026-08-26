@@ -3129,7 +3129,10 @@ function renderStock() {
  <td class="num mono">${v.stock}</td>
  <td class="num mono">${fmt(totalVal)}</td>
  <td>${v.stock <= 3 ? `<span class="pill low">কম স্টক</span>` : `<span class="pill ok">স্বাভাবিক</span>`}</td>
- <td class="tbl-actions"><button onclick="editStockPrompt('${jsq(stockBrand)}',${mm},${sz})">এডিট</button></td>
+  <td class="tbl-actions">
+ <button onclick="editStockPrompt('${jsq(stockBrand)}','${jsq(mm)}','${jsq(sz)}')">এডিট</button>
+ <button style="color:var(--red);" onclick="deleteStockItemPrompt('${jsq(stockBrand)}','${jsq(mm)}','${jsq(sz)}')">মুছুন</button>
+ </td>
  </tr>`;
         });
     });
@@ -3733,7 +3736,7 @@ function editStockPrompt(brand, mm, sz) {
  <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:10px; font-size:13px;">
  <div id="editNewBanInfo">০ বানে প্রায় ০ পিস আসবে</div>
  </div>
- <button type="button" class="btn btn-outline" style="width:100%; justify-content:center;" onclick="editAddBanToStock('${jsq(brand)}', ${mm}, ${sz})">+ উপরের স্টকে যোগ করুন</button>
+  <button type="button" class="btn btn-outline" style="width:100%; justify-content:center;" onclick="editAddBanToStock('${jsq(brand)}', '${jsq(mm)}', '${jsq(sz)}')">+ উপরের স্টকে যোগ করুন</button>
  </div>`
     : "";
 
@@ -3752,7 +3755,7 @@ function editStockPrompt(brand, mm, sz) {
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
- <button class="btn btn-primary" onclick="saveStockEdit('${jsq(brand)}',${mm},${sz})">সংরক্ষণ করুন</button>
+  <button class="btn btn-primary" onclick="saveStockEdit('${jsq(brand)}','${jsq(mm)}','${jsq(sz)}')">সংরক্ষণ করুন</button>
  `,
   );
 }
@@ -3798,6 +3801,36 @@ function saveStockEdit(brand, mm, sz) {
   closeModal();
   render();
   showToast("আপডেট হয়েছে");
+  persistShopData();
+}
+function deleteStockItemPrompt(brand, mm, sz) {
+  const v =
+    inventory[brand] && inventory[brand][mm] && inventory[brand][mm][sz];
+  if (!v) return;
+  const lbl = getBrandLabels(brand);
+  openModal(
+    "আইটেম মুছবেন?",
+    `
+ <p style="font-size:13.5px;line-height:1.7;">"${esc(brand)}" ব্র্যান্ডের <b>${esc(mm)} ${esc(lbl.unitLabel)} · ${esc(sz)} ${esc(lbl.sizeLabel)}</b> আইটেমটি (বর্তমান স্টক ${v.stock}) স্থায়ীভাবে মুছে ফেলা হবে।</p>
+ <p style="font-size:12px;color:var(--red);">এই কাজ ফিরিয়ে নেওয়া যাবে না — আগের ইনভয়েস/কেনার খাতার রেকর্ডে নাম থেকে যাবে, শুধু বর্তমান স্টক তালিকা থেকে এই আইটেমটি বাদ যাবে।</p>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('স্টক আইটেম মুছুন', () => deleteStockItemConfirmed('${jsq(brand)}','${jsq(mm)}','${jsq(sz)}'))">হ্যাঁ, মুছুন</button>
+ `,
+  );
+}
+function deleteStockItemConfirmed(brand, mm, sz) {
+  if (inventory[brand] && inventory[brand][mm]) {
+    delete inventory[brand][mm][sz];
+    if (Object.keys(inventory[brand][mm]).length === 0) {
+      delete inventory[brand][mm];
+    }
+  }
+  logActivity("স্টক আইটেম মুছে ফেলা হয়েছে", `${brand} · ${mm} · ${sz}`);
+  closeModal();
+  render();
+  showToast("আইটেম মুছে ফেলা হয়েছে");
   persistShopData();
 }
 
