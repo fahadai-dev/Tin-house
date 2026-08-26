@@ -1076,7 +1076,7 @@ function switchView(id, opts) {
     return;
   }
   currentView = id;
-  if (id === "sales") {
+  if (id === "salesPicker") {
     posStep = 0;
     posCategory = null;
     posBrand = null;
@@ -1150,7 +1150,8 @@ function switchView(id, opts) {
   }
   const titles = {
     dashboard: "ড্যাশবোর্ড",
-    sales: "বিক্রয়",
+    sales: "নতুন বিক্রয়",
+    salesPicker: "পণ্য বাছাই করুন",
     cart: "কার্ট",
     checkout: "ইনভয়েস তৈরি করুন",
     invoicePreview: "ইনভয়েস",
@@ -1261,6 +1262,7 @@ function render() {
   const c = document.getElementById("content");
   if (currentView === "dashboard") c.innerHTML = renderDashboard();
   else if (currentView === "sales") c.innerHTML = renderSales();
+  else if (currentView === "salesPicker") c.innerHTML = renderSalesPicker();
   else if (currentView === "cart") c.innerHTML = renderCartPage();
   else if (currentView === "checkout") c.innerHTML = renderCheckout();
   else if (currentView === "invoicePreview")
@@ -1706,10 +1708,148 @@ function renderDashboard() {
  বিক্রয় (POS)
  ============================================================ */
 function renderSales() {
+  const itemsSubtotal = cart.reduce(
+    (s, i) => s + cartEffectiveQty(i) * i.sellPrice,
+    0,
+  );
+  const customerOptions = ledger
+    .map(
+      (l) =>
+        `<option value="${l.id}">${esc(l.name)}${l.phone ? " · " + esc(l.phone) : ""}</option>`,
+    )
+    .join("");
+  const teamMembers = [];
+  if (currentUser)
+    teamMembers.push({
+      id: currentUser.id,
+      name: currentUser.full_name,
+      role: currentUser.role,
+    });
+  (staffList || []).forEach((s) => {
+    if (!teamMembers.find((t) => t.id === s.id))
+      teamMembers.push({ id: s.id, name: s.full_name, role: "staff" });
+  });
+  const salesByOptions = teamMembers
+    .map(
+      (t) =>
+        `<option value="${esc(t.name)}" ${currentUser && t.id === currentUser.id ? "selected" : ""}>${esc(t.name)}${t.role === "owner" ? " (মালিক)" : " (স্টাফ)"}</option>`,
+    )
+    .join("");
+
+  const itemRows =
+    cart.length === 0
+      ? `<div class="no-match" style="margin-bottom:14px;">এখনো কোনো পণ্য যোগ করা হয়নি — নিচে "আইটেম যোগ করুন" চাপুন</div>`
+      : cart
+          .map((item, idx) => {
+            const cat = getCategoryOf(item.brand);
+            const usesBan = !!cat.usesBan;
+            const lbl = getBrandLabels(item.brand);
+            const eff = cartEffectiveQty(item);
+            const totalAmtDisplay = eff * (item.sellPrice || 0);
+
+            const banBoxHtml = usesBan
+              ? (() => {
+                  const ppb = piecesPerBan(item.size);
+                  const feetPerBanForSize = sellFeetPerBan(item.size);
+                  const banDisplay =
+                    ppb > 0 ? Math.round((eff / ppb) * 100) / 100 : 0;
+                  return `
+ <div style="font-size:10.5px;color:var(--steel-500);margin:2px 0 10px;">এক বানে (${feetPerBanForSize} ফুট) প্রায় ${ppb.toFixed(1)} পিস</div>
+ <div class="cart-box cart-box-ban">
+ <label class="cart-box-label">📦 বান</label>
+ <div class="cart-box-row">
+ <input type="number" min="0" step="0.5" placeholder="বান সংখ্যা" value="${banDisplay || ""}" onchange="updateCartBan(${idx}, this.value)">
+ <input type="number" min="0" placeholder="বানের দর (৳)" onchange="updateCartBanPrice(${idx}, this.value)">
+ </div>
+ </div>`;
+                })()
+              : "";
+
+            return `
+ <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
+ <div class="cart-item-top">
+ <span style="font-weight:700;">${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}</span>
+ <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
+ </div>
+ ${banBoxHtml}
+ <div class="cart-box cart-box-piece">
+ <label class="cart-box-label">🔢 পরিমাণ (${esc(lbl.sizeLabel)})</label>
+ <input type="number" min="0" step="any" placeholder="পরিমাণ" value="${item.qtyPieces || ""}" onchange="updateCartPieces(${idx}, this.value)">
+ </div>
+ <div class="cart-box cart-box-price">
+ <label class="cart-box-label">৳ দাম</label>
+ <div class="cart-box-row">
+ <input type="number" min="0" placeholder="দর/প্রতি ${esc(lbl.sizeLabel)}" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)">
+ <input type="number" min="0" placeholder="মোট টাকা" value="${totalAmtDisplay || ""}" onchange="updateCartTotalAmount(${idx}, this.value)">
+ </div>
+ </div>
+ <div class="cart-sub" style="text-align:left;margin-top:8px;">মোট ${esc(lbl.sizeLabel)}: ${eff} · উপমোট: ${fmt(eff * item.sellPrice)}</div>
+ </div>`;
+          })
+          .join("");
+
+  const quickSaleBar = `
+ <div class="panel" style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+ <div style="font-size:12.5px; color:var(--steel-500);">নির্দিষ্ট পণ্য না বেছে দ্রুত একটা বিক্রয় বা শুধু লাভ যোগ করতে চাইলে</div>
+ <button class="btn btn-outline" onclick="quickSalePrompt()">⚡ দ্রুত বিক্রি</button>
+ </div>
+ ${renderRecentQuickSales()}`;
+
+  return `
+ ${quickSaleBar}
+ <div class="panel" style="margin-bottom:16px;">
+ <h3>পণ্যের তালিকা (${cart.length} আইটেম)</h3>
+ ${itemRows}
+ <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:6px;" onclick="switchView('salesPicker')">➕ আইটেম যোগ করুন</button>
+ <div style="display:flex;justify-content:space-between;padding-top:14px;margin-top:10px;border-top:2px solid var(--ink);font-weight:700;font-size:14.5px;">
+ <span>সাবটোটাল</span><span class="mono">${fmt(itemsSubtotal)}</span>
+ </div>
+ </div>
+ <div class="panel" style="max-width:520px;">
+ <div class="field">
+ <label>ইনভয়েস নম্বর</label>
+ <input type="number" id="invNumber" value="${invoiceCounter}" min="1">
+ </div>
+ <div class="field">
+ <label>বিক্রয়কারী — কে এই ইনভয়েসটি করছেন</label>
+ <select id="invSalesBy">${salesByOptions || '<option value="">— নির্বাচন করুন —</option>'}</select>
+ </div>
+ <div class="field">
+ <label>বিদ্যমান গ্রাহক হলে বাছাই করুন (নাহলে নিচে নাম লিখুন)</label>
+ <select id="invCustomer" onchange="invCustomerChange(this.value)"><option value="">— নতুন / নগদ ক্রেতা —</option>${customerOptions}</select>
+ </div>
+ <div class="field"><label>ক্রেতার নাম</label><input type="text" id="invCustName" placeholder="যেমনঃ নগদ ক্রেতা"></div>
+ <div class="field"><label>ক্রেতার ঠিকানা</label><input type="text" id="invCustAddress" placeholder="যেমনঃ বাজার রোড, সাভার"></div>
+ <div class="field"><label>মোবাইল নাম্বার (ঐচ্ছিক)</label><input type="text" id="invCustPhone" placeholder="01xxx-xxxxxx"></div>
+ <div class="field"><label>বিক্রয়ের তারিখ</label><input type="date" id="invDate" value="${toDateInputValue(new Date())}"></div>
+ <div class="field"><label>পণ্যের সাবটোটাল</label><input type="text" value="${fmt(itemsSubtotal)}" disabled style="background:var(--steel-100);color:var(--steel-700);"></div>
+ <div class="field"><label>ডেলিভারি চার্জ (৳) — না থাকলে ০ রাখুন</label><input type="number" id="invDelivery" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
+ <div class="field"><label>অন্যান্য খরচের বিবরণ (ঐচ্ছিক)</label><input type="text" id="invExpenseLabel" placeholder="যেমনঃ লেবার খরচ, লোড-আনলোড"></div>
+ <div class="field"><label>অন্যান্য খরচের পরিমাণ (৳)</label><input type="number" id="invExpenseAmt" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
+ <div class="field"><label>ছাড়/ডিসকাউন্ট (৳)</label><input type="number" id="invDiscount" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
+ <div class="field">
+ <label>জমার পরিমাণ</label>
+ <input type="number" id="invPaid" value="${itemsSubtotal}" min="0" oninput="checkoutRecalc(${itemsSubtotal})">
+ </div>
+ <div style="background:var(--steel-100); border-radius:8px; padding:12px 14px; font-size:13.5px;">
+ <div style="display:flex;justify-content:space-between;"><span>সর্বমোট বিল</span><b class="mono" id="invGrandVal">${fmt(itemsSubtotal)}</b></div>
+ <div style="display:flex;justify-content:space-between;margin-top:4px;"><span>বাকি থাকবে</span><b class="mono" id="invDueVal">${fmt(0)}</b></div>
+ </div>
+ <div style="font-size:11.5px;color:var(--steel-500);margin:8px 0 16px;">পুরো টাকা পরিশোধ হলে এই গ্রাহক "নগদ ক্রেতা" পেজে (সার্চযোগ্য) যুক্ত হবে। বাকি বা আংশিক বাকি থাকলে ক্রেতা স্বয়ংক্রিয়ভাবে বাকির খাতায় যুক্ত হয়ে যাবেন।</div>
+ <button class="checkout-btn" onclick="confirmInvoice(${itemsSubtotal})" ${cart.length === 0 ? "disabled" : ""}>ইনভয়েস তৈরি করুন →</button>
+ ${cart.length === 0 ? `<div style="font-size:11px;color:var(--red);margin-top:6px;text-align:center;">আগে অন্তত একটা পণ্য যোগ করুন</div>` : ""}
+ </div>`;
+}
+function renderSalesPicker() {
   let bodyHtml;
 
   if (posStep === 0) {
-    bodyHtml = categoryCardsHtml("sales");
+    bodyHtml = `
+ <div class="back-row">
+ <button class="btn btn-outline" onclick="switchView('sales')">← বিক্রয়ে ফিরে যান</button>
+ <div class="cur-brand">🛒 কার্টে আছে ${cart.length} আইটেম</div>
+ </div>
+ ${categoryCardsHtml("sales")}`;
   } else if (posStep === 1) {
     const q = posBrandSearch.trim().toLowerCase();
     const catBrandsList = BRANDS.filter(
@@ -1802,9 +1942,9 @@ function renderSales() {
  <div class="result-serial">${i + 1}</div>
  <div class="result-info">
   <div class="rname">${esc(posBrand)} <span class="rdim">· ${r.mm} ${esc(lbl.unitLabel)} · ${r.sz} ${esc(lbl.sizeLabel)}</span></div>
-  <div class="rmeta">ক্রয়ঃ <b>${lbl.qtyMode === "weight" ? fmt(r.v.buy * 1000) + "/কেজি" : fmt(r.v.buy)}</b> &nbsp;বিক্রয়ঃ <b>${lbl.qtyMode === "weight" ? fmt(r.v.sell * 1000) + "/কেজি" : fmt(r.v.sell)}</b> &nbsp;স্টকঃ <b class="${r.v.stock <= 3 ? "stock-low" : ""}">${lbl.qtyMode === "weight" ? formatQtyByMode("weight", r.v.stock) : r.v.stock + " পিস"}</b></div>
+ <div class="rmeta">ক্রয়ঃ <b>${fmt(r.v.buy)}</b> &nbsp;বিক্রয়ঃ <b>${fmt(r.v.sell)}</b> &nbsp;স্টকঃ <b class="${r.v.stock <= 3 ? "stock-low" : ""}">${r.v.stock} পিস</b></div>
  </div>
-   <button class="result-add" onclick="addToCart('${jsq(posBrand)}','${jsq(r.mm)}','${jsq(r.sz)}')">+ যোগ করুন</button>
+  <button class="result-add" onclick="addToCart('${jsq(posBrand)}', ${r.mm}, ${r.sz})">+ যোগ করুন</button>
  </div>`;
             })
             .join("") +
@@ -1820,18 +1960,11 @@ function renderSales() {
   );
   const cartBar = `
  <div class="back-row" style="justify-content:space-between;">
- <div class="cur-brand">🛒 কার্ট — ${cart.length} আইটেম${cart.length > 0 ? ` · ${totalPieces} পিস · ${fmt(totalAmt)}` : ""}</div>
- <button class="btn ${cart.length > 0 ? "btn-primary" : "btn-outline"}" onclick="switchView('cart')">কার্ট দেখুন →</button>
+ <div class="cur-brand">🛒 কার্ট — ${cart.length} আইটেম${cart.length > 0 ? ` · ${totalPieces} পরিমাণ · ${fmt(totalAmt)}` : ""}</div>
+ <button class="btn btn-primary" onclick="switchView('sales')">ইনভয়েসে ফিরে যান →</button>
  </div>`;
-  const quickSaleBar = `
- <div class="panel" style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
- <div style="font-size:12.5px; color:var(--steel-500);">নির্দিষ্ট পণ্য না বেছে দ্রুত একটা বিক্রয় বা শুধু লাভ যোগ করতে চাইলে</div>
- <button class="btn btn-outline" onclick="quickSalePrompt()">⚡ দ্রুত বিক্রি</button>
- </div>
- ${renderRecentQuickSales()}`;
 
-  const showQuickSale = posStep !== 0;
-  return (showQuickSale ? quickSaleBar : "") + cartBar + bodyHtml;
+  return cartBar + bodyHtml;
 }
 function renderRecentQuickSales() {
   const recent = quickSales.slice(-5).reverse();
