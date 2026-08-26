@@ -250,6 +250,22 @@ let expensePersonNextId = 1;
 
 let expenses = [];
 let expenseNextId = 1;
+let incomeCategories = [
+  { id: 1, name: "ভাড়া আয়", icon: "🏠" },
+  { id: 2, name: "কমিশন", icon: "🤝" },
+  { id: 3, name: "সুদ", icon: "💹" },
+  { id: 4, name: "পুরাতন মাল বিক্রি", icon: "♻️" },
+  { id: 5, name: "অন্যান্য আয়", icon: "💰" },
+];
+let incomeCatNextId = 6;
+
+let incomePeople = []; // { id, name, address, phone }
+let incomePersonNextId = 1;
+
+let incomes = []; // { id, date, categoryId, categoryName, personId, personName, personAddress, personPhone, amount, note }
+let incomeNextId = 1;
+
+let incomeSearch = "";
 
 let expenseSearch = "";
 let expenseTab = "entries";
@@ -361,6 +377,7 @@ const nav = [
   { id: "employees", label: "কর্মচারী", icon: "👷" },
   { id: "suppliers", label: "সাপ্লায়ার", icon: "🚚" },
   { id: "cash", label: "নগদ ক্রেতা", icon: "💵" },
+  { id: "income", label: "আয়", icon: "💰" },
   { id: "expenses", label: "খরচ", icon: "💸" },
   { id: "invoices", label: "ইনভয়েস হিস্ট্রি", icon: "🗂️" },
   { id: "returns", label: "রিটার্ন/এক্সচেঞ্জ", icon: "↩️" },
@@ -728,6 +745,12 @@ function collectState(isNewShop) {
     expensePersonNextId,
     expenses,
     expenseNextId,
+    incomeCategories,
+    incomeCatNextId,
+    incomePeople,
+    incomePersonNextId,
+    incomes,
+    incomeNextId,
     activityLog,
     activityLogNextId,
     LOW_STOCK_THRESHOLD,
@@ -774,6 +797,15 @@ function applyState(s) {
   expensePersonNextId = s.expensePersonNextId || 1;
   expenses = s.expenses || [];
   expenseNextId = s.expenseNextId || 1;
+  incomeCategories =
+    s.incomeCategories && s.incomeCategories.length
+      ? s.incomeCategories
+      : incomeCategories;
+  incomeCatNextId = s.incomeCatNextId || 6;
+  incomePeople = s.incomePeople || [];
+  incomePersonNextId = s.incomePersonNextId || 1;
+  incomes = s.incomes || [];
+  incomeNextId = s.incomeNextId || 1;
   activityLog = s.activityLog || [];
   activityLogNextId = s.activityLogNextId || 1;
   LOW_STOCK_THRESHOLD = s.LOW_STOCK_THRESHOLD || 5;
@@ -1092,6 +1124,9 @@ function switchView(id, opts) {
     profitTab = "monthly";
     profitDrillPath = [];
   }
+  if (id === "income") {
+    incomeSearch = "";
+  }
   if (id === "expenses") {
     expenseSearch = "";
     expenseTab = "entries";
@@ -1241,6 +1276,7 @@ function render() {
   else if (currentView === "employees") c.innerHTML = renderEmployees();
   else if (currentView === "suppliers") c.innerHTML = renderSuppliers();
   else if (currentView === "cash") c.innerHTML = renderCashCustomers();
+  else if (currentView === "income") c.innerHTML = renderIncome();
   else if (currentView === "expenses") c.innerHTML = renderExpenses();
   else if (currentView === "invoices") c.innerHTML = renderInvoices();
   else if (currentView === "returns") c.innerHTML = renderReturns();
@@ -1590,6 +1626,7 @@ function renderDashboard() {
  </div>`;
 
   const ledgerTiles = [
+    tile("income", "c-gold", "💰", "আয়ের খাতা"),
     tile("purchaseLedger", "c-blue", "📋", "কেনার খাতা"),
     tile("salesLedger", "c-green", "🧾", "বেচার খাতা"),
     tile("ledger", "c-red", "📒", "বাকির খাতা"),
@@ -2997,6 +3034,10 @@ function openReceiptModal(kind, id) {
     const p = payments.find((x) => x.id === id);
     html = buildPaymentReceiptHtml(p);
     filename = "রশিদ-" + p.id;
+  } else if (kind === "income") {
+    const inc = incomes.find((x) => x.id === id);
+    html = buildIncomeReceiptHtml(inc);
+    filename = "আয়-রশিদ-" + inc.id;
   } else {
     const e = expenses.find((x) => x.id === id);
     html = buildExpenseReceiptHtml(e);
@@ -6023,7 +6064,372 @@ function viewCashInvoices(ccId) {
     `<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>`,
   );
 }
+/* ============================================================
+ আয়ের হিসাব (INCOME)
+ ============================================================ */
+function incomeCategoryIcon(catId) {
+  const c = incomeCategories.find((x) => x.id === catId);
+  return c ? c.icon : "💰";
+}
+function incomeSearchInputFn(val) {
+  incomeSearch = val;
+  render();
+  const el = document.getElementById("incomeSearchInput");
+  if (el) {
+    el.focus();
+    const p = el.value.length;
+    el.setSelectionRange(p, p);
+  }
+}
+function addIncomeCategoryPrompt() {
+  openModal(
+    "নতুন আয়ের খাত যোগ করুন",
+    `
+ <div class="field"><label>খাতের নাম</label><input type="text" id="newIncCatName" placeholder="যেমনঃ ভাড়া আয়, কমিশন"></div>
+ <div class="field"><label>আইকন (ইমোজি, ঐচ্ছিক)</label><input type="text" id="newIncCatIcon" placeholder="💰" value="💰"></div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveNewIncomeCategory()">যোগ করুন</button>
+ `,
+  );
+}
+function saveNewIncomeCategory() {
+  const name = document.getElementById("newIncCatName").value.trim();
+  if (!name) {
+    showToast("খাতের নাম আবশ্যক");
+    return;
+  }
+  if (incomeCategories.some((c) => c.name === name)) {
+    showToast("এই খাত আগে থেকেই আছে");
+    return;
+  }
+  const icon = document.getElementById("newIncCatIcon").value.trim() || "💰";
+  incomeCategories.push({ id: incomeCatNextId++, name, icon });
+  closeModal();
+  render();
+  showToast("নতুন আয়ের খাত যুক্ত হয়েছে");
+  persistShopData();
+}
+function openAddIncomeModal(categoryId) {
+  const catOptions = incomeCategories
+    .map(
+      (c) =>
+        `<option value="${c.id}" ${categoryId === c.id ? "selected" : ""}>${c.icon} ${esc(c.name)}</option>`,
+    )
+    .join("");
+  const personOptions = incomePeople
+    .map(
+      (p) =>
+        `<option value="${p.id}">${esc(p.name)}${p.phone ? " · " + esc(p.phone) : ""}</option>`,
+    )
+    .join("");
+  openModal(
+    "নতুন আয় যোগ করুন",
+    `
+ <div class="field"><label>খাত</label><select id="incCategory">${catOptions}</select></div>
+ <div class="field">
+ <label>কার কাছ থেকে পাওয়া হলো</label>
+ <select id="incPersonSelect" onchange="incomePersonSelectChange(this.value)">
+ <option value="">— নতুন নাম লিখুন —</option>
+ ${personOptions}
+ </select>
+ </div>
+ <div id="incNewPersonWrap">
+ <div class="field"><label>নাম</label><input type="text" id="incPersonName" placeholder="যেমনঃ মোঃ করিম"></div>
+ <div class="field"><label>ঠিকানা (ঐচ্ছিক)</label><input type="text" id="incPersonAddress" placeholder="যেমনঃ বাজার রোড, সাভার"></div>
+ <div class="field"><label>মোবাইল নাম্বার (ঐচ্ছিক)</label><input type="text" id="incPersonPhone" placeholder="01xxx-xxxxxx"></div>
+ </div>
+ <div class="field"><label>পরিমাণ (৳)</label><input type="number" id="incAmount" min="0" value="0"></div>
+ <div class="field"><label>তারিখ</label><input type="date" id="incDate" value="${toDateInputValue(new Date())}"></div>
+ <div class="field"><label>বিবরণ/নোট (ঐচ্ছিক)</label><input type="text" id="incNote" placeholder="যেমনঃ জুলাই মাসের ভাড়া"></div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveNewIncome()">আয় যোগ করুন</button>
+ `,
+  );
+}
+function incomePersonSelectChange(val) {
+  const wrap = document.getElementById("incNewPersonWrap");
+  if (!wrap) return;
+  wrap.style.display = val ? "none" : "";
+}
+function saveNewIncome() {
+  const catId = parseInt(document.getElementById("incCategory").value);
+  const personSelectVal = document.getElementById("incPersonSelect").value;
+  const amount = Math.max(
+    0,
+    parseInt(document.getElementById("incAmount").value) || 0,
+  );
+  if (amount <= 0) {
+    showToast("সঠিক পরিমাণ লিখুন");
+    return;
+  }
+  const incDate = dateFromInput(document.getElementById("incDate").value);
+  const note = document.getElementById("incNote").value.trim();
 
+  let personId, personName, personAddress, personPhone;
+  if (personSelectVal) {
+    const p = incomePeople.find((x) => x.id == personSelectVal);
+    personId = p.id;
+    personName = p.name;
+    personAddress = p.address;
+    personPhone = p.phone;
+  } else {
+    const typedName = document.getElementById("incPersonName").value.trim();
+    if (!typedName) {
+      showToast("কার কাছ থেকে পাওয়া হলো তা লিখুন বা বাছাই করুন");
+      return;
+    }
+    const typedAddress = document
+      .getElementById("incPersonAddress")
+      .value.trim();
+    const typedPhone = document.getElementById("incPersonPhone").value.trim();
+    let existing = incomePeople.find((p) => p.name === typedName);
+    if (!existing) {
+      existing = {
+        id: incomePersonNextId++,
+        name: typedName,
+        address: typedAddress,
+        phone: typedPhone,
+      };
+      incomePeople.push(existing);
+    } else {
+      if (typedAddress) existing.address = typedAddress;
+      if (typedPhone) existing.phone = typedPhone;
+    }
+    personId = existing.id;
+    personName = existing.name;
+    personAddress = existing.address;
+    personPhone = existing.phone;
+  }
+
+  const cat = incomeCategories.find((c) => c.id === catId);
+  const income = {
+    id: incomeNextId++,
+    date: incDate,
+    categoryId: catId,
+    categoryName: cat ? cat.name : "অন্যান্য আয়",
+    personId,
+    personName,
+    personAddress,
+    personPhone,
+    amount,
+    note,
+  };
+  incomes.push(income);
+  logActivity(
+    "নতুন আয় যোগ",
+    `${personName} থেকে ${fmt(amount)} (${income.categoryName})${note ? " · " + note : ""}`,
+  );
+  closeModal();
+  showToast("আয় যোগ হয়েছে");
+  render();
+  persistShopData();
+}
+function editIncomePrompt(id) {
+  const inc = incomes.find((x) => x.id === id);
+  if (!inc) return;
+  const catOptions = incomeCategories
+    .map(
+      (c) =>
+        `<option value="${c.id}" ${inc.categoryId === c.id ? "selected" : ""}>${c.icon} ${esc(c.name)}</option>`,
+    )
+    .join("");
+  openModal(
+    "আয় এডিট করুন",
+    `
+ <div class="field"><label>খাত</label><select id="editIncCategory">${catOptions}</select></div>
+ <div class="field"><label>কার কাছ থেকে পাওয়া হলো (নাম)</label><input type="text" id="editIncPersonName" value="${esc(inc.personName)}"></div>
+ <div class="field"><label>ঠিকানা</label><input type="text" id="editIncPersonAddress" value="${esc(inc.personAddress || "")}"></div>
+ <div class="field"><label>মোবাইল নাম্বার</label><input type="text" id="editIncPersonPhone" value="${esc(inc.personPhone || "")}"></div>
+ <div class="field"><label>পরিমাণ (৳)</label><input type="number" id="editIncAmount" min="0" value="${inc.amount}"></div>
+ <div class="field"><label>তারিখ</label><input type="date" id="editIncDate" value="${toDateInputValue(inc.date)}"></div>
+ <div class="field"><label>বিবরণ/নোট</label><input type="text" id="editIncNote" value="${esc(inc.note || "")}"></div>
+ `,
+    `
+ <button class="btn btn-outline" style="color:var(--red);" onclick="deleteIncomePrompt(${id})">মুছুন</button>
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveIncomeEdit(${id})">সংরক্ষণ করুন</button>
+ `,
+  );
+}
+function saveIncomeEdit(id) {
+  const inc = incomes.find((x) => x.id === id);
+  if (!inc) return;
+  const catId = parseInt(document.getElementById("editIncCategory").value);
+  const amount = Math.max(
+    0,
+    parseInt(document.getElementById("editIncAmount").value) || 0,
+  );
+  if (amount <= 0) {
+    showToast("সঠিক পরিমাণ লিখুন");
+    return;
+  }
+  const cat = incomeCategories.find((c) => c.id === catId);
+  inc.categoryId = catId;
+  inc.categoryName = cat ? cat.name : inc.categoryName;
+  inc.personName = document.getElementById("editIncPersonName").value.trim();
+  inc.personAddress = document
+    .getElementById("editIncPersonAddress")
+    .value.trim();
+  inc.personPhone = document.getElementById("editIncPersonPhone").value.trim();
+  inc.amount = amount;
+  inc.date = dateFromInput(document.getElementById("editIncDate").value);
+  inc.note = document.getElementById("editIncNote").value.trim();
+  closeModal();
+  render();
+  showToast("আয় আপডেট হয়েছে");
+  persistShopData();
+}
+function deleteIncomePrompt(id) {
+  const inc = incomes.find((x) => x.id === id);
+  if (!inc) return;
+  openModal(
+    "আয় মুছবেন?",
+    `
+ <p style="font-size:13.5px;">${esc(inc.personName)} থেকে পাওয়া <b class="mono">${fmt(inc.amount)}</b> টাকার (${esc(inc.categoryName)}) এই এন্ট্রিটি মুছে ফেলা হবে। এই কাজ ফিরিয়ে নেওয়া যাবে না।</p>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('আয়ের এন্ট্রি মুছুন', () => deleteIncomeConfirmed(${id}))">হ্যাঁ, মুছুন</button>
+ `,
+  );
+}
+function deleteIncomeConfirmed(id) {
+  incomes = incomes.filter((x) => x.id !== id);
+  closeModal();
+  render();
+  showToast("আয় মুছে ফেলা হয়েছে");
+  persistShopData();
+}
+function buildIncomeReceiptHtml(inc) {
+  const shopContactLine = [
+    esc(SHOP_ADDRESS),
+    SHOP_PHONE ? "ফোনঃ " + esc(SHOP_PHONE) : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return `
+ <div class="invoice-box">
+ <div class="ihead">
+ <h2>${esc(SHOP_NAME)}</h2>
+ ${shopContactLine ? `<p>${shopContactLine}</p>` : ""}
+ <p>আয়ের রশিদ #${inc.id} · ${new Date(inc.date).toLocaleDateString("bn-BD")}</p>
+ </div>
+ <table class="itbl">
+ <thead><tr><th>বিবরণ</th><th class="r">পরিমাণ</th></tr></thead>
+ <tbody>
+ <tr><td>খাত</td><td class="r">${incomeCategoryIcon(inc.categoryId)} ${esc(inc.categoryName)}</td></tr>
+ <tr><td>যার কাছ থেকে পাওয়া হয়েছে</td><td class="r">${esc(inc.personName)}</td></tr>
+ ${inc.personPhone ? `<tr><td>মোবাইল নাম্বার</td><td class="r">${esc(inc.personPhone)}</td></tr>` : ""}
+ ${inc.personAddress ? `<tr><td>ঠিকানা</td><td class="r">${esc(inc.personAddress)}</td></tr>` : ""}
+ ${inc.note ? `<tr><td>নোট</td><td class="r">${esc(inc.note)}</td></tr>` : ""}
+ </tbody>
+ </table>
+ <div class="itotal"><span>প্রাপ্ত পরিমাণ</span><span>${fmt(inc.amount)}</span></div>
+ </div>`;
+}
+function renderIncome() {
+  const totalAll = incomes.reduce((s, i) => s + i.amount, 0);
+  const thisMonthKey = monthKeyOf(new Date());
+  const totalThisMonth = incomes
+    .filter((i) => monthKeyOf(i.date) === thisMonthKey)
+    .reduce((s, i) => s + i.amount, 0);
+
+  const statCards = `
+ <div class="stat-grid">
+ <div class="stat-card" style="--accent:var(--green)">
+ <div class="lbl">এই মাসের মোট আয় (${monthLabelOf(thisMonthKey)})</div><div class="val">${fmt(totalThisMonth)}</div>
+ </div>
+ <div class="stat-card" style="--accent:var(--steel-700)">
+ <div class="lbl">সর্বমোট আয় (সব সময়)</div><div class="val">${fmt(totalAll)}</div>
+ </div>
+ </div>`;
+
+  const catGrid = `
+ <div class="mgmt-toolbar">
+ <div style="font-size:13px;color:var(--steel-500);">একটি খাতে ক্লিক করে দ্রুত নতুন আয় যোগ করুন</div>
+ </div>
+ <div class="brand-grid" style="margin-bottom:22px;">
+ ${incomeCategories
+   .map(
+     (c) => `
+ <button class="cat-tile" onclick="openAddIncomeModal(${c.id})">
+ <div class="cic">${c.icon}</div><div class="cname">${esc(c.name)}</div>
+ </button>`,
+   )
+   .join("")}
+ <button class="cat-tile add-cat" onclick="addIncomeCategoryPrompt()">
+ <div class="cic">➕</div><div class="cname">নতুন খাত</div>
+ </button>
+ </div>`;
+
+  const q = incomeSearch.trim().toLowerCase();
+  let list = incomes.slice();
+  if (q !== "") {
+    list = list.filter((i) => {
+      const dateStr = new Date(i.date).toLocaleDateString("bn-BD", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      const hay = (
+        i.categoryName +
+        " " +
+        i.personName +
+        " " +
+        (i.note || "") +
+        " " +
+        dateStr
+      ).toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  const searchBar = `
+ <div class="search-bar ${q ? "has-val" : ""}">
+ <span class="sic">🔍</span>
+ <input type="text" id="incomeSearchInput" value="${esc(incomeSearch)}" placeholder="খাত, নাম বা তারিখ দিয়ে সার্চ করুন..."
+ oninput="incomeSearchInputFn(this.value)" autocomplete="off">
+ <span class="sclear" onclick="incomeSearchInputFn('')">✕</span>
+ </div>`;
+
+  let body;
+  if (incomes.length === 0) {
+    body = `<div class="empty-state"><div class="ic">💰</div>এখনো কোনো আয় যোগ করা হয়নি<br><span style="font-size:12px;">উপরের একটি খাতে ক্লিক করে প্রথম আয় যোগ করুন</span></div>`;
+  } else if (list.length === 0) {
+    body = `<div class="no-match">🔍 এই সার্চে কোনো আয় পাওয়া যায়নি</div>`;
+  } else {
+    body = `<table class="tbl">
+ <thead><tr><th>তারিখ</th><th>খাত</th><th>কার কাছ থেকে</th><th>মোবাইল</th><th>বিবরণ</th><th class="r">পরিমাণ</th><th></th></tr></thead>
+ <tbody>${list
+   .slice()
+   .sort((a, b) => new Date(b.date) - new Date(a.date))
+   .map(
+     (i) => `
+ <tr>
+ <td>${new Date(i.date).toLocaleDateString("bn-BD")}</td>
+ <td>${incomeCategoryIcon(i.categoryId)} ${esc(i.categoryName)}</td>
+ <td>${esc(i.personName)}</td>
+ <td>${telHtml(i.personPhone) || "—"}</td>
+ <td>${esc(i.note) || "—"}</td>
+ <td class="num r mono" style="color:var(--green);">${fmt(i.amount)}</td>
+ <td class="tbl-actions">
+ <button onclick="openReceiptModal('income', ${i.id})">রশিদ</button>
+ <button onclick="editIncomePrompt(${i.id})">এডিট</button>
+ <button style="color:var(--red);" onclick="deleteIncomePrompt(${i.id})">মুছুন</button>
+ </td>
+ </tr>`,
+   )
+   .join("")}
+ </tbody></table>`;
+  }
+
+  return statCards + catGrid + searchBar + body;
+}
 /* ============================================================
  খরচের হিসাব (EXPENSES)
  ============================================================ */
@@ -6559,7 +6965,7 @@ function buildExpenseReceiptHtml(e) {
  <thead><tr><th>বিবরণ</th><th class="r">পরিমাণ</th></tr></thead>
  <tbody>
  <tr><td>খাত</td><td class="r">${expenseCategoryIcon(e.categoryId)} ${esc(e.categoryName)}</td></tr>
- <tr><td>কাকে দেওয়া হয়েছে</td><td class="r">${esc(e.personName)}</td></tr>
+ <tr><td>যাকে দেওয়া হয়েছে</td><td class="r">${esc(e.personName)}</td></tr>
  ${e.note ? `<tr><td>নোট</td><td class="r">${esc(e.note)}</td></tr>` : ""}
  </tbody>
  </table>
@@ -7471,6 +7877,18 @@ function renderCashbox() {
       amount: q.totalAmount,
     });
   });
+  incomes.forEach((i) => {
+    if (!reportInRange(i.date, range.from, range.to)) return;
+    txns.push({
+      t: new Date(i.date).getTime(),
+      date: i.date,
+      dir: "in",
+      cat: "otherincome",
+      label: `আয় — ${i.personName}`,
+      detail: `${incomeCategoryIcon(i.categoryId)} ${i.categoryName}${i.note ? " · " + i.note : ""}`,
+      amount: i.amount,
+    });
+  });
 
   const totalIn = txns
     .filter((x) => x.dir === "in")
@@ -7507,6 +7925,7 @@ function renderCashbox() {
     ["quickprofit", "দ্রুত বিক্রি"],
     ["expense", "খরচ"],
     ["purchase", "কেনা"],
+    ["otherincome", "আয়"],
   ]
     .map(
       ([key, label]) =>
@@ -7715,7 +8134,10 @@ function renderBusinessReport() {
 
   const cashSaleAmount = filteredInv.reduce((s, inv) => s + inv.paid, 0);
   const dueCollectedAmount = filteredPay.reduce((s, p) => s + p.amount, 0);
-  const otherIncome = 0;
+  const filteredIncomes = incomes.filter((i) =>
+    reportInRange(i.date, range.from, range.to),
+  );
+  const otherIncome = filteredIncomes.reduce((s, i) => s + i.amount, 0);
   const cashPurchaseAmount = filteredPurch.reduce((s, p) => s + p.cost, 0);
   const supplierDuePaid = 0;
   const otherExpenseAmount = filteredExp.reduce((s, e) => s + e.amount, 0);
