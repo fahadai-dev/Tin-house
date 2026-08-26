@@ -230,7 +230,7 @@ let supplierNextId = 1;
 let supplierDueEntries = []; // সাপ্লায়ারের কাছ থেকে ক্রয়/বাকি যোগ হওয়ার এন্ট্রি
 let supplierDueNextId = 1;
 let supplierDetailId = null;
-let customerDueEntries = []; // গ্রাহককে ইনভয়েস ছাড়া সরাসরি বাকি দেওয়ার এন্ট্রি
+let customerDueEntries = []; // গ্রাহককে ক্যাশ মেমো ছাড়া সরাসরি বাকি দেওয়ার এন্ট্রি
 let customerDueNextId = 1;
 let cart = [];
 
@@ -379,7 +379,7 @@ const nav = [
   { id: "cash", label: "নগদ ক্রেতা", icon: "💵" },
   { id: "income", label: "আয়", icon: "💰" },
   { id: "expenses", label: "খরচ", icon: "💸" },
-  { id: "invoices", label: "ইনভয়েস হিস্ট্রি", icon: "🗂️" },
+  { id: "invoices", label: "ক্যাশ মেমো হিস্ট্রি", icon: "🗂️" },
   { id: "returns", label: "রিটার্ন/এক্সচেঞ্জ", icon: "↩️" },
   { id: "daily", label: "দৈনিক হিসাব", icon: "📅" },
   { id: "profit", label: "লাভ-ক্ষতি", icon: "📈" },
@@ -965,7 +965,7 @@ function computeTotalStockPieces() {
 
 /* ============================================================
  বিভিন্ন তালিকা পেজের জন্য দিন/মাস/বছর ফিল্টার (কেনার খাতা,
- বেচার খাতা, ইনভয়েস হিস্ট্রি, খরচের খাতা, রিটার্ন ইত্যাদিতে ব্যবহৃত)
+ বেচার খাতা, ক্যাশ মেমো হিস্ট্রি, খরচের খাতা, রিটার্ন ইত্যাদিতে ব্যবহৃত)
  ============================================================ */
 let periodAnchor = {}; // pageKey -> Date (কোন তারিখ/মাস/বছর থেকে দেখানো হচ্ছে)
 function getPeriodAnchor(pageKey) {
@@ -1153,8 +1153,8 @@ function switchView(id, opts) {
     sales: "নতুন বিক্রয়",
     salesPicker: "পণ্য বাছাই করুন",
     cart: "কার্ট",
-    checkout: "ইনভয়েস তৈরি করুন",
-    invoicePreview: "ইনভয়েস",
+    checkout: "ক্যাশ মেমো তৈরি করুন",
+    invoicePreview: "ক্যাশ মেমো",
     paymentReceipt: "প্রাপ্তি রশিদ",
     stock: "স্টক তালিকা",
     purchaseLedger: "কেনার খাতা",
@@ -1165,7 +1165,7 @@ function switchView(id, opts) {
     suppliers: "সাপ্লায়ার",
     cash: "নগদ ক্রেতা",
     expenses: "খরচ",
-    invoices: "ইনভয়েস হিস্ট্রি",
+    invoices: "ক্যাশ মেমো হিস্ট্রি",
     returns: "রিটার্ন/এক্সচেঞ্জ",
     daily: "দৈনিক হিসাব",
     profit: "লাভ-ক্ষতি",
@@ -1404,7 +1404,7 @@ function buildThermalInvoiceHtml(inv, widthMm) {
  ${SHOP_MOBILE_BANKING_NUMBER ? `<div class="th-center">${esc(SHOP_MOBILE_BANKING_TYPE || "মোবাইল ব্যাংকিং")}ঃ ${esc(SHOP_MOBILE_BANKING_NUMBER)}</div>` : ""}
  ${SHOP_ADDRESS ? `<div class="th-center">${esc(SHOP_ADDRESS)}</div>` : ""}
  <div class="th-line"></div>
- <div>ইনভয়েস #${inv.id}</div>
+ <div>ক্যাশ মেমো #${inv.id}</div>
  <div>তারিখঃ ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
  <div>ক্রেতাঃ ${esc(inv.customer)}</div>
  ${inv.customerPhone ? `<div>ফোনঃ ${esc(inv.customerPhone)}</div>` : ""}
@@ -1449,7 +1449,7 @@ function downloadThermal(invId, widthMm) {
   if (!inv) return;
   const pa = document.getElementById("printArea");
   if (pa) pa.innerHTML = buildThermalInvoiceHtml(inv, widthMm);
-  downloadPrintArea("থার্মাল-ইনভয়েস-" + inv.id);
+  downloadPrintArea("থার্মাল-ক্যাশ মেমো-" + inv.id);
 }
 function downloadPrintArea(filename) {
   try {
@@ -1529,10 +1529,10 @@ function downloadPrintArea(filename) {
 function renderSettings() {
   return `
  <div class="panel" style="max-width:480px;">
- <h3>দোকানের তথ্য (ইনভয়েস ও রশিদে দেখাবে)</h3>
- <div style="font-size:12px;color:var(--steel-500);margin-bottom:16px;">যে তথ্য নাই বা দিতে চান না, সেই ঘর ফাঁকা রাখুন — ইনভয়েসে সেটা দেখাবে না।</div>
+ <h3>দোকানের তথ্য (ক্যাশ মেমো ও রশিদে দেখাবে)</h3>
+ <div style="font-size:12px;color:var(--steel-500);margin-bottom:16px;">যে তথ্য নাই বা দিতে চান না, সেই ঘর ফাঁকা রাখুন — ক্যাশ মেমোে সেটা দেখাবে না।</div>
  <div class="field">
- <label>দোকানের লোগো/ছবি (ইনভয়েসে দেখাবে)</label>
+ <label>দোকানের লোগো/ছবি (ক্যাশ মেমোে দেখাবে)</label>
  <div style="display:flex; align-items:center; gap:14px; margin-bottom:6px;">
  <div id="shopLogoPreviewWrap" style="width:64px;height:64px;border-radius:12px;overflow:hidden;background:var(--steel-100);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
  ${SHOP_LOGO ? `<img id="shopLogoPreviewImg" src="${SHOP_LOGO}" style="width:100%;height:100%;object-fit:cover;">` : `<span id="shopLogoPreviewImg" style="font-size:26px;">🏪</span>`}
@@ -1642,7 +1642,7 @@ function renderDashboard() {
   const businessTiles = [
     tile("cashbox", "c-gold", "💰", "ক্যাশবক্স"),
     tile("stock", "c-teal", "📦", "স্টক তালিকা"),
-    tile("invoices", "c-indigo", "🗂️", "ইনভয়েস হিস্ট্রি"),
+    tile("invoices", "c-indigo", "🗂️", "ক্যাশ মেমো হিস্ট্রি"),
     tile("daily", "c-cyan", "📅", "দৈনিক হিসাব"),
     tile("returns", "c-pink", "↩️", "রিটার্ন/এক্সচেঞ্জ"),
     tile("cash", "c-brown", "💵", "নগদ ক্রেতা"),
@@ -1807,11 +1807,11 @@ function renderSales() {
  </div>
  <div class="panel" style="max-width:520px;">
  <div class="field">
- <label>ইনভয়েস নম্বর</label>
+ <label>ক্যাশ মেমো নম্বর</label>
  <input type="number" id="invNumber" value="${invoiceCounter}" min="1">
  </div>
  <div class="field">
- <label>বিক্রয়কারী — কে এই ইনভয়েসটি করছেন</label>
+ <label>বিক্রয়কারী — কে এই ক্যাশ মেমোটি করছেন</label>
  <select id="invSalesBy">${salesByOptions || '<option value="">— নির্বাচন করুন —</option>'}</select>
  </div>
  <div class="field">
@@ -1836,7 +1836,7 @@ function renderSales() {
  <div style="display:flex;justify-content:space-between;margin-top:4px;"><span>বাকি থাকবে</span><b class="mono" id="invDueVal">${fmt(0)}</b></div>
  </div>
  <div style="font-size:11.5px;color:var(--steel-500);margin:8px 0 16px;">পুরো টাকা পরিশোধ হলে এই গ্রাহক "নগদ ক্রেতা" পেজে (সার্চযোগ্য) যুক্ত হবে। বাকি বা আংশিক বাকি থাকলে ক্রেতা স্বয়ংক্রিয়ভাবে বাকির খাতায় যুক্ত হয়ে যাবেন।</div>
- <button class="checkout-btn" onclick="confirmInvoice(${itemsSubtotal})" ${cart.length === 0 ? "disabled" : ""}>ইনভয়েস তৈরি করুন →</button>
+ <button class="checkout-btn" onclick="confirmInvoice(${itemsSubtotal})" ${cart.length === 0 ? "disabled" : ""}>ক্যাশ মেমো তৈরি করুন →</button>
  ${cart.length === 0 ? `<div style="font-size:11px;color:var(--red);margin-top:6px;text-align:center;">আগে অন্তত একটা পণ্য যোগ করুন</div>` : ""}
  </div>`;
 }
@@ -1961,7 +1961,7 @@ function renderSalesPicker() {
   const cartBar = `
  <div class="back-row" style="justify-content:space-between;">
  <div class="cur-brand">🛒 কার্ট — ${cart.length} আইটেম${cart.length > 0 ? ` · ${totalPieces} পরিমাণ · ${fmt(totalAmt)}` : ""}</div>
- <button class="btn btn-primary" onclick="switchView('sales')">ইনভয়েসে ফিরে যান →</button>
+ <button class="btn btn-primary" onclick="switchView('sales')">ক্যাশ মেমোে ফিরে যান →</button>
  </div>`;
 
   return cartBar + bodyHtml;
@@ -2075,7 +2075,7 @@ function renderCartPage() {
  <div class="panel" style="max-width:420px;margin-top:6px;">
  <div class="cart-total-row"><span>মোট পরিমাণ</span><span class="mono">${totalPieces}</span></div>
  <div class="cart-total-row grand"><span>সর্বমোট</span><span>${fmt(totalAmt)}</span></div>
- <button class="checkout-btn" onclick="goToCheckout()">ইনভয়েস তৈরি করুন →</button>
+ <button class="checkout-btn" onclick="goToCheckout()">ক্যাশ মেমো তৈরি করুন →</button>
  </div>`;
 }
 /* ============================================================
@@ -2086,7 +2086,7 @@ function quickSalePrompt() {
     "⚡ দ্রুত বিক্রি",
     `
   <div style="font-size:11.5px;color:var(--steel-500);margin-bottom:14px;line-height:1.6;">
- নাম ও ফোন দিলে সাধারণ ইনভয়েসের মতোই তৈরি হবে (বাকির খাতা/নগদ ক্রেতায় যুক্ত হবে)। নাম/ফোন ফাঁকা রাখলে কোনো ইনভয়েস হবে না, কিন্তু বিক্রয়ের পুরো টাকাটা এখনই আপনার মূল হিসাব (ড্যাশবোর্ড, ক্যাশবক্স) ও লাভ-ক্ষতিতে যোগ হয়ে যাবে — লাভ লিখলে সেটাও আলাদাভাবে হিসাব হবে।
+ নাম ও ফোন দিলে সাধারণ ক্যাশ মেমোের মতোই তৈরি হবে (বাকির খাতা/নগদ ক্রেতায় যুক্ত হবে)। নাম/ফোন ফাঁকা রাখলে কোনো ক্যাশ মেমো হবে না, কিন্তু বিক্রয়ের পুরো টাকাটা এখনই আপনার মূল হিসাব (ড্যাশবোর্ড, ক্যাশবক্স) ও লাভ-ক্ষতিতে যোগ হয়ে যাবে — লাভ লিখলে সেটাও আলাদাভাবে হিসাব হবে।
  </div>
  <div class="field"><label>ক্রেতার নাম (ঐচ্ছিক)</label><input type="text" id="qsName" placeholder="ঐচ্ছিক"></div>
  <div class="field"><label>ফোন নাম্বার (ঐচ্ছিক)</label><input type="text" id="qsPhone" placeholder="ঐচ্ছিক"></div>
@@ -2171,10 +2171,10 @@ function confirmQuickSale() {
     invoice.custId = cc.id;
     invoices.push(invoice);
     logActivity(
-      "দ্রুত বিক্রি (ইনভয়েস)",
+      "দ্রুত বিক্রি (ক্যাশ মেমো)",
       `#${invoice.id} · ${name} · ${fmt(totalAmount)}`,
     );
-    showToast("ইনভয়েস তৈরি হয়েছে");
+    showToast("ক্যাশ মেমো তৈরি হয়েছে");
   } else {
     quickSales.push({
       id: quickSaleNextId++,
@@ -2411,7 +2411,7 @@ function updateCartTotalAmount(idx, val) {
 }
 
 /* ============================================================
- চেকআউট / ইনভয়েস তৈরি
+ চেকআউট / ক্যাশ মেমো তৈরি
  ============================================================ */
 async function goToCheckout() {
   if (cart.length === 0) {
@@ -2473,7 +2473,7 @@ function renderCheckout() {
   return `
  <div class="back-row">
  <button class="btn btn-outline" onclick="switchView('cart')">← কার্টে ফিরে যান</button>
- <div class="cur-brand">ইনভয়েস তৈরি করুন</div>
+ <div class="cur-brand">ক্যাশ মেমো তৈরি করুন</div>
  </div>
  <div class="panel" style="margin-bottom:16px;">
  <h3>কার্টের পণ্য (${cart.length} আইটেম)</h3>
@@ -2484,11 +2484,11 @@ function renderCheckout() {
  </div>
  <div class="panel" style="max-width:520px;">
  <div class="field">
- <label>ইনভয়েস নম্বর</label>
+ <label>ক্যাশ মেমো নম্বর</label>
  <input type="number" id="invNumber" value="${invoiceCounter}" min="1">
  </div>
  <div class="field">
- <label>বিক্রয়কারী — কে এই ইনভয়েসটি করছেন</label>
+ <label>বিক্রয়কারী — কে এই ক্যাশ মেমোটি করছেন</label>
  <select id="invSalesBy">${salesByOptions || '<option value="">— নির্বাচন করুন —</option>'}</select>
  </div>
  <div class="field">
@@ -2513,7 +2513,7 @@ function renderCheckout() {
  <div style="display:flex;justify-content:space-between;margin-top:4px;"><span>বাকি থাকবে</span><b class="mono" id="invDueVal">${fmt(0)}</b></div>
  </div>
  <div style="font-size:11.5px;color:var(--steel-500);margin:8px 0 16px;">পুরো টাকা পরিশোধ হলে এই গ্রাহক "নগদ ক্রেতা" পেজে (সার্চযোগ্য) যুক্ত হবে। বাকি বা আংশিক বাকি থাকলে ক্রেতা স্বয়ংক্রিয়ভাবে বাকির খাতায় যুক্ত হয়ে যাবেন।</div>
- <button class="checkout-btn" onclick="confirmInvoice(${itemsSubtotal})">ইনভয়েস তৈরি করুন →</button>
+ <button class="checkout-btn" onclick="confirmInvoice(${itemsSubtotal})">ক্যাশ মেমো তৈরি করুন →</button>
  </div>`;
 }
 function checkoutRecalc(itemsSubtotal) {
@@ -2557,11 +2557,11 @@ function confirmInvoice(itemsSubtotal) {
   const invNumberEl = document.getElementById("invNumber");
   const invNumber = invNumberEl ? parseInt(invNumberEl.value) : NaN;
   if (!invNumber || invNumber < 1) {
-    showToast("সঠিক ইনভয়েস নম্বর দিন");
+    showToast("সঠিক ক্যাশ মেমো নম্বর দিন");
     return;
   }
   if (invoices.find((x) => x.id === invNumber)) {
-    showToast("এই ইনভয়েস নম্বর আগে থেকেই ব্যবহৃত হয়েছে — অন্য নম্বর দিন");
+    showToast("এই ক্যাশ মেমো নম্বর আগে থেকেই ব্যবহৃত হয়েছে — অন্য নম্বর দিন");
     return;
   }
   const custId = document.getElementById("invCustomer").value;
@@ -2702,7 +2702,7 @@ function confirmInvoice(itemsSubtotal) {
   invoices.push(invoice);
   invoiceCounter = Math.max(invoiceCounter, invNumber + 1);
   logActivity(
-    "নতুন ইনভয়েস তৈরি",
+    "নতুন ক্যাশ মেমো তৈরি",
     `#${invoice.id} · ${customerName} · ${fmt(grandTotal)}${due > 0 ? " (বাকি " + fmt(due) + ")" : ""}`,
   );
 
@@ -2712,7 +2712,7 @@ function confirmInvoice(itemsSubtotal) {
   posBrand = null;
   posBrandSearch = "";
   posItemSearch = "";
-  showToast("ইনভয়েস তৈরি হয়েছে");
+  showToast("ক্যাশ মেমো তৈরি হয়েছে");
   persistShopData();
   switchView("invoicePreview");
 }
@@ -2884,14 +2884,14 @@ function buildInvoiceHtml(inv) {
  </div>
  </div>
  <div class="si-top-right">
- <div class="si-title">ইনভয়েস</div>
+ <div class="si-title">ক্যাশ মেমো</div>
  <div class="si-date">তারিখ: ${new Date(inv.createdAt || inv.date).toLocaleDateString("bn-BD")}</div>
  ${SHOP_ADDRESS ? `<div class="si-date">ঠিকানা: ${esc(SHOP_ADDRESS)}</div>` : ""}
  </div>
  </div>
  <div class="si-bar">
- <div>ইনভয়েস নম্বর: #${inv.id}</div>
- <div>ইনভয়েস তারিখ: ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
+ <div>ক্যাশ মেমো নম্বর: #${inv.id}</div>
+ <div>ক্যাশ মেমো তারিখ: ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
  </div>
  <div class="si-cust">
  <div class="si-cust-row"><span class="si-lbl">কাস্টমার:</span><span>${esc(inv.customer)}</span></div>
@@ -2930,7 +2930,7 @@ function printInvoice(inv) {
 function renderInvoicePreview() {
   const inv = invoices.find((x) => x.id === lastInvoiceId);
   if (!inv) {
-    return `<div class="empty-state"><div class="ic">🧾</div>কোনো ইনভয়েস পাওয়া যায়নি<br><span style="font-size:12px;">"ইনভয়েস হিস্ট্রি" থেকে দেখুন</span></div>
+    return `<div class="empty-state"><div class="ic">🧾</div>কোনো ক্যাশ মেমো পাওয়া যায়নি<br><span style="font-size:12px;">"ক্যাশ মেমো হিস্ট্রি" থেকে দেখুন</span></div>
  <div style="text-align:center;margin-top:14px;"><button class="btn btn-primary" onclick="switchView('sales')">← বিক্রয়ে ফিরে যান</button></div>`;
   }
   const html = buildInvoiceHtml(inv);
@@ -2939,26 +2939,26 @@ function renderInvoicePreview() {
     if (pa) pa.innerHTML = html;
   }, 0);
   const cancelledBanner = inv.cancelled
-    ? `<div style="max-width:680px;margin:0 auto 14px;background:#FCEBE9;color:var(--red);border:1px solid #F3C4BC;border-radius:8px;padding:10px 14px;font-size:13px;text-align:center;font-weight:700;">❌ এই ইনভয়েসটি বাতিল করা হয়েছে — স্টক ও হিসাব ফিরিয়ে নেওয়া হয়েছে</div>`
+    ? `<div style="max-width:680px;margin:0 auto 14px;background:#FCEBE9;color:var(--red);border:1px solid #F3C4BC;border-radius:8px;padding:10px 14px;font-size:13px;text-align:center;font-weight:700;">❌ এই ক্যাশ মেমোটি বাতিল করা হয়েছে — স্টক ও হিসাব ফিরিয়ে নেওয়া হয়েছে</div>`
     : "";
   return `
  <div class="back-row">
  <button class="btn btn-outline" onclick="switchView('sales')">← নতুন বিক্রয়</button>
- <div class="cur-brand">ইনভয়েস #${inv.id}</div>
+ <div class="cur-brand">ক্যাশ মেমো #${inv.id}</div>
  </div>
  ${cancelledBanner}
  <div style="max-width:680px;margin:0 auto;">
  ${html}
  <div style="display:flex; gap:10px; justify-content:center; margin-top:20px; flex-wrap:wrap;">
- <button class="btn btn-outline" onclick="switchView('invoices')">🗂️ ইনভয়েস হিস্ট্রি</button>
- <button class="btn btn-outline" onclick="downloadPrintArea('${jsq("ইনভয়েস-" + inv.id)}')">⬇ ডাউনলোড (A4)</button>
+ <button class="btn btn-outline" onclick="switchView('invoices')">🗂️ ক্যাশ মেমো হিস্ট্রি</button>
+ <button class="btn btn-outline" onclick="downloadPrintArea('${jsq("ক্যাশ মেমো-" + inv.id)}')">⬇ ডাউনলোড (A4)</button>
  <button class="btn btn-primary" onclick="tryPrint()">🖨 প্রিন্ট (A4)</button>
  <button class="btn btn-outline" onclick="printThermal(${inv.id},58)">🧾 থার্মাল প্রিন্ট (৫৮mm)</button>
  <button class="btn btn-outline" onclick="downloadThermal(${inv.id},58)">⬇ থার্মাল ডাউনলোড (৫৮mm)</button>
  <button class="btn btn-outline" onclick="printThermal(${inv.id},80)">🧾 থার্মাল প্রিন্ট (৮০mm)</button>
  <button class="btn btn-outline" onclick="downloadThermal(${inv.id},80)">⬇ থার্মাল ডাউনলোড (৮০mm)</button>
-  ${!inv.cancelled ? `<button class="btn btn-outline" onclick="editInvoicePrompt(${inv.id})">✏️ ইনভয়েস এডিট করুন</button>` : ""}
- ${!inv.cancelled ? `<button class="btn btn-outline" style="color:var(--red);border-color:var(--red);" onclick="cancelInvoicePrompt(${inv.id})">❌ ইনভয়েস বাতিল করুন</button>` : ""}
+  ${!inv.cancelled ? `<button class="btn btn-outline" onclick="editInvoicePrompt(${inv.id})">✏️ ক্যাশ মেমো এডিট করুন</button>` : ""}
+ ${!inv.cancelled ? `<button class="btn btn-outline" style="color:var(--red);border-color:var(--red);" onclick="cancelInvoicePrompt(${inv.id})">❌ ক্যাশ মেমো বাতিল করুন</button>` : ""}
  </div>
  </div>`;
 }
@@ -2979,7 +2979,7 @@ function editInvoicePrompt(invId) {
     )
     .join("");
   openModal(
-    `ইনভয়েস #${inv.id} এডিট করুন`,
+    `ক্যাশ মেমো #${inv.id} এডিট করুন`,
     `
  <div class="field"><label>ক্রেতার নাম</label><input type="text" id="editInvCustName" value="${esc(inv.customer)}"></div>
  <div class="field"><label>মোবাইল নাম্বার</label><input type="text" id="editInvCustPhone" value="${esc(inv.customerPhone || "")}"></div>
@@ -3077,11 +3077,11 @@ function saveInvoiceEdit(invId) {
   }
 
   logActivity(
-    "ইনভয়েস এডিট করা হয়েছে",
+    "ক্যাশ মেমো এডিট করা হয়েছে",
     `#${inv.id} · নতুন মোট ${fmt(grandTotal)}`,
   );
   closeModal();
-  showToast("ইনভয়েস আপডেট হয়েছে");
+  showToast("ক্যাশ মেমো আপডেট হয়েছে");
   persistShopData();
   render();
 }
@@ -3090,19 +3090,19 @@ function cancelInvoicePrompt(id) {
   const inv = invoices.find((x) => x.id === id);
   if (!inv || inv.cancelled) return;
   openModal(
-    "ইনভয়েস বাতিল করবেন?",
+    "ক্যাশ মেমো বাতিল করবেন?",
     `
- <p style="font-size:13.5px;line-height:1.7;">ইনভয়েস <b>#${inv.id}</b> (${esc(inv.customer)} · ${fmt(inv.total)}) বাতিল করা হবে।</p>
+ <p style="font-size:13.5px;line-height:1.7;">ক্যাশ মেমো <b>#${inv.id}</b> (${esc(inv.customer)} · ${fmt(inv.total)}) বাতিল করা হবে।</p>
  <ul style="font-size:12.5px;color:var(--steel-700);line-height:1.8;padding-left:18px;">
  <li>বিক্রি করা সব পণ্য স্টকে আবার যোগ হবে</li>
- <li>এই ইনভয়েসের কারণে যে বাকি যোগ হয়েছিল সেটা গ্রাহকের হিসাব থেকে বাদ যাবে</li>
- <li>ইনভয়েসটা "বাতিল" হিসেবে রেকর্ডে থাকবে (মুছে যাবে না), কিন্তু কোনো রিপোর্ট/হিসাবে গণনা হবে না</li>
+ <li>এই ক্যাশ মেমোের কারণে যে বাকি যোগ হয়েছিল সেটা গ্রাহকের হিসাব থেকে বাদ যাবে</li>
+ <li>ক্যাশ মেমোটা "বাতিল" হিসেবে রেকর্ডে থাকবে (মুছে যাবে না), কিন্তু কোনো রিপোর্ট/হিসাবে গণনা হবে না</li>
  </ul>
  <p style="font-size:12px;color:var(--red);">এই কাজ ফিরিয়ে নেওয়া যাবে না।</p>
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল করুন (থাক)</button>
- <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('ইনভয়েস বাতিল করুন', () => cancelInvoiceConfirmed(${id}))">হ্যাঁ, ইনভয়েস বাতিল করুন</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('ক্যাশ মেমো বাতিল করুন', () => cancelInvoiceConfirmed(${id}))">হ্যাঁ, ক্যাশ মেমো বাতিল করুন</button>
  `,
   );
 }
@@ -3138,12 +3138,12 @@ function cancelInvoiceConfirmed(id) {
   inv.cancelled = true;
   inv.cancelledAt = new Date();
   logActivity(
-    "ইনভয়েস বাতিল করা হয়েছে",
+    "ক্যাশ মেমো বাতিল করা হয়েছে",
     `#${inv.id} · ${inv.customer} · ${fmt(inv.total)}`,
   );
 
   closeModal();
-  showToast("ইনভয়েস বাতিল করা হয়েছে");
+  showToast("ক্যাশ মেমো বাতিল করা হয়েছে");
   persistShopData();
   render();
 }
@@ -3152,7 +3152,7 @@ function openReceiptModal(kind, id) {
   if (kind === "invoice") {
     const inv = invoices.find((x) => x.id === id);
     html = buildInvoiceHtml(inv);
-    filename = "ইনভয়েস-" + inv.id;
+    filename = "ক্যাশ মেমো-" + inv.id;
   } else if (kind === "payment") {
     const p = payments.find((x) => x.id === id);
     html = buildPaymentReceiptHtml(p);
@@ -3481,7 +3481,7 @@ function editBrandPrompt(name) {
  <div class="field"><label>ব্র্যান্ডের নাম পরিবর্তন করুন</label><input type="text" id="editBrandName" value="${esc(name)}"></div>
   <div class="field"><label>প্রথম ঘরের একক/টাইটেল</label>${unitSelectHtml("editBrandUnitLabel", lbl.unitLabel)}</div>
  <div class="field"><label>দ্বিতীয় ঘরের একক/টাইটেল (পরিমাণের একক)</label>${unitSelectHtml("editBrandSizeLabel", lbl.sizeLabel)}</div>
- <div style="font-size:11px;color:var(--steel-500);">এই টাইটেল স্টক, কার্ট, ইনভয়েস — সব জায়গায় দেখাবে।</div>
+ <div style="font-size:11px;color:var(--steel-500);">এই টাইটেল স্টক, কার্ট, ক্যাশ মেমো — সব জায়গায় দেখাবে।</div>
  `,
     `
  <button class="btn btn-outline" style="color:var(--red);" onclick="deleteBrandPrompt('${jsq(name)}')">🗑️ ব্র্যান্ড মুছুন</button>
@@ -3529,7 +3529,7 @@ function deleteBrandPrompt(name) {
   openModal(
     "ব্র্যান্ড মুছবেন?",
     `
- <p style="font-size:13.5px;line-height:1.7;">"${esc(name)}" ব্র্যান্ডটি ও এর বর্তমান স্টক তালিকা (${itemCount} টি আইটেম) স্থায়ীভাবে মুছে ফেলা হবে। আগের ইনভয়েস/কেনার খাতার রেকর্ডে ব্র্যান্ডের নাম থেকে যাবে (মুছে যাবে না), শুধু বর্তমান স্টক তালিকা থেকে ব্র্যান্ডটি বাদ যাবে।</p>
+ <p style="font-size:13.5px;line-height:1.7;">"${esc(name)}" ব্র্যান্ডটি ও এর বর্তমান স্টক তালিকা (${itemCount} টি আইটেম) স্থায়ীভাবে মুছে ফেলা হবে। আগের ক্যাশ মেমো/কেনার খাতার রেকর্ডে ব্র্যান্ডের নাম থেকে যাবে (মুছে যাবে না), শুধু বর্তমান স্টক তালিকা থেকে ব্র্যান্ডটি বাদ যাবে।</p>
  <p style="font-size:12px;color:var(--red);">এই কাজ ফিরিয়ে নেওয়া যাবে না।</p>
  `,
     `
@@ -3933,7 +3933,7 @@ function deleteStockItemPrompt(brand, mm, sz) {
     "আইটেম মুছবেন?",
     `
  <p style="font-size:13.5px;line-height:1.7;">"${esc(brand)}" ব্র্যান্ডের <b>${esc(mm)} ${esc(lbl.unitLabel)} · ${esc(sz)} ${esc(lbl.sizeLabel)}</b> আইটেমটি (বর্তমান স্টক ${v.stock}) স্থায়ীভাবে মুছে ফেলা হবে।</p>
- <p style="font-size:12px;color:var(--red);">এই কাজ ফিরিয়ে নেওয়া যাবে না — আগের ইনভয়েস/কেনার খাতার রেকর্ডে নাম থেকে যাবে, শুধু বর্তমান স্টক তালিকা থেকে এই আইটেমটি বাদ যাবে।</p>
+ <p style="font-size:12px;color:var(--red);">এই কাজ ফিরিয়ে নেওয়া যাবে না — আগের ক্যাশ মেমো/কেনার খাতার রেকর্ডে নাম থেকে যাবে, শুধু বর্তমান স্টক তালিকা থেকে এই আইটেমটি বাদ যাবে।</p>
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -4202,7 +4202,7 @@ function renderSalesLedger() {
   const range = salesLedgerGetRange();
 
   if (invoices.length === 0 && quickSales.length === 0)
-    return `<div class="empty-state"><div class="ic">📗</div>এখনো কোনো বিক্রয় হয়নি<br><span style="font-size:12px;">"বিক্রয়" থেকে প্রথম ইনভয়েস তৈরি করুন</span></div>`;
+    return `<div class="empty-state"><div class="ic">📗</div>এখনো কোনো বিক্রয় হয়নি<br><span style="font-size:12px;">"বিক্রয়" থেকে প্রথম ক্যাশ মেমো তৈরি করুন</span></div>`;
 
   const presetTabs = `
  <div class="tab-row" style="margin-bottom:10px;">
@@ -4447,7 +4447,7 @@ function renderSalesLedgerCatDetail() {
  <div class="day-tx">
  <div>
  <div class="txname">${esc(inv.customer)}</div>
- <div class="txmeta">ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
+ <div class="txmeta">ক্যাশ মেমো #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
  </div>
  <div style="text-align:right;">
  <div class="mono" style="font-weight:700;color:${type === "cash" ? "var(--green)" : "var(--red)"};">${fmt(amount)}</div>
@@ -4521,7 +4521,7 @@ function renderSalesLedgerCatDetail() {
   const searchBar = `
  <div class="search-bar ${q ? "has-val" : ""}">
  <span class="sic">🔍</span>
- <input type="text" id="salesLedgerCatSearchInput" value="${esc(salesLedgerCatSearch)}" placeholder="নাম, ফোন বা ইনভয়েস নম্বর দিয়ে সার্চ করুন..."
+ <input type="text" id="salesLedgerCatSearchInput" value="${esc(salesLedgerCatSearch)}" placeholder="নাম, ফোন বা ক্যাশ মেমো নম্বর দিয়ে সার্চ করুন..."
  oninput="salesLedgerCatSearchInputFn(this.value)" autocomplete="off">
  <span class="sclear" onclick="salesLedgerCatSearchInputFn('')">✕</span>
  </div>`;
@@ -4676,7 +4676,7 @@ function ledgerSortChange(val) {
 function renderDueSummary() {
   const period = listPeriod.dueSummary || "day";
 
-  // "বাকি দিয়েছি" = এই সময়ে বাকিতে যত টাকার পণ্য বিক্রি হয়েছে (ইনভয়েসের due অংশ)
+  // "বাকি দিয়েছি" = এই সময়ে বাকিতে যত টাকার পণ্য বিক্রি হয়েছে (ক্যাশ মেমোের due অংশ)
   const anchor = getPeriodAnchor("dueSummary");
   const dueGivenInvoices = invoices.filter(
     (inv) =>
@@ -4709,7 +4709,7 @@ function renderDueSummary() {
  <div class="day-tx">
  <div>
  <div class="txname"><span class="tx-tag sale">বাকি দিলাম</span>${esc(inv.customer)}${inv.customerPhone ? " · " + telHtml(inv.customerPhone) : ""}</div>
- <div class="txmeta">ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")} · মোট বিল ${fmt(inv.total)} · বাকি রইলো ${fmt(inv.due)}</div>
+ <div class="txmeta">ক্যাশ মেমো #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")} · মোট বিল ${fmt(inv.total)} · বাকি রইলো ${fmt(inv.due)}</div>
  </div>
  <button class="btn btn-outline" onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">দেখুন</button>
  </div>`,
@@ -4741,7 +4741,7 @@ function renderDueSummary() {
  </div>
 
  <div class="panel" style="margin-top:16px; margin-bottom:8px;">
- <h3 style="color:var(--red);">বাকি দিয়েছি — ${dueGivenInvoices.length} টি ইনভয়েস</h3>
+ <h3 style="color:var(--red);">বাকি দিয়েছি — ${dueGivenInvoices.length} টি ক্যাশ মেমো</h3>
  ${givenRows || `<div class="no-match">এই সময়ে কোনো বাকি বিক্রি নেই</div>`}
  </div>
 
@@ -5762,7 +5762,7 @@ function renderCustomerDetail(id) {
         html: `
  <div class="day-tx">
  <div>
- <div class="txname"><span class="tx-tag sale">বিক্রয়</span>ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
+ <div class="txname"><span class="tx-tag sale">বিক্রয়</span>ক্যাশ মেমো #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
  <div class="txmeta">সর্বমোট ${fmt(inv.total)} · বাকি ${fmt(inv.due)}</div>
  </div>
  <button class="btn btn-outline" onclick="openCashboxMemoDetail(${inv.id})">দেখুন</button>
@@ -5838,7 +5838,7 @@ function viewCustomerInvoices(custId) {
       html: `
  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--steel-100);font-size:13px;">
  <div>
- <div style="font-weight:600;"><span class="tx-tag sale">বিক্রয়</span>ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
+ <div style="font-weight:600;"><span class="tx-tag sale">বিক্রয়</span>ক্যাশ মেমো #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
  <div style="color:var(--steel-500);font-size:12px;">সর্বমোট ${fmt(inv.total)} · বাকি ${fmt(inv.due)}</div>
  </div>
  <button class="btn btn-outline" onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">প্রিন্ট/ডাউনলোড</button>
@@ -5920,7 +5920,7 @@ function editCustomerPrompt(id) {
  <div class="field"><label>মোবাইল নাম্বার</label><input type="text" id="custEditPhone" value="${esc(cust.phone || "")}"></div>
  <div class="field"><label>বর্তমান বাকি (৳)</label><input type="number" id="custEditDue" min="0" value="${cust.due}"></div>
  <div class="field"><label>যুক্ত হওয়ার তারিখ</label><input type="date" id="custEditDate" value="${toDateInputValue(cust.addedDate || new Date())}"></div>
- <div style="font-size:11px;color:var(--steel-500);">বাকির পরিমাণ এখান থেকে সরাসরি বদলালে সেটা কোনো ইনভয়েস/পেমেন্টের হিসাবের সাথে যুক্ত হবে না — শুধু বর্তমান বকেয়ার সংখ্যাটাই বদলে যাবে।</div>
+ <div style="font-size:11px;color:var(--steel-500);">বাকির পরিমাণ এখান থেকে সরাসরি বদলালে সেটা কোনো ক্যাশ মেমো/পেমেন্টের হিসাবের সাথে যুক্ত হবে না — শুধু বর্তমান বকেয়ার সংখ্যাটাই বদলে যাবে।</div>
  `,
     `
  <button class="btn btn-outline" style="color:var(--red);" onclick="deleteCustomerPrompt(${id})">🗑️ মুছুন</button>
@@ -5956,7 +5956,7 @@ function addCustomerDuePrompt(id) {
   openModal(
     `বাকি দিচ্ছি — ${esc(cust.name)}`,
     `
- <div style="font-size:12px;color:var(--steel-500);margin-bottom:12px;line-height:1.6;">এই গ্রাহককে ইনভয়েস ছাড়া বাকিতে মাল দিয়েছেন — সেই পরিমাণ এখানে লিখুন। এটা গ্রাহকের বর্তমান বকেয়ার সাথে যোগ হয়ে যাবে।</div>
+ <div style="font-size:12px;color:var(--steel-500);margin-bottom:12px;line-height:1.6;">এই গ্রাহককে ক্যাশ মেমো ছাড়া বাকিতে মাল দিয়েছেন — সেই পরিমাণ এখানে লিখুন। এটা গ্রাহকের বর্তমান বকেয়ার সাথে যোগ হয়ে যাবে।</div>
  <div class="field"><label>পরিমাণ (৳)</label><input type="number" id="custDueAddAmount" min="0" placeholder="যেমনঃ ২,০০০"></div>
  <div class="field"><label>তারিখ</label><input type="date" id="custDueAddDate" value="${toDateInputValue(new Date())}"></div>
  <div class="field"><label>বিবরণ (ঐচ্ছিক)</label><input type="text" id="custDueAddNote" placeholder="যেমনঃ ৫ বস্তা সিমেন্ট বাকিতে দেওয়া হয়েছে"></div>
@@ -6003,7 +6003,7 @@ function deleteCustomerPrompt(id) {
   openModal(
     "গ্রাহক মুছবেন?",
     `
- <p style="font-size:13.5px;line-height:1.7;">"${esc(cust.name)}" কে বাকির খাতা থেকে স্থায়ীভাবে মুছে ফেলা হবে। এই গ্রাহকের আগের ইনভয়েস/পেমেন্ট রেকর্ডে নাম থেকে যাবে, শুধু এই তালিকা থেকে বাদ যাবেন।</p>
+ <p style="font-size:13.5px;line-height:1.7;">"${esc(cust.name)}" কে বাকির খাতা থেকে স্থায়ীভাবে মুছে ফেলা হবে। এই গ্রাহকের আগের ক্যাশ মেমো/পেমেন্ট রেকর্ডে নাম থেকে যাবে, শুধু এই তালিকা থেকে বাদ যাবেন।</p>
  <p style="font-size:12px;color:var(--red);">এই কাজ ফিরিয়ে নেওয়া যাবে না।</p>
  `,
     `
@@ -6322,7 +6322,7 @@ function renderCashCustomers() {
  <div class="lmeta">${[esc(c.address), telHtml(c.phone)].filter(Boolean).join(" · ") || "কোনো তথ্য নেই"} · সর্বমোট ক্রয় ${fmt(c.totalSpent)} · সর্বশেষ ${c.lastDate ? new Date(c.lastDate).toLocaleDateString("bn-BD") : "—"}</div>
  </div>
  <div class="ledger-due"><div class="amt clear">নগদ</div><div class="lbl">সম্পূর্ণ পরিশোধিত</div></div>
- <button class="btn btn-outline" onclick="viewCashInvoices(${c.id})">ইনভয়েস</button>
+ <button class="btn btn-outline" onclick="viewCashInvoices(${c.id})">ক্যাশ মেমো</button>
  </div>`,
    )
    .join("")}
@@ -6343,7 +6343,7 @@ function viewCashInvoices(ccId) {
   const cc = cashCustomers.find((c) => c.id === ccId);
   const rows =
     cc.invoiceIds.length === 0
-      ? `<div class="no-match">এখনো কোনো ইনভয়েস নেই</div>`
+      ? `<div class="no-match">এখনো কোনো ক্যাশ মেমো নেই</div>`
       : cc.invoiceIds
           .slice()
           .reverse()
@@ -6352,7 +6352,7 @@ function viewCashInvoices(ccId) {
             if (!inv) return "";
             return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--steel-100);font-size:13px;">
  <div>
- <div style="font-weight:600;">ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
+ <div style="font-weight:600;">ক্যাশ মেমো #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
  <div style="color:var(--steel-500);font-size:12px;">সর্বমোট ${fmt(inv.total)}</div>
  </div>
  <button class="btn btn-outline" onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">প্রিন্ট/ডাউনলোড</button>
@@ -6360,7 +6360,7 @@ function viewCashInvoices(ccId) {
           })
           .join("");
   openModal(
-    `ইনভয়েস — ${esc(cc.name)}`,
+    `ক্যাশ মেমো — ${esc(cc.name)}`,
     rows,
     `<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>`,
   );
@@ -7275,7 +7275,7 @@ function buildExpenseReceiptHtml(e) {
 }
 
 /* ============================================================
- ইনভয়েস হিস্ট্রি
+ ক্যাশ মেমো হিস্ট্রি
  ============================================================ */
 function renderInvoices() {
   const q = invoiceSearch.trim().toLowerCase();
@@ -7289,7 +7289,7 @@ function renderInvoices() {
  </div>`;
 
   if (invoices.length === 0)
-    return `<div class="empty-state"><div class="ic">🗂️</div>এখনো কোনো ইনভয়েস তৈরি হয়নি<br><span style="font-size:12px;">"বিক্রয়" থেকে প্রথম ইনভয়েস তৈরি করুন</span></div>`;
+    return `<div class="empty-state"><div class="ic">🗂️</div>এখনো কোনো ক্যাশ মেমো তৈরি হয়নি<br><span style="font-size:12px;">"বিক্রয়" থেকে প্রথম ক্যাশ মেমো তৈরি করুন</span></div>`;
 
   const filtered = invoices.filter((inv) => {
     if (
@@ -7319,14 +7319,14 @@ function renderInvoices() {
     return (
       periodTabsHtml("invoices") +
       searchBar +
-      `<div class="no-match">🔍 এই সময়ে/সার্চে কোনো ইনভয়েস পাওয়া যায়নি</div>`
+      `<div class="no-match">🔍 এই সময়ে/সার্চে কোনো ক্যাশ মেমো পাওয়া যায়নি</div>`
     );
 
   return (
     periodTabsHtml("invoices") +
     searchBar +
     `<table class="tbl">
- <thead><tr><th>ইনভয়েস</th><th>ক্রেতা</th><th>মোবাইল</th><th>তারিখ</th><th>আইটেম</th><th class="r">সর্বমোট</th><th class="r">বাকি</th><th></th></tr></thead>
+ <thead><tr><th>ক্যাশ মেমো</th><th>ক্রেতা</th><th>মোবাইল</th><th>তারিখ</th><th>আইটেম</th><th class="r">সর্বমোট</th><th class="r">বাকি</th><th></th></tr></thead>
  <tbody>${filtered
    .slice()
    .reverse()
@@ -7381,7 +7381,7 @@ function returnPrompt(invId) {
     .join("");
 
   openModal(
-    `রিটার্ন — ইনভয়েস #${inv.id}`,
+    `রিটার্ন — ক্যাশ মেমো #${inv.id}`,
     `
  <div style="font-size:12.5px;color:var(--steel-500);margin-bottom:10px;">যে পণ্যগুলো ফেরত নিচ্ছেন তার পাশে − / + চেপে পরিমাণ ঠিক করুন (০ মানে ফেরত নয়)</div>
  ${itemsHtml}
@@ -7482,13 +7482,13 @@ function processReturn(invId) {
   showToast(`রিটার্ন সম্পন্ন হয়েছে — ${fmt(total)} টাকার পণ্য`);
   logActivity(
     "রিটার্ন প্রসেস করা হয়েছে",
-    `ইনভয়েস #${inv.id} · ${inv.customer} · ${fmt(total)} টাকা`,
+    `ক্যাশ মেমো #${inv.id} · ${inv.customer} · ${fmt(total)} টাকা`,
   );
   persistShopData();
 }
 function renderReturns() {
   if (returns.length === 0)
-    return `<div class="empty-state"><div class="ic">↩️</div>এখনো কোনো রিটার্ন হয়নি<br><span style="font-size:12px;">"ইনভয়েস হিস্ট্রি" পেজে গিয়ে যেকোনো ইনভয়েসে "রিটার্ন" বাটনে চাপুন</span></div>`;
+    return `<div class="empty-state"><div class="ic">↩️</div>এখনো কোনো রিটার্ন হয়নি<br><span style="font-size:12px;">"ক্যাশ মেমো হিস্ট্রি" পেজে গিয়ে যেকোনো ক্যাশ মেমোে "রিটার্ন" বাটনে চাপুন</span></div>`;
   const period = listPeriod.returns || "all";
   const filteredReturns = returns.filter((r) =>
     inSelectedPeriodAnchored(r.date, period, getPeriodAnchor("returns")),
@@ -7501,7 +7501,7 @@ function renderReturns() {
   return (
     periodTabsHtml("returns") +
     `<table class="tbl">
- <thead><tr><th>রিটার্ন</th><th>ইনভয়েস</th><th>ক্রেতা</th><th>তারিখ</th><th>পণ্য</th><th class="r">মোট</th><th>পদ্ধতি</th><th>স্টক</th></tr></thead>
+ <thead><tr><th>রিটার্ন</th><th>ক্যাশ মেমো</th><th>ক্রেতা</th><th>তারিখ</th><th>পণ্য</th><th class="r">মোট</th><th>পদ্ধতি</th><th>স্টক</th></tr></thead>
  <tbody>${filteredReturns
    .slice()
    .reverse()
@@ -7710,7 +7710,7 @@ function renderDaily() {
  <div class="day-tx">
  <div>
  <div class="txname"><span class="tx-tag sale">বিক্রয়</span>${esc(inv.customer)}${inv.customerPhone ? " · " + telHtml(inv.customerPhone) : ""}</div>
- <div class="txmeta">ইনভয়েস #${inv.id} · ${inv.items.length} টি পণ্য · মোট ${fmt(inv.total)} · পরিশোধিত ${fmt(inv.paid)}${inv.due > 0 ? " · নতুন বাকি " + fmt(inv.due) : " · সম্পূর্ণ নগদ"}</div>
+ <div class="txmeta">ক্যাশ মেমো #${inv.id} · ${inv.items.length} টি পণ্য · মোট ${fmt(inv.total)} · পরিশোধিত ${fmt(inv.paid)}${inv.due > 0 ? " · নতুন বাকি " + fmt(inv.due) : " · সম্পূর্ণ নগদ"}</div>
  </div>
  <button class="btn btn-outline" onclick="openCashboxMemoDetail(${inv.id})">দেখুন</button>
  </div>`,
@@ -7891,7 +7891,7 @@ function metricCardsHtml(m) {
  </div>
  <div class="panel" style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
  <div style="font-size:13px;color:var(--steel-500);">
- ${m.invCount} টি ইনভয়েস · মুনাফার হার (মার্জিন) <b class="mono" style="color:${m.netProfit >= 0 ? "var(--green)" : "var(--red)"}">${m.margin.toFixed(1)}%</b>
+ ${m.invCount} টি ক্যাশ মেমো · মুনাফার হার (মার্জিন) <b class="mono" style="color:${m.netProfit >= 0 ? "var(--green)" : "var(--red)"}">${m.margin.toFixed(1)}%</b>
  ${m.deliveryExpense > 0 ? ` · ডেলিভারি/অন্যান্য চার্জ ${fmt(m.deliveryExpense)} (নিরপেক্ষ, মুনাফায় ধরা হয়নি)` : ""}
  </div>
  </div>`;
@@ -7928,7 +7928,7 @@ function renderProfit() {
     totalQuickRevenue > 0
       ? `
  <div class="panel" style="margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
- <div style="font-size:13px;color:var(--steel-500);">⚡ দ্রুত বিক্রি থেকে (ইনভয়েস ছাড়া) — বিক্রয় ${fmt(totalQuickRevenue)}</div>
+ <div style="font-size:13px;color:var(--steel-500);">⚡ দ্রুত বিক্রি থেকে (ক্যাশ মেমো ছাড়া) — বিক্রয় ${fmt(totalQuickRevenue)}</div>
  <b class="mono" style="font-size:16px;color:var(--green);">লাভ ${fmt(totalQuickProfit)}</b>
  </div>`
       : "";
@@ -7937,7 +7937,7 @@ function renderProfit() {
     return (
       tabsHtml +
       quickProfitPanel +
-      `<div class="empty-state"><div class="ic">📈</div>এখনো কোনো বিক্রয় হয়নি<br><span style="font-size:12px;">"বিক্রয়" থেকে ইনভয়েস তৈরি হলে এখানে লাভ-ক্ষতির হিসাব দেখা যাবে</span></div>`
+      `<div class="empty-state"><div class="ic">📈</div>এখনো কোনো বিক্রয় হয়নি<br><span style="font-size:12px;">"বিক্রয়" থেকে ক্যাশ মেমো তৈরি হলে এখানে লাভ-ক্ষতির হিসাব দেখা যাবে</span></div>`
     );
   }
 
@@ -7948,7 +7948,7 @@ function renderProfit() {
   if (depth >= levels.length) {
     const rows =
       filteredSoFar.length === 0
-        ? `<tr><td colspan="7" class="no-match">এই সময়ে কোনো ইনভয়েস নেই</td></tr>`
+        ? `<tr><td colspan="7" class="no-match">এই সময়ে কোনো ক্যাশ মেমো নেই</td></tr>`
         : filteredSoFar
             .slice()
             .sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -7981,7 +7981,7 @@ function renderProfit() {
       metricCardsHtml(overallMetrics) +
       `
  <table class="tbl">
- <thead><tr><th>ইনভয়েস</th><th>ক্রেতা</th><th>তারিখ</th><th>বিক্রয়</th><th>ক্রয়মূল্য</th><th>নিট মুনাফা</th><th></th></tr></thead>
+ <thead><tr><th>ক্যাশ মেমো</th><th>ক্রেতা</th><th>তারিখ</th><th>বিক্রয়</th><th>ক্রয়মূল্য</th><th>নিট মুনাফা</th><th></th></tr></thead>
  <tbody>${rows}</tbody>
  </table>`
     );
@@ -8011,7 +8011,7 @@ function renderProfit() {
       return `<div class="day-card" onclick="profitDrillInto('${showLevel}','${k}')">
  <div>
  <div class="dname">${profitLevelLabel(showLevel, k)}</div>
- <div class="dmeta">${m.invCount} টি ইনভয়েস · মার্জিন ${m.margin.toFixed(1)}%</div>
+ <div class="dmeta">${m.invCount} টি ক্যাশ মেমো · মার্জিন ${m.margin.toFixed(1)}%</div>
  </div>
  <div class="day-stats">
  <div><div class="dv" style="color:var(--steel-700);">${fmt(m.sales)}</div><div class="dl">বিক্রয়</div></div>
@@ -8060,7 +8060,7 @@ function profitInvoiceDetail(invId) {
   const gross = itemsRevenue - itemCogs;
   const net = gross - (inv.discount || 0);
   openModal(
-    `মুনাফা বিস্তারিত — ইনভয়েস #${inv.id}`,
+    `মুনাফা বিস্তারিত — ক্যাশ মেমো #${inv.id}`,
     `
  <div style="font-size:12.5px;color:var(--steel-500);margin-bottom:10px;">ক্রেতা: ${esc(inv.customer)} · ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
  <table class="itbl">
@@ -8125,7 +8125,7 @@ function renderCashbox() {
         dir: "in",
         cat: "sale",
         label: `বিক্রয় — ${inv.customer}`,
-        detail: `ইনভয়েস #${inv.id}`,
+        detail: `ক্যাশ মেমো #${inv.id}`,
         amount: inv.paid,
         invoiceId: inv.id,
       });
@@ -8174,7 +8174,7 @@ function renderCashbox() {
       dir: "in",
       cat: "quickprofit",
       label: `দ্রুত বিক্রি${q.name ? " — " + q.name : ""}`,
-      detail: q.profit > 0 ? `লাভ ${fmt(q.profit)}` : "ইনভয়েস ছাড়া বিক্রি",
+      detail: q.profit > 0 ? `লাভ ${fmt(q.profit)}` : "ক্যাশ মেমো ছাড়া বিক্রি",
       amount: q.totalAmount,
     });
   });
@@ -8314,7 +8314,7 @@ function openCashboxMemoDetail(invId) {
   const netAfterReturn = inv.total - totalReturned;
 
   const cancelledBanner = inv.cancelled
-    ? `<div style="background:#FCEBE9;color:var(--red);border-radius:8px;padding:10px 14px;font-size:12.5px;text-align:center;font-weight:700;margin-bottom:12px;">❌ এই ইনভয়েসটি বাতিল করা হয়েছে</div>`
+    ? `<div style="background:#FCEBE9;color:var(--red);border-radius:8px;padding:10px 14px;font-size:12.5px;text-align:center;font-weight:700;margin-bottom:12px;">❌ এই ক্যাশ মেমোটি বাতিল করা হয়েছে</div>`
     : "";
 
   const body = `
@@ -8324,7 +8324,7 @@ function openCashboxMemoDetail(invId) {
  <div style="font-size:12.5px; color:var(--steel-500); margin-top:6px; line-height:1.9;">
  ${inv.customerPhone ? `📞 ${telHtml(inv.customerPhone)}<br>` : ""}
  ${inv.customerAddress ? `📍 ${esc(inv.customerAddress)}<br>` : ""}
- 🧾 ইনভয়েস #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}${inv.salesBy ? " · বিক্রয়কারীঃ " + esc(inv.salesBy) : ""}
+ 🧾 ক্যাশ মেমো #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}${inv.salesBy ? " · বিক্রয়কারীঃ " + esc(inv.salesBy) : ""}
  </div>
  </div>
  <table class="itbl">
@@ -8360,7 +8360,7 @@ function openCashboxMemoDetail(invId) {
  <button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>
  ${!inv.cancelled ? `<button class="btn btn-outline" onclick="closeModal(); editInvoicePrompt(${inv.id});">✏️ এডিট করুন</button>` : ""}
  <button class="btn btn-outline" onclick="closeModal(); returnPrompt(${inv.id});">↩️ রিটার্ন করুন</button>
- ${!inv.cancelled ? `<button class="btn btn-outline" style="color:var(--red);border-color:var(--red);" onclick="closeModal(); cancelInvoicePrompt(${inv.id});">🗑️ ইনভয়েস ডিলিট/বাতিল</button>` : ""}
+ ${!inv.cancelled ? `<button class="btn btn-outline" style="color:var(--red);border-color:var(--red);" onclick="closeModal(); cancelInvoicePrompt(${inv.id});">🗑️ ক্যাশ মেমো ডিলিট/বাতিল</button>` : ""}
  <button class="btn btn-primary" onclick="closeModal(); printInvoice(invoices.find(x=>x.id===${inv.id}));">🖨️ প্রিন্ট/ডাউনলোড</button>
  `;
 
@@ -8593,7 +8593,7 @@ function renderBusinessReport() {
      ? `<div class="no-match" style="padding:16px;">এই সময়ে কোনো বিক্রয় নেই</div>`
      : `
  <table class="tbl">
- <thead><tr><th>ক্রেতা</th><th class="r">ইনভয়েস</th><th class="r">বিক্রয়</th><th class="r">নগদ লাভ</th><th class="r">বাকি (অপেক্ষমাণ) লাভ</th><th class="r">মোট লাভ/ক্ষতি</th></tr></thead>
+ <thead><tr><th>ক্রেতা</th><th class="r">ক্যাশ মেমো</th><th class="r">বিক্রয়</th><th class="r">নগদ লাভ</th><th class="r">বাকি (অপেক্ষমাণ) লাভ</th><th class="r">মোট লাভ/ক্ষতি</th></tr></thead>
  <tbody>${custProfitRows
    .map(
      (c) => `
