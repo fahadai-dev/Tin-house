@@ -121,9 +121,15 @@ function cartQtyMode(brand) {
   if (m === "count") return "count";
   return "measure";
 }
+function baseUnitLabelFor(brand) {
+  const cat = getCategoryOf(brand);
+  if (cat.usesBan) return "পিস";
+  return getBrandLabels(brand).sizeLabel || "";
+}
 function formatItemQty(brand, qty) {
   if (isWeightBrand(brand)) return formatQtyByMode("weight", qty);
-  return String(qty);
+  const unit = baseUnitLabelFor(brand);
+  return unit ? `${qty} ${unit}` : String(qty);
 }
 function itemLabelText(brand, mm, size) {
   if (isWeightBrand(brand)) return "ওজন অনুযায়ী";
@@ -1401,7 +1407,7 @@ function buildThermalInvoiceHtml(inv, widthMm) {
       const weight = isWeightBrand(it.brand);
       const nameLine = weight
         ? `${esc(it.brand)} (ওজন)`
-        : `${esc(it.brand)} ${itemLabelText(it.brand, it.mm, it.size)}`;
+        : `${esc(it.brand)} ${itemLabelText(it.brand, it.mm, it.size)}${it.banQty ? ` (${it.banQty} বান)` : ""}`;
       const priceLine = weight
         ? fmt(it.sellPrice * 1000) + "/কেজি"
         : fmt(it.sellPrice);
@@ -2285,10 +2291,10 @@ function openCartItemModal(brand, mm, size, editIdx) {
  <div class="field" style="flex:1;"><label>প্রাইমারি ইউনিট</label>${unitSelectHtml2}</div>
  </div>
  <div class="field"><label id="cimPriceLabel">মূল্য (প্রতি ${esc(defaultUnit.label)})</label><input type="number" id="cimPrice" min="0" value="${Math.round(existingPricePerUnit) || invItem.sell}" oninput="cimRecalc()"></div>
- <div style="font-weight:600;color:var(--rust);margin:14px 0 6px;">ডিসকাউন্ট</div>
- <div style="display:flex; gap:10px; margin-bottom:14px;">
- <div style="flex:1;display:flex;"><input type="number" id="cimDiscPercent" min="0" max="100" value="0" oninput="cimRecalc()"><span style="background:var(--amber);color:white;padding:0 14px;display:flex;align-items:center;border-radius:0 9px 9px 0;font-weight:700;">%</span></div>
- <div style="flex:1;display:flex;"><span style="background:var(--steel-700);color:white;padding:0 14px;display:flex;align-items:center;border-radius:9px 0 0 9px;font-weight:700;">৳</span><input type="number" id="cimDiscAmount" min="0" value="0" oninput="cimRecalc()"></div>
+  <div style="font-weight:600;color:var(--rust);margin:14px 0 6px;">ডিসকাউন্ট</div>
+ <div class="cim-disc-row">
+ <div class="cim-disc-box"><input type="number" id="cimDiscPercent" min="0" max="100" value="0" oninput="cimRecalc()"><span class="cim-disc-tag amber">%</span></div>
+ <div class="cim-disc-box"><span class="cim-disc-tag dark">৳</span><input type="number" id="cimDiscAmount" min="0" value="0" oninput="cimRecalc()"></div>
  </div>
  <div style="background:var(--steel-100); border-radius:8px; padding:12px 14px; font-size:13.5px;">
  <div style="display:flex;justify-content:space-between;"><span>সাব টোটাল</span><b class="mono" id="cimSubtotal">৳০</b></div>
@@ -2374,10 +2380,12 @@ function cimSave() {
     inventory[cimBrand][cimMM] &&
     inventory[cimBrand][cimMM][cimSize]) || { buy: 0 };
 
+  const banQtyVal = unit.key === "ban" ? qty : null;
   if (cimEditIdx != null) {
     const item = cart[cimEditIdx];
     item.qtyPieces = baseQty;
     item.sellPrice = Math.round(finalPricePerBase * 100) / 100;
+    item.banQty = banQtyVal;
   } else {
     cart.push({
       brand: cimBrand,
@@ -2386,6 +2394,7 @@ function cimSave() {
       qtyPieces: baseQty,
       sellPrice: Math.round(finalPricePerBase * 100) / 100,
       buyPrice: invItem.buy,
+      banQty: banQtyVal,
     });
   }
   closeModal();
@@ -2703,10 +2712,7 @@ function confirmInvoice(itemsSubtotal) {
     qty: cartEffectiveQty(item),
     sellPrice: item.sellPrice,
     buyPrice: item.buyPrice,
-    banQty:
-      item.qtyBan !== null && item.qtyBan !== undefined && item.qtyBan !== ""
-        ? item.qtyBan
-        : null,
+    banQty: item.banQty != null ? item.banQty : null,
   }));
 
   let customerName,
@@ -2958,11 +2964,12 @@ function buildInvoiceHtml(inv) {
   const itemsSubtotal =
     inv.itemsSubtotal != null ? inv.itemsSubtotal : inv.total;
   const shopMetaLines = [
-    SHOP_EMAIL ? `ইমেইল: ${esc(SHOP_EMAIL)}` : "",
     SHOP_PHONE ? `ফোন: ${esc(SHOP_PHONE)}` : "",
     SHOP_MOBILE_BANKING_NUMBER
       ? `${esc(SHOP_MOBILE_BANKING_TYPE || "মোবাইল ব্যাংকিং")}: ${esc(SHOP_MOBILE_BANKING_NUMBER)}`
       : "",
+    SHOP_ADDRESS ? `ঠিকানা: ${esc(SHOP_ADDRESS)}` : "",
+    SHOP_EMAIL ? `ইমেইল: ${esc(SHOP_EMAIL)}` : "",
   ]
     .filter(Boolean)
     .map((l) => `<div>${l}</div>`)
@@ -2977,10 +2984,9 @@ function buildInvoiceHtml(inv) {
  <div class="si-shop-meta">${shopMetaLines}</div>
  </div>
  </div>
- <div class="si-top-right">
+  <div class="si-top-right">
  <div class="si-title">ক্যাশ মেমো</div>
  <div class="si-date">তারিখ: ${new Date(inv.createdAt || inv.date).toLocaleDateString("bn-BD")}</div>
- ${SHOP_ADDRESS ? `<div class="si-date">ঠিকানা: ${esc(SHOP_ADDRESS)}</div>` : ""}
  </div>
  </div>
  <div class="si-bar">
@@ -7919,7 +7925,7 @@ function profitComputeMetrics(list) {
     deliveryExpense += (inv.delivery || 0) + (inv.expenseAmt || 0);
   });
   const grossProfit = sales - cogs;
-  const netProfit = grossProfit - discount;
+  const netProfit = grossProfit;
   const margin = sales > 0 ? (netProfit / sales) * 100 : 0;
   return {
     sales,
@@ -7942,7 +7948,7 @@ function invoiceProfitInfo(inv) {
     0,
   );
   const gross = itemsRevenue - itemCogs;
-  const net = gross - (inv.discount || 0);
+  const net = gross;
   const total = inv.total || 0;
   const dueRatio = total > 0 ? Math.min(1, Math.max(0, inv.due / total)) : 0;
   const pendingProfit = net * dueRatio;
@@ -7980,7 +7986,7 @@ function metricCardsHtml(m) {
  <div class="stat-card" style="--accent:var(--steel-700)"><div class="lbl">পণ্য বিক্রয়</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.sales)}</div></div>
  <div class="stat-card" style="--accent:var(--amber)"><div class="lbl">ক্রয়মূল্য (COGS)</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.cogs)}</div></div>
  <div class="stat-card" style="--accent:${m.grossProfit >= 0 ? "var(--green)" : "var(--red)"}"><div class="lbl">গ্রস মুনাফা</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.grossProfit)}</div></div>
- <div class="stat-card" style="--accent:var(--red)"><div class="lbl">ছাড় (বাদ)</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.discount)}</div></div>
+  <div class="stat-card" style="--accent:var(--steel-500)"><div class="lbl">ছাড় (তথ্যের জন্য, লাভে প্রভাব ফেলে না)</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.discount)}</div></div>
  <div class="stat-card" style="--accent:${m.netProfit >= 0 ? "var(--green)" : "var(--red)"}"><div class="lbl">নিট মুনাফা</div><div class="val" style="font-size:16px;word-break:break-word;color:${m.netProfit >= 0 ? "var(--green)" : "var(--red)"}">${fmt(m.netProfit)}</div></div>
  </div>
  <div class="panel" style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
@@ -8163,9 +8169,9 @@ function profitInvoiceDetail(invId) {
  </table>
  <div class="isubrow"><span>পণ্যের সাবটোটাল (বিক্রয়)</span><span>${fmt(itemsRevenue)}</span></div>
  <div class="isubrow"><span>মোট ক্রয়মূল্য</span><span>${fmt(itemCogs)}</span></div>
- <div class="isubrow"><span>গ্রস মুনাফা</span><span>${fmt(gross)}</span></div>
- ${inv.discount > 0 ? `<div class="idiscount"><span>ছাড়</span><span>−${fmt(inv.discount)}</span></div>` : ""}
+  <div class="isubrow"><span>গ্রস মুনাফা</span><span>${fmt(gross)}</span></div>
  <div class="itotal"><span>নিট মুনাফা</span><span style="color:${net >= 0 ? "var(--green)" : "var(--red)"}">${fmt(net)}</span></div>
+ ${inv.discount > 0 ? `<div style="font-size:11px;color:var(--steel-500);margin-top:8px;">এই মেমোতে ${fmt(inv.discount)} টাকা ছাড় দেওয়া হয়েছে — গ্রাহকের বিল থেকে বাদ গেছে, কিন্তু মুনাফার হিসাব থেকে বাদ যায়নি।</div>` : ""}
  ${inv.delivery || inv.expenseAmt ? `<div style="font-size:11.5px;color:var(--steel-500);margin-top:10px;">ডেলিভারি/অন্যান্য চার্জ ${fmt((inv.delivery || 0) + (inv.expenseAmt || 0))} গ্রাহকের কাছ থেকে নেওয়া হয়েছে কিন্তু এখানে নিরপেক্ষ (pass-through) ধরা হয়েছে বলে মুনাফায় যোগ করা হয়নি।</div>` : ""}
  `,
     `<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>`,
@@ -8661,7 +8667,7 @@ function renderBusinessReport() {
  <div style="font-size:11px;color:var(--steel-500);margin-top:4px;">(মোট বিক্রি + কাস্টমারের বাকির টাকা + অন্যান্য আয়) − (মোট কেনা + সাপ্লায়ারের বাকির টাকা + অন্যান্য খরচ)</div>
  </div>
  <div class="panel" style="margin-bottom:16px;">
- <h3>পণ্য বিক্রি থেকে লাভ <span style="font-weight:400;font-size:11px;color:var(--steel-500);">(বিক্রিত পণ্যের বিক্রয়মূল্য − ক্রয়মূল্য − ছাড়)</span></h3>
+  <h3>পণ্য বিক্রি থেকে লাভ <span style="font-weight:400;font-size:11px;color:var(--steel-500);">(বিক্রিত পণ্যের বিক্রয়মূল্য − ক্রয়মূল্য; ছাড়/ডেলিভারি/অন্যান্য চার্জ এতে ধরা হয় না)</span></h3>
  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center;">
  <div>
  <div style="font-size:11.5px;color:var(--steel-500);">নগদ টাকা</div>

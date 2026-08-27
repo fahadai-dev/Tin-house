@@ -491,6 +491,13 @@ input, select{ font-family:inherit; }
  padding:14px 16px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:10px;
 }
 .person-row:hover{ border-color:var(--rust); }
+.cim-disc-row{ display:flex; gap:10px; margin-bottom:14px; }
+.cim-disc-box{ flex:1 1 0; display:flex; min-width:0; border-radius:9px; overflow:hidden; border:1.5px solid var(--steel-100); }
+.cim-disc-box input{ flex:1 1 auto; min-width:0; width:100%; border:none; border-radius:0; padding:9px 10px; font-size:14px; }
+.cim-disc-box input:focus{ outline:none; }
+.cim-disc-tag{ flex-shrink:0; padding:0 14px; display:flex; align-items:center; font-weight:700; color:white; }
+.cim-disc-tag.amber{ background:var(--amber); }
+.cim-disc-tag.dark{ background:var(--steel-700); }
  
 .bottom-nav{ display:none; }
 .offline-badge{ display:inline-flex; align-items:center; background:rgba(224,160,48,0.18); color:var(--amber); border:1px solid rgba(224,160,48,0.4); padding:5px 10px; border-radius:20px; font-size:11px; font-weight:700; margin-right:8px; }
