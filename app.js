@@ -1741,62 +1741,21 @@ function renderSales() {
       ? `<div class="no-match" style="margin-bottom:14px;">এখনো কোনো পণ্য যোগ করা হয়নি — নিচে "আইটেম যোগ করুন" চাপুন</div>`
       : cart
           .map((item, idx) => {
-            const cat = getCategoryOf(item.brand);
-            const usesBan = !!cat.usesBan;
-            const lbl = getBrandLabels(item.brand);
             const eff = cartEffectiveQty(item);
-            const totalAmtDisplay = eff * (item.sellPrice || 0);
-
-            const banBoxHtml = usesBan
-              ? (() => {
-                  const ppb = piecesPerBan(item.size);
-                  const feetPerBanForSize = sellFeetPerBan(item.size);
-                  const banDisplay =
-                    ppb > 0 ? Math.round((eff / ppb) * 100) / 100 : 0;
-                  return `
- <div style="font-size:10.5px;color:var(--steel-500);margin:2px 0 10px;">এক বানে (${feetPerBanForSize} ফুট) প্রায় ${ppb.toFixed(1)} পিস</div>
- <div class="cart-box cart-box-ban">
- <label class="cart-box-label">📦 বান</label>
- <div class="cart-box-row">
- <input type="number" min="0" step="0.5" placeholder="বান সংখ্যা" value="${banDisplay || ""}" onchange="updateCartBan(${idx}, this.value)">
- <input type="number" min="0" placeholder="বানের দর (৳)" onchange="updateCartBanPrice(${idx}, this.value)">
- </div>
- </div>`;
-                })()
-              : "";
-
+            const totalAmt = eff * item.sellPrice;
             return `
  <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
  <div class="cart-item-top">
  <span style="font-weight:700;">${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}</span>
  <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
  </div>
- ${banBoxHtml}
- <div class="cart-box cart-box-piece">
- <label class="cart-box-label">🔢 পরিমাণ (${esc(lbl.sizeLabel)})</label>
- <input type="number" min="0" step="any" placeholder="পরিমাণ" value="${item.qtyPieces || ""}" onchange="updateCartPieces(${idx}, this.value)">
- </div>
- <div class="cart-box cart-box-price">
- <label class="cart-box-label">৳ দাম</label>
- <div class="cart-box-row">
- <input type="number" min="0" placeholder="দর/প্রতি ${esc(lbl.sizeLabel)}" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)">
- <input type="number" min="0" placeholder="মোট টাকা" value="${totalAmtDisplay || ""}" onchange="updateCartTotalAmount(${idx}, this.value)">
- </div>
- </div>
- <div class="cart-sub" style="text-align:left;margin-top:8px;">মোট ${esc(lbl.sizeLabel)}: ${eff} · উপমোট: ${fmt(eff * item.sellPrice)}</div>
+ <div class="cart-sub" style="text-align:left;margin-top:6px;">পরিমাণঃ ${formatItemQty(item.brand, eff)} · দরঃ ${fmt(item.sellPrice)} · মোটঃ ${fmt(totalAmt)}</div>
+ <button class="btn btn-outline" style="margin-top:8px;padding:6px 12px;font-size:12px;" onclick="openCartItemModal('${jsq(item.brand)}', ${item.mm}, ${item.size}, ${idx})">✏️ এডিট</button>
  </div>`;
           })
           .join("");
 
-  const quickSaleBar = `
- <div class="panel" style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
- <div style="font-size:12.5px; color:var(--steel-500);">নির্দিষ্ট পণ্য না বেছে দ্রুত একটা বিক্রয় বা শুধু লাভ যোগ করতে চাইলে</div>
- <button class="btn btn-outline" onclick="quickSalePrompt()">⚡ দ্রুত বিক্রি</button>
- </div>
- ${renderRecentQuickSales()}`;
-
   return `
- ${quickSaleBar}
  <div class="panel" style="margin-bottom:16px;">
  <h3>পণ্যের তালিকা (${cart.length} আইটেম)</h3>
  ${itemRows}
@@ -1944,7 +1903,7 @@ function renderSalesPicker() {
   <div class="rname">${esc(posBrand)} <span class="rdim">· ${r.mm} ${esc(lbl.unitLabel)} · ${r.sz} ${esc(lbl.sizeLabel)}</span></div>
  <div class="rmeta">ক্রয়ঃ <b>${fmt(r.v.buy)}</b> &nbsp;বিক্রয়ঃ <b>${fmt(r.v.sell)}</b> &nbsp;স্টকঃ <b class="${r.v.stock <= 3 ? "stock-low" : ""}">${r.v.stock} পিস</b></div>
  </div>
-  <button class="result-add" onclick="addToCart('${jsq(posBrand)}', ${r.mm}, ${r.sz})">+ যোগ করুন</button>
+    <button class="result-add" onclick="openCartItemModal('${jsq(posBrand)}', ${r.mm}, ${r.sz})">+ যোগ করুন</button>
  </div>`;
             })
             .join("") +
@@ -1993,71 +1952,16 @@ function renderCartPage() {
   }
   const rows = cart
     .map((item, idx) => {
-      const cat = getCategoryOf(item.brand);
-      const usesBan = !!cat.usesBan;
-      const lbl = getBrandLabels(item.brand);
       const eff = cartEffectiveQty(item);
-      const totalAmtDisplay = eff * (item.sellPrice || 0);
-
-      if (usesBan) {
-        const ppb = piecesPerBan(item.size);
-        const feetPerBanForSize = sellFeetPerBan(item.size);
-        const banDisplay = ppb > 0 ? Math.round((eff / ppb) * 100) / 100 : 0;
-        return `
- <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
- <div class="cart-item-top">
- <span style="font-weight:700;">${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}</span>
- <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
- </div>
- <div style="font-size:10.5px;color:var(--steel-500);margin:2px 0 10px;">এক বানে (${feetPerBanForSize} ফুট) প্রায় ${ppb.toFixed(1)} পিস — যেকোনো ঘরে মান দিলে বাকিগুলো নিজে থেকেই হিসাব হয়ে যাবে</div>
-
- <div class="cart-box cart-box-ban">
- <label class="cart-box-label">📦 বান</label>
- <div class="cart-box-row">
- <input type="number" min="0" step="0.5" placeholder="বান সংখ্যা" value="${banDisplay || ""}" onchange="updateCartBan(${idx}, this.value)">
- <input type="number" min="0" placeholder="বানের দর (৳)" onchange="updateCartBanPrice(${idx}, this.value)">
- </div>
- </div>
-
- <div class="cart-box cart-box-piece">
- <label class="cart-box-label">🔢 পিস</label>
- <input type="number" min="0" placeholder="পিস সংখ্যা" value="${item.qtyPieces || ""}" onchange="updateCartPieces(${idx}, this.value)">
- </div>
-
- <div class="cart-box cart-box-price">
- <label class="cart-box-label">৳ দাম</label>
- <div class="cart-box-row">
- <input type="number" min="0" placeholder="দর/পিস" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)">
- <input type="number" min="0" placeholder="মোট টাকা" value="${totalAmtDisplay || ""}" onchange="updateCartTotalAmount(${idx}, this.value)">
- </div>
- </div>
-
- <div class="cart-sub" style="text-align:left;margin-top:8px;">মোট পিস: ${eff} · উপমোট: ${fmt(eff * item.sellPrice)}</div>
- </div>`;
-      }
-
-      // বান ছাড়া সাধারণ পণ্য (পিস/কেজি/গ্রাম/মিটার/ইঞ্চি/ফুট/প্যাকেট ইত্যাদি) — সরাসরি পরিমাণ ও দর
+      const totalAmt = eff * item.sellPrice;
       return `
  <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
  <div class="cart-item-top">
  <span style="font-weight:700;">${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}</span>
  <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
  </div>
-
- <div class="cart-box cart-box-piece">
- <label class="cart-box-label">🔢 পরিমাণ (${esc(lbl.sizeLabel)})</label>
- <input type="number" min="0" step="any" placeholder="যেমনঃ ২.৫" value="${item.qtyPieces || ""}" onchange="updateCartPieces(${idx}, this.value)">
- </div>
-
- <div class="cart-box cart-box-price">
- <label class="cart-box-label">৳ দাম</label>
- <div class="cart-box-row">
- <input type="number" min="0" placeholder="দর/প্রতি ${esc(lbl.sizeLabel)}" value="${item.sellPrice}" onchange="updateCartPrice(${idx}, this.value)">
- <input type="number" min="0" placeholder="মোট টাকা" value="${totalAmtDisplay || ""}" onchange="updateCartTotalAmount(${idx}, this.value)">
- </div>
- </div>
-
- <div class="cart-sub" style="text-align:left;margin-top:8px;">মোট ${esc(lbl.sizeLabel)}: ${eff} · উপমোট: ${fmt(eff * item.sellPrice)}</div>
+ <div class="cart-sub" style="text-align:left;margin-top:6px;">পরিমাণঃ ${formatItemQty(item.brand, eff)} · দরঃ ${fmt(item.sellPrice)} · মোটঃ ${fmt(totalAmt)}</div>
+ <button class="btn btn-outline" style="margin-top:8px;padding:6px 12px;font-size:12px;" onclick="openCartItemModal('${jsq(item.brand)}', ${item.mm}, ${item.size}, ${idx})">✏️ এডিট</button>
  </div>`;
     })
     .join("");
@@ -2298,6 +2202,179 @@ function addToCart(brand, mm, size) {
 }
 function removeFromCart(idx) {
   cart.splice(idx, 1);
+  render();
+}
+/* ============================================================
+ কার্ট আইটেম মডাল — নতুন যোগ ও এডিট দুটোর জন্যই ব্যবহৃত হয়
+ ============================================================ */
+let cimBrand = null,
+  cimMM = null,
+  cimSize = null,
+  cimEditIdx = null,
+  cimUnitOptions = [];
+
+function cartUnitOptionsFor(brand, size) {
+  if (isWeightBrand(brand)) {
+    return [
+      { key: "g", label: "গ্রাম", factor: 1 },
+      { key: "kg", label: "কেজি", factor: 1000 },
+    ];
+  }
+  const cat = getCategoryOf(brand);
+  if (cat.usesBan) {
+    const ppb = piecesPerBan(size);
+    return [
+      { key: "piece", label: "পিস", factor: 1 },
+      { key: "ban", label: "বান", factor: ppb },
+    ];
+  }
+  const lbl = getBrandLabels(brand);
+  return [{ key: "unit", label: lbl.sizeLabel, factor: 1 }];
+}
+
+function openCartItemModal(brand, mm, size, editIdx) {
+  cimBrand = brand;
+  cimMM = mm;
+  cimSize = size;
+  cimEditIdx = editIdx != null ? editIdx : null;
+  cimUnitOptions = cartUnitOptionsFor(brand, size);
+  const invItem = (inventory[brand] &&
+    inventory[brand][mm] &&
+    inventory[brand][mm][size]) || { sell: 0, buy: 0, stock: 0 };
+  const existing = cimEditIdx != null ? cart[cimEditIdx] : null;
+  const defaultUnit = cimUnitOptions[0];
+  const existingBaseQty = existing ? cartEffectiveQty(existing) : 0;
+  const existingUnitQty = defaultUnit.factor
+    ? existingBaseQty / defaultUnit.factor
+    : existingBaseQty;
+  const existingPricePerUnit = existing
+    ? existing.sellPrice * defaultUnit.factor
+    : invItem.sell * defaultUnit.factor;
+  const itemName = `${brand} · ${itemLabelText(brand, mm, size)}`;
+
+  const unitSelectHtml2 =
+    cimUnitOptions.length > 1
+      ? `<select id="cimUnit" onchange="cimUnitChange()">${cimUnitOptions
+          .map((u) => `<option value="${u.key}">${esc(u.label)}</option>`)
+          .join("")}</select>`
+      : `<input type="text" value="${esc(cimUnitOptions[0].label)}" disabled>`;
+
+  openModal(
+    editIdx != null ? "আইটেম এডিট করুন" : "নতুন আইটেম লাইন",
+    `
+ <div class="field"><label>পণ্য/সার্ভিস নাম</label><input type="text" id="cimName" value="${esc(itemName)}" disabled style="background:var(--steel-100);"></div>
+ <div style="display:flex; gap:10px;">
+ <div class="field" style="flex:1;"><label>পরিমাণ</label><input type="number" id="cimQty" min="0" step="any" value="${existingUnitQty || 1}" oninput="cimRecalc()"></div>
+ <div class="field" style="flex:1;"><label>প্রাইমারি ইউনিট</label>${unitSelectHtml2}</div>
+ </div>
+ <div class="field"><label id="cimPriceLabel">মূল্য (প্রতি ${esc(defaultUnit.label)})</label><input type="number" id="cimPrice" min="0" value="${Math.round(existingPricePerUnit) || invItem.sell}" oninput="cimRecalc()"></div>
+ <div style="font-weight:600;color:var(--rust);margin:14px 0 6px;">ডিসকাউন্ট</div>
+ <div style="display:flex; gap:10px; margin-bottom:14px;">
+ <div style="flex:1;display:flex;"><input type="number" id="cimDiscPercent" min="0" max="100" value="0" oninput="cimRecalc()"><span style="background:var(--amber);color:white;padding:0 14px;display:flex;align-items:center;border-radius:0 9px 9px 0;font-weight:700;">%</span></div>
+ <div style="flex:1;display:flex;"><span style="background:var(--steel-700);color:white;padding:0 14px;display:flex;align-items:center;border-radius:9px 0 0 9px;font-weight:700;">৳</span><input type="number" id="cimDiscAmount" min="0" value="0" oninput="cimRecalc()"></div>
+ </div>
+ <div style="background:var(--steel-100); border-radius:8px; padding:12px 14px; font-size:13.5px;">
+ <div style="display:flex;justify-content:space-between;"><span>সাব টোটাল</span><b class="mono" id="cimSubtotal">৳০</b></div>
+ <div style="display:flex;justify-content:space-between;margin-top:4px;"><span>ডিসকাউন্ট</span><b class="mono" id="cimDiscountVal">৳০</b></div>
+ <div style="display:flex;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid var(--steel-300);font-size:15px;"><span>মোট মূল্য</span><b class="mono" id="cimTotal">৳০</b></div>
+ </div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="cimSave()">ঠিক আছে</button>
+ `,
+  );
+  cimRecalc();
+}
+
+function cimUnitChange() {
+  const unitEl = document.getElementById("cimUnit");
+  const unit =
+    cimUnitOptions.find((u) => u.key === unitEl.value) || cimUnitOptions[0];
+  const invItem = (inventory[cimBrand] &&
+    inventory[cimBrand][cimMM] &&
+    inventory[cimBrand][cimMM][cimSize]) || { sell: 0 };
+  document.getElementById("cimPrice").value =
+    Math.round(invItem.sell * unit.factor * 100) / 100;
+  const lblEl = document.getElementById("cimPriceLabel");
+  if (lblEl) lblEl.textContent = "মূল্য (প্রতি " + unit.label + ")";
+  cimRecalc();
+}
+
+function cimRecalc() {
+  const qtyEl = document.getElementById("cimQty");
+  const priceEl = document.getElementById("cimPrice");
+  const discPEl = document.getElementById("cimDiscPercent");
+  const discAEl = document.getElementById("cimDiscAmount");
+  if (!qtyEl || !priceEl) return;
+  const qty = Math.max(0, parseFloat(qtyEl.value) || 0);
+  const price = Math.max(0, parseFloat(priceEl.value) || 0);
+  const discP = Math.max(0, parseFloat(discPEl.value) || 0);
+  const discA = Math.max(0, parseFloat(discAEl.value) || 0);
+  const subtotal = qty * price;
+  const discountTotal = Math.min(subtotal, (subtotal * discP) / 100 + discA);
+  const total = Math.max(0, subtotal - discountTotal);
+  document.getElementById("cimSubtotal").textContent = fmt(
+    Math.round(subtotal),
+  );
+  document.getElementById("cimDiscountVal").textContent = fmt(
+    Math.round(discountTotal),
+  );
+  document.getElementById("cimTotal").textContent = fmt(Math.round(total));
+}
+
+function cimSave() {
+  const unitEl = document.getElementById("cimUnit");
+  const unitKey = unitEl ? unitEl.value : cimUnitOptions[0].key;
+  const unit =
+    cimUnitOptions.find((u) => u.key === unitKey) || cimUnitOptions[0];
+  const qty = Math.max(
+    0,
+    parseFloat(document.getElementById("cimQty").value) || 0,
+  );
+  const price = Math.max(
+    0,
+    parseFloat(document.getElementById("cimPrice").value) || 0,
+  );
+  const discP = Math.max(
+    0,
+    parseFloat(document.getElementById("cimDiscPercent").value) || 0,
+  );
+  const discA = Math.max(
+    0,
+    parseFloat(document.getElementById("cimDiscAmount").value) || 0,
+  );
+  if (qty <= 0) {
+    showToast("সঠিক পরিমাণ লিখুন");
+    return;
+  }
+  const subtotal = qty * price;
+  const discountTotal = Math.min(subtotal, (subtotal * discP) / 100 + discA);
+  const total = Math.max(0, subtotal - discountTotal);
+  const baseQty = Math.round(qty * unit.factor * 100) / 100;
+  const finalPricePerBase = baseQty > 0 ? total / baseQty : 0;
+  const invItem = (inventory[cimBrand] &&
+    inventory[cimBrand][cimMM] &&
+    inventory[cimBrand][cimMM][cimSize]) || { buy: 0 };
+
+  if (cimEditIdx != null) {
+    const item = cart[cimEditIdx];
+    item.qtyPieces = baseQty;
+    item.sellPrice = Math.round(finalPricePerBase * 100) / 100;
+  } else {
+    cart.push({
+      brand: cimBrand,
+      mm: cimMM,
+      size: cimSize,
+      qtyPieces: baseQty,
+      sellPrice: Math.round(finalPricePerBase * 100) / 100,
+      buyPrice: invItem.buy,
+    });
+  }
+  closeModal();
+  showToast(
+    cimEditIdx != null ? "আইটেম আপডেট হয়েছে" : "আইটেম কার্টে যোগ হয়েছে",
+  );
   render();
 }
 function sellFeetPerBan(sizeFeet) {
