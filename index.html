@@ -25,7 +25,7 @@
  --wave-h:14px;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
-html,body{height:100%;}
+html,body{height:100%; overflow-x:hidden; max-width:100%;}
 body{
  font-family:'Hind Siliguri', sans-serif;
  background:var(--paper);
@@ -144,7 +144,7 @@ input, select{ font-family:inherit; }
 .topbar-brand-text{ min-width:0; flex:1 1 auto; }
 .topbar-shopname{ font-family:'Baloo Da 2'; font-size:16.5px; font-weight:700; line-height:1.2; letter-spacing:.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .topbar-pagetitle{ font-size:11.5px; color:var(--steel-300); margin-top:2px; font-weight:500; letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.content{ padding:26px 28px 90px; flex:1; }
+.content{ padding:26px 28px 90px; flex:1; overflow-x:hidden; max-width:100%; }
  
 .stat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:24px; }
 .stat-card{
@@ -336,7 +336,8 @@ input, select{ font-family:inherit; }
 .modal-foot{ padding:16px 22px; border-top:1px solid var(--steel-100); display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
  
 .mgmt-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:10px; flex-wrap:wrap; }
-.tbl{ width:100%; border-collapse:collapse; background:white; border-radius:var(--radius); overflow:hidden; border:1px solid var(--steel-100); }
+.tbl-scroll{ width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:var(--radius); border:1px solid var(--steel-100); }
+.tbl{ width:100%; min-width:600px; border-collapse:collapse; background:white; overflow:hidden; }
 .tbl th{ background:var(--steel-100); text-align:left; padding:10px 14px; font-size:11.5px; color:var(--steel-700); font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
 .tbl td{ padding:10px 14px; font-size:13.5px; border-top:1px solid var(--steel-100); }
 .tbl td.num{ font-family:'JetBrains Mono'; }
@@ -402,7 +403,7 @@ input, select{ font-family:inherit; }
 .si-tbl tbody tr:nth-child(even){ background:#FAF9F6; }
 .si-serial{ display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--rust); color:white; font-size:11px; font-weight:700; }
 .si-summary-wrap{ display:flex; justify-content:flex-end; margin-top:14px; }
-.si-summary{ width:260px; font-size:12.5px; background:var(--paper); border-radius:10px; padding:14px 16px; }
+.si-summary{ width:min(260px, 100%); font-size:12.5px; background:var(--paper); border-radius:10px; padding:14px 16px; box-sizing:border-box; }
 .si-srow{ display:flex; justify-content:space-between; padding:4.5px 0; }
 .si-srow.total{ border-top:1.5px dashed var(--steel-300); font-weight:700; font-size:14.5px; padding-top:9px; margin-top:5px; color:var(--rust-dark); }
 .si-srow.hl{ background:var(--rust); color:white; border-radius:7px; padding:9px 11px; margin-top:8px; font-weight:700; }

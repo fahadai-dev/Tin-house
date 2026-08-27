@@ -565,6 +565,13 @@ async function bootstrapApp() {
     hint.textContent = "সংযোগে সমস্যা হয়েছে — পেজ রিলোড করে আবার চেষ্টা করুন";
   }
 }
+
+document.addEventListener("focusin", (e) => {
+  if (e.target && e.target.tagName === "INPUT" && e.target.type === "number") {
+    e.target.select();
+  }
+});
+
 bootstrapApp();
 
 window.addEventListener("online", () => {
@@ -1544,6 +1551,46 @@ function downloadPrintArea(filename) {
   } catch (e) {
     showToast("ডাউনলোড ব্যর্থ হয়েছে, আবার চেষ্টা করুন");
   }
+}
+async function shareHtmlFile(filename, innerHtml, textSummary) {
+  try {
+    const styleTag = document.getElementById("thermalPageStyle");
+    const doc = `<!DOCTYPE html><html lang="bn"><head><meta charset="UTF-8"><title>${filename}</title></head><body>${innerHtml}</body></html>`;
+    const blob = new Blob([doc], { type: "text/html" });
+    const file = new File([blob], filename + ".html", { type: "text/html" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: filename,
+        text: textSummary || "",
+      });
+      return;
+    }
+    if (navigator.share) {
+      await navigator.share({ title: filename, text: textSummary || filename });
+      return;
+    }
+    showToast(
+      "এই ব্রাউজারে সরাসরি শেয়ার সাপোর্ট নেই — ডাউনলোড করে শেয়ার করুন",
+    );
+  } catch (e) {
+    if (e && e.name !== "AbortError")
+      showToast("শেয়ার করা যায়নি, আবার চেষ্টা করুন");
+  }
+}
+function shareInvoice(invId) {
+  const inv = invoices.find((x) => x.id === invId);
+  if (!inv) return;
+  const html = buildInvoiceHtml(inv);
+  const summary = `${SHOP_NAME} — ক্যাশ মেমো #${inv.id} — ${inv.customer} — মোট ${fmt(inv.total)}`;
+  shareHtmlFile("ক্যাশ মেমো-" + inv.id, html, summary);
+}
+function sharePaymentReceipt(payId) {
+  const p = payments.find((x) => x.id === payId);
+  if (!p) return;
+  const html = buildPaymentReceiptHtml(p);
+  const summary = `${SHOP_NAME} — প্রাপ্তি রশিদ #${p.id} — ${p.custName} — জমা ${fmt(p.amount)}`;
+  shareHtmlFile("রশিদ-" + p.id, html, summary);
 }
 
 /* ============================================================
@@ -3052,6 +3099,7 @@ function renderInvoicePreview() {
  <div style="display:flex; gap:10px; justify-content:center; margin-top:20px; flex-wrap:wrap;">
  <button class="btn btn-outline" onclick="switchView('invoices')">🗂️ ক্যাশ মেমো হিস্ট্রি</button>
  <button class="btn btn-outline" onclick="downloadPrintArea('${jsq("ক্যাশ মেমো-" + inv.id)}')">⬇ ডাউনলোড (A4)</button>
+  <button class="btn btn-primary" onclick="shareInvoice(${inv.id})">📤 শেয়ার করুন</button>
  <button class="btn btn-primary" onclick="tryPrint()">🖨 প্রিন্ট (A4)</button>
  <button class="btn btn-outline" onclick="printThermal(${inv.id},58)">🧾 থার্মাল প্রিন্ট (৫৮mm)</button>
  <button class="btn btn-outline" onclick="downloadThermal(${inv.id},58)">⬇ থার্মাল ডাউনলোড (৫৮mm)</button>
@@ -6234,6 +6282,7 @@ function renderPaymentReceiptPage() {
  <div style="display:flex; gap:10px; justify-content:center; margin-top:20px; flex-wrap:wrap;">
  <button class="btn btn-outline" onclick="switchView('ledger')">📒 বাকির খাতা</button>
  <button class="btn btn-outline" onclick="downloadPrintArea('${jsq("রশিদ-" + p.id)}')">⬇ ডাউনলোড করুন</button>
+  <button class="btn btn-primary" onclick="sharePaymentReceipt(${p.id})">📤 শেয়ার করুন</button>
  <button class="btn btn-primary" onclick="tryPrint()">🖨 প্রিন্ট করুন / কাস্টমারকে দিন</button>
  <button class="btn btn-outline" style="color:var(--red);border-color:var(--red);" onclick="deletePaymentPrompt(${p.id})">🗑️ রশিদ মুছুন</button>
  </div>
