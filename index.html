@@ -130,9 +130,10 @@ input, select{ font-family:inherit; }
 .topbar{
  background:linear-gradient(135deg,var(--steel-900),var(--ink) 70%); color:white;
  padding:14px 28px; display:flex; align-items:center; justify-content:space-between;
+ gap:12px;
  border-bottom:1px solid rgba(255,255,255,0.06);
 }
-.topbar-left{ display:flex; align-items:center; gap:12px; }
+.topbar-left{ display:flex; align-items:center; gap:12px; min-width:0; flex:1 1 auto; }
 .topbar-brand-icon{
  width:42px; height:42px; border-radius:11px; flex-shrink:0; overflow:hidden;
  background:linear-gradient(135deg,var(--rust),var(--amber));
@@ -140,9 +141,9 @@ input, select{ font-family:inherit; }
  box-shadow:0 3px 10px rgba(190,74,34,0.35);
 }
 .topbar-brand-icon img{ width:100%; height:100%; object-fit:cover; }
-.topbar-brand-text{ min-width:0; }
-.topbar-shopname{ font-family:'Baloo Da 2'; font-size:16.5px; font-weight:700; line-height:1.2; letter-spacing:.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:52vw; }
-.topbar-pagetitle{ font-size:11.5px; color:var(--steel-300); margin-top:2px; font-weight:500; letter-spacing:.02em; }
+.topbar-brand-text{ min-width:0; flex:1 1 auto; }
+.topbar-shopname{ font-family:'Baloo Da 2'; font-size:16.5px; font-weight:700; line-height:1.2; letter-spacing:.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.topbar-pagetitle{ font-size:11.5px; color:var(--steel-300); margin-top:2px; font-weight:500; letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .content{ padding:26px 28px 90px; flex:1; }
  
 .stat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:24px; }
@@ -306,6 +307,9 @@ input, select{ font-family:inherit; }
 .unit-opt.custom {
   color: var(--rust);
   font-weight: 600;
+}
+#homeBtn {
+  display: none !important;
 }
 .field{ margin-bottom:14px; }
 .field label{ display:block; font-size:12.5px; font-weight:600; color:var(--steel-700); margin-bottom:5px; }
@@ -489,11 +493,6 @@ input, select{ font-family:inherit; }
 .person-row:hover{ border-color:var(--rust); }
  
 .bottom-nav{ display:none; }
-.home-btn{ display:inline-flex; align-items:center; gap:6px; color:white; font-size:13px; font-weight:700; padding:8px 13px; border-radius:20px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); flex-shrink:0; }
-.home-btn .hi{ font-size:15px; }
-.home-btn:hover{ background:rgba(255,255,255,0.16); }
-.home-btn:active{ background:rgba(255,255,255,0.22); }
-.home-btn.hidden{ display:none; }
 .offline-badge{ display:inline-flex; align-items:center; background:rgba(224,160,48,0.18); color:var(--amber); border:1px solid rgba(224,160,48,0.4); padding:5px 10px; border-radius:20px; font-size:11px; font-weight:700; margin-right:8px; }
 .offline-badge.hidden{ display:none; }
 .sidebar-backdrop{ display:none; position:fixed; inset:0; background:rgba(15,18,20,0.55); z-index:69; }
@@ -551,12 +550,12 @@ input, select{ font-family:inherit; }
  .mm-grid{ grid-template-columns:repeat(3,1fr); }
  .pos-layout{ flex-direction:column; }
  .cart-panel{ width:100%; position:static; }
- .topbar{ padding:12px 14px; }
- .topbar-brand-icon{ width:36px; height:36px; font-size:16px; border-radius:9px; }
- .topbar-shopname{ font-size:14.5px; max-width:38vw; }
- .topbar-pagetitle{ font-size:10.5px; }
- .logout-btn{ padding:7px 10px; font-size:11.5px; }
- .home-btn{ padding:6px 10px; font-size:11.5px; }
+  .topbar{ padding:10px 12px; }
+ .topbar-left{ gap:9px; }
+ .topbar-brand-icon{ width:34px; height:34px; font-size:15px; border-radius:9px; }
+ .topbar-shopname{ font-size:13.5px; }
+ .topbar-pagetitle{ font-size:10px; }
+ .logout-btn{ padding:7px 9px; font-size:11px; flex-shrink:0; white-space:nowrap; }
  .bottom-nav{ display:none !important; }
  .mobile-cart-bar{
  display:flex; position:fixed; left:10px; right:10px; bottom:16px; z-index:59;
@@ -596,8 +595,7 @@ input, select{ font-family:inherit; }
 <div id="app">
  <div class="main">
  <div class="topbar">
- <div class="topbar-left">
- <button class="home-btn" id="homeBtn" onclick="goHome()" aria-label="হোম" title="হোম"><span class="hi">🏠</span> হোম</button>
+  <div class="topbar-left">
  <div class="topbar-brand-icon" id="topbarBrandIcon">🏪</div>
  <div class="topbar-brand-text">
  <div class="topbar-shopname" id="topbarShopName">আমার দোকান</div>
