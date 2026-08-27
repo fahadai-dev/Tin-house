@@ -151,27 +151,44 @@ const UNIT_OPTIONS = [
 function unitSelectHtml(fieldId, currentValue) {
   const cur = currentValue || "";
   const isCustom = cur !== "" && !UNIT_OPTIONS.includes(cur);
+  const displayLabel = cur === "" ? "— বাছুন —" : cur;
   const opts = UNIT_OPTIONS.map(
-    (u) => `<option value="${u}" ${cur === u ? "selected" : ""}>${u}</option>`,
+    (u) =>
+      `<div class="unit-opt ${cur === u ? "active" : ""}" onclick="unitSelectPick('${fieldId}','${jsq(u)}')">${esc(u)}</div>`,
   ).join("");
   return `
- <select id="${fieldId}Select" onchange="unitSelectChange('${fieldId}', this.value)">
- <option value="">— বাছুন —</option>
- ${opts}
- <option value="__custom__" ${isCustom ? "selected" : ""}>✏️ নিজে লিখুন (অন্য কিছু)</option>
- </select>
- <input type="text" id="${fieldId}" value="${esc(cur)}" placeholder="যেমনঃ প্যাক, বোতল" style="margin-top:6px; ${isCustom || cur === "" ? "" : "display:none;"}">`;
+ <div class="unit-picker">
+   <button type="button" class="unit-picker-btn" onclick="unitPickerToggle('${fieldId}')">
+     <span id="${fieldId}PickerLabel">${esc(displayLabel)}</span><span class="unit-picker-arrow">▾</span>
+   </button>
+   <div class="unit-picker-list" id="${fieldId}List" style="display:none;">
+     ${opts}
+     <div class="unit-opt custom ${isCustom ? "active" : ""}" onclick="unitSelectPick('${fieldId}','__custom__')">✏️ নিজে লিখুন (অন্য কিছু)</div>
+   </div>
+ </div>
+ <input type="text" id="${fieldId}" value="${esc(cur)}" placeholder="যেমনঃ প্যাক, বোতল" style="margin-top:8px; ${isCustom || cur === "" ? "" : "display:none;"}">`;
 }
-function unitSelectChange(fieldId, val) {
+function unitPickerToggle(fieldId) {
+  document.querySelectorAll(".unit-picker-list").forEach((el) => {
+    if (el.id !== fieldId + "List") el.style.display = "none";
+  });
+  const list = document.getElementById(fieldId + "List");
+  if (list)
+    list.style.display = list.style.display === "none" ? "block" : "none";
+}
+function unitSelectPick(fieldId, val) {
   const input = document.getElementById(fieldId);
+  const labelEl = document.getElementById(fieldId + "PickerLabel");
+  const list = document.getElementById(fieldId + "List");
+  if (list) list.style.display = "none";
   if (!input) return;
-  if (val === "__custom__" || val === "") {
+  if (val === "__custom__") {
+    if (labelEl) labelEl.textContent = "✏️ নিজে লিখুন (অন্য কিছু)";
     input.style.display = "";
-    if (val === "__custom__") {
-      input.value = "";
-      input.focus();
-    }
+    input.value = "";
+    input.focus();
   } else {
+    if (labelEl) labelEl.textContent = val;
     input.style.display = "none";
     input.value = val;
   }
