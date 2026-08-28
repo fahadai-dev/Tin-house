@@ -2291,6 +2291,7 @@ function cartUnitOptionsFor(brand, size) {
     ];
   }
   const cat = getCategoryOf(brand);
+  const lbl = getBrandLabels(brand);
   if (cat.usesBan) {
     const ppb = piecesPerBan(size);
     return [
@@ -2298,7 +2299,16 @@ function cartUnitOptionsFor(brand, size) {
       { key: "ban", label: "বান", factor: ppb },
     ];
   }
-  const lbl = getBrandLabels(brand);
+  // সাধারণ পণ্য: সাইজের ঘরে সংখ্যা থাকলে ও সেই এককটা নিজেই "পিস" না হলে,
+  // "পিস" অপশনও যোগ হবে — যেখানে ১ পিস = সেই সংখ্যক sizeLabel একক
+  const sizeNum = parseFloat(size);
+  const isAlreadyPiece = lbl.sizeLabel === "পিস";
+  if (!isNaN(sizeNum) && sizeNum > 0 && !isAlreadyPiece) {
+    return [
+      { key: "unit", label: lbl.sizeLabel, factor: 1 },
+      { key: "piece", label: "পিস", factor: sizeNum },
+    ];
+  }
   return [{ key: "unit", label: lbl.sizeLabel, factor: 1 }];
 }
 
