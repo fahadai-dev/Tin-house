@@ -567,7 +567,18 @@ async function bootstrapApp() {
 }
 
 function bnDigitsToEn(str) {
-  const map = { "০":"0","১":"1","২":"2","৩":"3","৪":"4","৫":"5","৬":"6","৭":"7","৮":"8","৯":"9" };
+  const map = {
+    "০": "0",
+    "১": "1",
+    "২": "2",
+    "৩": "3",
+    "৪": "4",
+    "৫": "5",
+    "৬": "6",
+    "৭": "7",
+    "৮": "8",
+    "৯": "9",
+  };
   return String(str).replace(/[০-৯]/g, (d) => map[d]);
 }
 document.addEventListener("input", (e) => {
@@ -578,7 +589,9 @@ document.addEventListener("input", (e) => {
     if (converted !== el.value) {
       const pos = el.selectionStart;
       el.value = converted;
-      try { el.setSelectionRange(pos, pos); } catch (err) {}
+      try {
+        el.setSelectionRange(pos, pos);
+      } catch (err) {}
     }
   }
 });
@@ -1940,7 +1953,7 @@ function renderSalesPicker() {
  <div class="cur-brand">${esc((PRODUCT_CATEGORIES.find((c) => c.id === posCategory) || {}).name || "")}</div>
  </div>`;
 
-        const searchBar = `
+    const searchBar = `
  <div class="search-bar ${q ? "has-val" : ""}">
  <span class="sic">🔍</span>
  <input type="text" id="posBrandSearchInput" value="${posBrandSearch}" placeholder="ব্র্যান্ডের নাম দিয়ে সার্চ করুন, বা 🎤 চেপে বলুন"
@@ -1998,7 +2011,7 @@ function renderSalesPicker() {
  <button class="btn btn-outline" onclick="posGoStep(${cat.hasBrands ? 1 : 0})">← পেছনে যান</button>
  <div class="cur-brand">${esc(posBrand)}</div>
  </div>`;
-        const searchBar = `
+    const searchBar = `
  <div class="search-bar ${q ? "has-val" : ""}">
  <span class="sic">🔍</span>
   <input type="text" id="posItemSearchInput" value="${posItemSearch}" placeholder="${esc(lbl.unitLabel)} বা ${esc(lbl.sizeLabel)} দিয়ে সার্চ করুন"
