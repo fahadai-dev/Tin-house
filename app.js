@@ -1447,7 +1447,7 @@ function buildThermalInvoiceHtml(inv, widthMm) {
  ${inv.expenseAmt > 0 ? `<div class="th-row"><span>${esc(inv.expenseLabel) || "ভাড়া"}</span><span>${fmt(inv.expenseAmt)}</span></div>` : ""}
  <div class="th-line"></div>
  <div class="th-row th-bold th-lg"><span>মোট</span><span>${fmt(inv.total)}</span></div>
- <div class="th-row"><span>পেলাম</span><span>${fmt(inv.paid)}</span></div>
+  <div class="th-row"><span>মোট জমা</span><span>${fmt(inv.paid)}</span></div>
  <div class="th-row th-bold"><span>বাকি</span><span>${fmt(inv.due)}</span></div>
  <div class="th-line"></div>
  <div class="th-center">ধন্যবাদ! আবার আসবেন</div>
@@ -2286,8 +2286,8 @@ let cimBrand = null,
 function cartUnitOptionsFor(brand, size) {
   if (isWeightBrand(brand)) {
     return [
-      { key: "g", label: "গ্রাম", factor: 1 },
       { key: "kg", label: "কেজি", factor: 1000 },
+      { key: "g", label: "গ্রাম", factor: 1 },
     ];
   }
   const cat = getCategoryOf(brand);
@@ -2337,6 +2337,12 @@ function openCartItemModal(brand, mm, size, editIdx) {
  <div class="field" style="flex:1;"><label>পরিমাণ</label><input type="number" id="cimQty" min="0" step="any" value="${existingUnitQty || 1}" oninput="cimRecalc()"></div>
  <div class="field" style="flex:1;"><label>প্রাইমারি ইউনিট</label>${unitSelectHtml2}</div>
  </div>
+  <div id="cimGramPresets" class="cim-gram-presets" style="display:none;">
+ <div class="cim-gram-presets-label">দ্রুত নির্বাচন (গ্রাম)</div>
+ <div class="cim-gram-presets-row">
+ ${[100, 200, 300, 400, 500, 600, 700, 800, 900, 1000].map((g) => `<button type="button" class="cim-gram-chip" onclick="cimSetQty(${g})">${g}</button>`).join("")}
+ </div>
+ </div>
  <div class="field"><label id="cimPriceLabel">মূল্য (প্রতি ${esc(defaultUnit.label)})</label><input type="number" id="cimPrice" min="0" value="${Math.round(existingPricePerUnit) || invItem.sell}" oninput="cimRecalc()"></div>
   <div style="font-weight:600;color:var(--rust);margin:14px 0 6px;">ডিসকাউন্ট</div>
  <div class="cim-disc-row">
@@ -2355,6 +2361,7 @@ function openCartItemModal(brand, mm, size, editIdx) {
  `,
   );
   cimRecalc();
+  cimGramPresetsUpdate();
 }
 
 function cimUnitChange() {
@@ -2368,6 +2375,19 @@ function cimUnitChange() {
     Math.round(invItem.sell * unit.factor * 100) / 100;
   const lblEl = document.getElementById("cimPriceLabel");
   if (lblEl) lblEl.textContent = "মূল্য (প্রতি " + unit.label + ")";
+  cimRecalc();
+  cimGramPresetsUpdate();
+}
+function cimGramPresetsUpdate() {
+  const unitEl = document.getElementById("cimUnit");
+  const presetsEl = document.getElementById("cimGramPresets");
+  if (!unitEl || !presetsEl) return;
+  presetsEl.style.display = unitEl.value === "g" ? "block" : "none";
+}
+function cimSetQty(val) {
+  const qtyEl = document.getElementById("cimQty");
+  if (!qtyEl) return;
+  qtyEl.value = val;
   cimRecalc();
 }
 
@@ -3057,7 +3077,7 @@ function buildInvoiceHtml(inv) {
  <div class="si-srow"><span>ডেলিভারি চার্জ:</span><span class="mono">${fmt(delivery)}</span></div>
  <div class="si-srow"><span>${esc(inv.expenseLabel) || "ভাড়া"}:</span><span class="mono">${fmt(expenseAmt)}</span></div>
  <div class="si-srow total"><span>মোট মূল্য:</span><span class="mono">${fmt(inv.total)}</span></div>
- <div class="si-srow"><span>পেলাম:</span><span class="mono">${fmt(inv.paid)}</span></div>
+  <div class="si-srow"><span>মোট জমা:</span><span class="mono">${fmt(inv.paid)}</span></div>
  <div class="si-srow"><span>মোট বাকি:</span><span class="mono">${fmt(inv.due)}</span></div>
  <div class="si-srow"><span>পূর্বের পাওনা:</span><span class="mono">${fmt(inv.duePrev != null ? inv.duePrev : 0)}</span></div>
  <div class="si-srow hl"><span>বর্তমান পাওনা:</span><span class="mono">${fmt(inv.dueTotalAfter != null ? inv.dueTotalAfter : 0)}</span></div>
