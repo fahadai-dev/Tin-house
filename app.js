@@ -566,6 +566,53 @@ async function bootstrapApp() {
   }
 }
 
+function bnDigitsToEn(str) {
+  const map = { "০":"0","১":"1","২":"2","৩":"3","৪":"4","৫":"5","৬":"6","৭":"7","৮":"8","৯":"9" };
+  return String(str).replace(/[০-৯]/g, (d) => map[d]);
+}
+document.addEventListener("input", (e) => {
+  const el = e.target;
+  if (!el || el.tagName !== "INPUT") return;
+  if (["text", "number", "tel", "search"].includes(el.type)) {
+    const converted = bnDigitsToEn(el.value);
+    if (converted !== el.value) {
+      const pos = el.selectionStart;
+      el.value = converted;
+      try { el.setSelectionRange(pos, pos); } catch (err) {}
+    }
+  }
+});
+function startVoiceSearch(onResult) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    showToast("এই ব্রাউজারে ভয়েস সার্চ সাপোর্ট নেই");
+    return;
+  }
+  const rec = new SR();
+  rec.lang = "bn-BD";
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+  showToast("🎤 বলুন...");
+  rec.onresult = (e) => {
+    const text = e.results[0][0].transcript.trim();
+    if (text) onResult(text);
+  };
+  rec.onerror = () => {
+    showToast("ভয়েস শোনা যায়নি, আবার চেষ্টা করুন");
+  };
+  try {
+    rec.start();
+  } catch (err) {
+    showToast("ভয়েস সার্চ চালু করা যায়নি");
+  }
+}
+function voiceSearchBrand() {
+  startVoiceSearch((text) => posBrandSearchInput(text));
+}
+function voiceSearchItem() {
+  startVoiceSearch((text) => posItemSearchInput(text));
+}
+
 document.addEventListener("focusin", (e) => {
   if (e.target && e.target.tagName === "INPUT" && e.target.type === "number") {
     e.target.select();
@@ -1893,12 +1940,13 @@ function renderSalesPicker() {
  <div class="cur-brand">${esc((PRODUCT_CATEGORIES.find((c) => c.id === posCategory) || {}).name || "")}</div>
  </div>`;
 
-    const searchBar = `
+        const searchBar = `
  <div class="search-bar ${q ? "has-val" : ""}">
  <span class="sic">🔍</span>
- <input type="text" id="posBrandSearchInput" value="${posBrandSearch}" placeholder="ব্র্যান্ডের নাম দিয়ে সার্চ করুন"
+ <input type="text" id="posBrandSearchInput" value="${posBrandSearch}" placeholder="ব্র্যান্ডের নাম দিয়ে সার্চ করুন, বা 🎤 চেপে বলুন"
  oninput="posBrandSearchInput(this.value)" autocomplete="off">
  <span class="sclear" onclick="posBrandSearchInput('')">✕</span>
+ <button type="button" class="voice-btn" onclick="voiceSearchBrand()" title="ভয়েস সার্চ">🎤</button>
  </div>`;
 
     const grid =
@@ -1950,12 +1998,13 @@ function renderSalesPicker() {
  <button class="btn btn-outline" onclick="posGoStep(${cat.hasBrands ? 1 : 0})">← পেছনে যান</button>
  <div class="cur-brand">${esc(posBrand)}</div>
  </div>`;
-    const searchBar = `
+        const searchBar = `
  <div class="search-bar ${q ? "has-val" : ""}">
  <span class="sic">🔍</span>
   <input type="text" id="posItemSearchInput" value="${posItemSearch}" placeholder="${esc(lbl.unitLabel)} বা ${esc(lbl.sizeLabel)} দিয়ে সার্চ করুন"
  oninput="posItemSearchInput(this.value)" autocomplete="off">
  <span class="sclear" onclick="posItemSearchInput('')">✕</span>
+ <button type="button" class="voice-btn" onclick="voiceSearchItem()" title="ভয়েস সার্চ">🎤</button>
  </div>`;
 
     const isBrandEmpty = Object.keys(inventory[posBrand] || {}).length === 0;
