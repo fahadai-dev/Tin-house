@@ -2344,6 +2344,20 @@ let cimBrand = null,
   cimSize = null,
   cimEditIdx = null,
   cimUnitOptions = [];
+let cimSelectedUnitKey = null,
+  cimCustomUnitLabel = "";
+const HARDWARE_UNIT_LIST = [
+  "কেজি",
+  "গ্রাম",
+  "ফুট",
+  "গজ",
+  "পিস",
+  "রোল",
+  "সেট",
+  "প্যাকেট",
+  "বান্ডেল",
+  "স্কয়ার ফুট",
+];
 
 function cartUnitOptionsFor(brand, size) {
   if (isWeightBrand(brand)) {
@@ -2360,6 +2374,20 @@ function cartUnitOptionsFor(brand, size) {
       { key: "piece", label: "পিস", factor: 1 },
       { key: "ban", label: "বান", factor: ppb },
     ];
+  }
+  if (cat.id === "hardware") {
+    const opts = HARDWARE_UNIT_LIST.map((label, i) => ({
+      key: "hw" + i,
+      label,
+      factor: 1,
+    }));
+    opts.push({
+      key: "__custom__",
+      label: "✏️ নিজে লিখুন",
+      factor: 1,
+      isCustom: true,
+    });
+    return opts;
   }
   // সাধারণ পণ্য: সাইজের ঘরে সংখ্যা থাকলে ও সেই এককটা নিজেই "পিস" না হলে,
   // "পিস" অপশনও যোগ হবে — যেখানে ১ পিস = সেই সংখ্যক sizeLabel একক
@@ -2393,13 +2421,9 @@ function openCartItemModal(brand, mm, size, editIdx) {
     ? existing.sellPrice * defaultUnit.factor
     : invItem.sell * defaultUnit.factor;
   const itemName = `${brand} · ${itemLabelText(brand, mm, size)}`;
-
-  const unitSelectHtml2 =
-    cimUnitOptions.length > 1
-      ? `<select id="cimUnit" onchange="cimUnitChange()">${cimUnitOptions
-          .map((u) => `<option value="${u.key}">${esc(u.label)}</option>`)
-          .join("")}</select>`
-      : `<input type="text" value="${esc(cimUnitOptions[0].label)}" disabled>`;
+  cimSelectedUnitKey = defaultUnit.key;
+  cimCustomUnitLabel = "";
+  const unitSelectHtml2 = cimUnitPickerHtml();
 
   openModal(
     editIdx != null ? "আইটেম এডিট করুন" : "নতুন আইটেম লাইন",
@@ -2436,25 +2460,89 @@ function openCartItemModal(brand, mm, size, editIdx) {
   cimGramPresetsUpdate();
 }
 
-function cimUnitChange() {
-  const unitEl = document.getElementById("cimUnit");
-  const unit =
-    cimUnitOptions.find((u) => u.key === unitEl.value) || cimUnitOptions[0];
+function cimUnitPickerHtml() {
+  if (cimUnitOptions.length <= 1) {
+    return `<input type="text" value="${esc(cimUnitOptions[0].label)}" disabled>`;
+  }
+  const cur =
+    cimUnitOptions.find((u) => u.key === cimSelectedUnitKey) ||
+    cimUnitOptions[0];
+  const curLabel = cur.isCustom
+    ? cimCustomUnitLabel || "✏️ নিজে লিখুন"
+    : cur.label;
+  const opts = cimUnitOptions
+    .map(
+      (u) =>
+        `<div class="unit-opt ${u.key === cimSelectedUnitKey ? "active" : ""} ${u.isCustom ? "custom" : ""}" onclick="cimUnitPick('${u.key}')">${esc(
+          u.isCustom ? "✏️ নিজে লিখুন (অন্য কিছু)" : u.label,
+        )}</div>`,
+    )
+    .join("");
+  return `
+ <div class="unit-picker">
+   <button type="button" class="unit-picker-btn" onclick="cimUnitPickerToggle()">
+     <span id="cimUnitPickerLabel">${esc(curLabel)}</span><span class="unit-picker-arrow">▾</span>
+   </button>
+   <div class="unit-picker-list" id="cimUnitList" style="display:none;">${opts}</div>
+ </div>
+ <input type="text" id="cimUnitCustomInput" value="${esc(cimCustomUnitLabel)}" placeholder="যেমনঃ থান, শীট" oninput="cimCustomUnitInput(this.value)" style="margin-top:8px; ${cur.isCustom ? "" : "display:none;"}">`;
+}
+function cimUnitPickerToggle() {
+  const list = document.getElementById("cimUnitList");
+  if (list)
+    list.style.display = list.style.display === "none" ? "block" : "none";
+}
+function cimUnitPick(key) {
+  cimSelectedUnitKey = key;
+  const unit = cimUnitOptions.find((u) => u.key === key) || cimUnitOptions[0];
+  const list = document.getElementById("cimUnitList");
+  const customInput = document.getElementById("cimUnitCustomInput");
+  const labelEl = document.getElementById("cimUnitPickerLabel");
+  if (list) {
+    list.style.display = "none";
+    list.querySelectorAll(".unit-opt").forEach((el, i) => {
+      el.classList.toggle(
+        "active",
+        cimUnitOptions[i] && cimUnitOptions[i].key === key,
+      );
+    });
+  }
+  if (unit.isCustom) {
+    if (customInput) {
+      customInput.style.display = "";
+      customInput.focus();
+    }
+    if (labelEl) labelEl.textContent = cimCustomUnitLabel || "✏️ নিজে লিখুন";
+  } else {
+    if (customInput) customInput.style.display = "none";
+    if (labelEl) labelEl.textContent = unit.label;
+  }
   const invItem = (inventory[cimBrand] &&
     inventory[cimBrand][cimMM] &&
     inventory[cimBrand][cimMM][cimSize]) || { sell: 0 };
-  document.getElementById("cimPrice").value =
-    Math.round(invItem.sell * unit.factor * 100) / 100;
+  const priceEl = document.getElementById("cimPrice");
+  if (priceEl)
+    priceEl.value = Math.round(invItem.sell * unit.factor * 100) / 100;
   const lblEl = document.getElementById("cimPriceLabel");
-  if (lblEl) lblEl.textContent = "মূল্য (প্রতি " + unit.label + ")";
+  if (lblEl)
+    lblEl.textContent =
+      "মূল্য (প্রতি " +
+      (unit.isCustom ? cimCustomUnitLabel || "একক" : unit.label) +
+      ")";
   cimRecalc();
   cimGramPresetsUpdate();
 }
+function cimCustomUnitInput(val) {
+  cimCustomUnitLabel = val;
+  const labelEl = document.getElementById("cimUnitPickerLabel");
+  if (labelEl) labelEl.textContent = val || "✏️ নিজে লিখুন";
+  const lblEl = document.getElementById("cimPriceLabel");
+  if (lblEl) lblEl.textContent = "মূল্য (প্রতি " + (val || "একক") + ")";
+}
 function cimGramPresetsUpdate() {
-  const unitEl = document.getElementById("cimUnit");
   const presetsEl = document.getElementById("cimGramPresets");
-  if (!unitEl || !presetsEl) return;
-  presetsEl.style.display = unitEl.value === "g" ? "block" : "none";
+  if (!presetsEl) return;
+  presetsEl.style.display = cimSelectedUnitKey === "g" ? "block" : "none";
 }
 function cimSetQty(val) {
   const qtyEl = document.getElementById("cimQty");
@@ -2486,10 +2574,13 @@ function cimRecalc() {
 }
 
 function cimSave() {
-  const unitEl = document.getElementById("cimUnit");
-  const unitKey = unitEl ? unitEl.value : cimUnitOptions[0].key;
   const unit =
-    cimUnitOptions.find((u) => u.key === unitKey) || cimUnitOptions[0];
+    cimUnitOptions.find((u) => u.key === cimSelectedUnitKey) ||
+    cimUnitOptions[0];
+  if (unit.isCustom && !cimCustomUnitLabel.trim()) {
+    showToast("ইউনিটের নাম লিখুন");
+    return;
+  }
   const qty = Math.max(
     0,
     parseFloat(document.getElementById("cimQty").value) || 0,
