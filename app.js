@@ -89,9 +89,18 @@ function initCategoryPseudoBrands() {
     if (!brandCategory[b]) brandCategory[b] = "tin";
   });
 }
+const SAFE_FALLBACK_CATEGORY = {
+  id: "unknown",
+  name: "সাধারণ",
+  icon: "📦",
+  hasBrands: true,
+  unitLabel: "পণ্যের নাম",
+  sizeLabel: "পরিমাণ",
+  usesBan: false,
+};
 function getCategoryOf(brand) {
   const cid = brandCategory[brand];
-  return PRODUCT_CATEGORIES.find((c) => c.id === cid) || PRODUCT_CATEGORIES[0];
+  return PRODUCT_CATEGORIES.find((c) => c.id === cid) || SAFE_FALLBACK_CATEGORY;
 }
 function getBrandLabels(brand) {
   const cat = getCategoryOf(brand);
@@ -2706,8 +2715,10 @@ function sellFeetPerBan(sizeFeet) {
   return FEET_PER_BAN;
 }
 function piecesPerBan(sizeFeet) {
-  const feetPerBan = sellFeetPerBan(sizeFeet);
-  return sizeFeet > 0 ? feetPerBan / sizeFeet : 0;
+  const num = parseFloat(sizeFeet);
+  if (isNaN(num) || num <= 0) return 0;
+  const feetPerBan = sellFeetPerBan(num);
+  return feetPerBan / num;
 }
 function cartEffectiveQty(item) {
   return Math.round((Number(item.qtyPieces) || 0) * 100) / 100;
