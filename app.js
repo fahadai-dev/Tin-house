@@ -2360,11 +2360,18 @@ const HARDWARE_UNIT_LIST = [
 ];
 
 function cartUnitOptionsFor(brand, size, mm) {
+  const item0 =
+    inventory[brand] && inventory[brand][mm] && inventory[brand][mm][size];
+  const extra0 = (item0 && item0.extraUnits) || [];
   if (isWeightBrand(brand)) {
-    return [
+    const opts = [
       { key: "kg", label: "কেজি", factor: 1000 },
       { key: "g", label: "গ্রাম", factor: 1 },
     ];
+    extra0.forEach((u, i) =>
+      opts.push({ key: "ex" + i, label: u.label, factor: u.factor }),
+    );
+    return opts;
   }
   const cat = getCategoryOf(brand);
   if (cat.usesBan) {
@@ -2389,10 +2396,7 @@ function cartUnitOptionsFor(brand, size, mm) {
       opts.push({ key: "piece_fallback", label: "পিস", factor: sizeNum });
     }
   }
-  const item =
-    inventory[brand] && inventory[brand][mm] && inventory[brand][mm][size];
-  const extra = (item && item.extraUnits) || [];
-  extra.forEach((u, i) =>
+  extra0.forEach((u, i) =>
     opts.push({ key: "ex" + i, label: u.label, factor: u.factor }),
   );
   return opts;
@@ -2469,7 +2473,7 @@ function openCartItemModal(brand, mm, size, editIdx) {
 
 function cimUnitPickerHtml() {
   const cimCat = getCategoryOf(cimBrand);
-  const allowAdd = !isWeightBrand(cimBrand) && !cimCat.usesBan;
+  const allowAdd = !cimCat.usesBan;
   if (cimUnitOptions.length <= 1 && !allowAdd) {
     return `<input type="text" value="${esc(cimUnitOptions[0].label)}" disabled>`;
   }
@@ -2494,7 +2498,7 @@ function cimUnitPickerHtml() {
  </div>
  <div id="cimAddUnitForm" class="cim-add-unit-form" style="display:${cimAddFormOpen ? "flex" : "none"};">
  <input type="text" id="cimNewUnitLabel" placeholder="ইউনিটের নাম (যেমনঃ থান)">
- <input type="number" id="cimNewUnitFactor" min="0" step="any" placeholder="= কত ${esc(getBrandLabels(cimBrand).sizeLabel)}">
+  <input type="number" id="cimNewUnitFactor" min="0" step="any" placeholder="= কত ${esc(isWeightBrand(cimBrand) ? "গ্রাম" : getBrandLabels(cimBrand).sizeLabel)}">
  <button type="button" class="btn btn-primary" onclick="cimAddFormConfirm()">যোগ করুন</button>
  </div>`;
 }
