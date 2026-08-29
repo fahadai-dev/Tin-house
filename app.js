@@ -349,6 +349,8 @@ let dailySelectedDate = null;
 let dailyOverviewPreset = "all"; // 'day' | 'month' | 'year' | 'all'
 // বাকির খাতায় কোন গ্রাহকের বিস্তারিত দেখানো হচ্ছে
 let ledgerDetailId = null;
+let saleCustomerType = "cash"; // 'cash' | 'credit'
+let ledgerTab = "due"; // 'due' | 'paid'
 
 let purchaseSearch = "";
 let salesLedgerSearch = "";
@@ -1199,6 +1201,10 @@ function switchView(id, opts) {
     ledgerMinDue = "";
     ledgerMaxDue = "";
     ledgerSort = "default";
+    ledgerTab = "due";
+  }
+  if (id === "sales" || id === "checkout") {
+    saleCustomerType = "cash";
   }
   if (id === "employees") {
     employeeDetailId = null;
@@ -1903,13 +1909,8 @@ function renderSales() {
  <label>বিক্রয়কারী — কে এই ক্যাশ মেমোটি করছেন</label>
  <select id="invSalesBy">${salesByOptions || '<option value="">— নির্বাচন করুন —</option>'}</select>
  </div>
- <div class="field">
- <label>বিদ্যমান গ্রাহক হলে বাছাই করুন (নাহলে নিচে নাম লিখুন)</label>
- <select id="invCustomer" onchange="invCustomerChange(this.value)"><option value="">— নতুন / নগদ ক্রেতা —</option>${customerOptions}</select>
- </div>
- <div class="field"><label>ক্রেতার নাম</label><input type="text" id="invCustName" placeholder="যেমনঃ নগদ ক্রেতা"></div>
- <div class="field"><label>ক্রেতার ঠিকানা</label><input type="text" id="invCustAddress" placeholder="যেমনঃ বাজার রোড, সাভার"></div>
- <div class="field"><label>মোবাইল নাম্বার (ঐচ্ছিক)</label><input type="text" id="invCustPhone" placeholder="01xxx-xxxxxx"></div>
+  ${saleCustomerToggleHtml()}
+ ${saleCustomerFieldsHtml()}
  <div class="field"><label>বিক্রয়ের তারিখ</label><input type="date" id="invDate" value="${toDateInputValue(new Date())}"></div>
  <div class="field"><label>পণ্যের সাবটোটাল</label><input type="text" value="${fmt(itemsSubtotal)}" disabled style="background:var(--steel-100);color:var(--steel-700);"></div>
  <div class="field"><label>ডেলিভারি চার্জ (৳) — না থাকলে ০ রাখুন</label><input type="number" id="invDelivery" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
@@ -2876,13 +2877,8 @@ function renderCheckout() {
  <label>বিক্রয়কারী — কে এই ক্যাশ মেমোটি করছেন</label>
  <select id="invSalesBy">${salesByOptions || '<option value="">— নির্বাচন করুন —</option>'}</select>
  </div>
- <div class="field">
- <label>বিদ্যমান গ্রাহক হলে বাছাই করুন (নাহলে নিচে নাম লিখুন)</label>
- <select id="invCustomer" onchange="invCustomerChange(this.value)"><option value="">— নতুন / নগদ ক্রেতা —</option>${customerOptions}</select>
- </div>
- <div class="field"><label>ক্রেতার নাম</label><input type="text" id="invCustName" placeholder="যেমনঃ নগদ ক্রেতা"></div>
- <div class="field"><label>ক্রেতার ঠিকানা</label><input type="text" id="invCustAddress" placeholder="যেমনঃ বাজার রোড, সাভার"></div>
- <div class="field"><label>মোবাইল নাম্বার (ঐচ্ছিক)</label><input type="text" id="invCustPhone" placeholder="01xxx-xxxxxx"></div>
+  ${saleCustomerToggleHtml()}
+ ${saleCustomerFieldsHtml()}
  <div class="field"><label>বিক্রয়ের তারিখ (যেই তারিখের বিক্রয় হিসেবে গণ্য হবে, দরকার হলে আগের তারিখও দিতে পারেন)</label><input type="date" id="invDate" value="${toDateInputValue(new Date())}"></div>
  <div class="field"><label>পণ্যের সাবটোটাল</label><input type="text" value="${fmt(itemsSubtotal)}" disabled style="background:var(--steel-100);color:var(--steel-700);"></div>
  <div class="field"><label>ডেলিভারি চার্জ (৳) — না থাকলে ০ রাখুন</label><input type="number" id="invDelivery" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
@@ -2923,6 +2919,65 @@ function checkoutRecalc(itemsSubtotal) {
   if (grandEl) grandEl.textContent = fmt(grandTotal);
   if (dueVal) dueVal.textContent = fmt(grandTotal - paid);
 }
+function saleCustomerToggleHtml() {
+  return `
+ <div class="sale-type-toggle">
+ <button type="button" class="stt-btn ${saleCustomerType === "cash" ? "active cash" : ""}" onclick="setSaleCustomerType('cash')">💵 নগদ</button>
+ <button type="button" class="stt-btn ${saleCustomerType === "credit" ? "active credit" : ""}" onclick="setSaleCustomerType('credit')">📒 বাকি</button>
+ </div>`;
+}
+function setSaleCustomerType(type) {
+  saleCustomerType = type;
+  render();
+}
+function saleCustomerFieldsHtml() {
+  if (saleCustomerType === "cash") {
+    const opts = cashCustomers
+      .map(
+        (c) =>
+          `<option value="${c.id}">${esc(c.name)}${c.phone ? " · " + esc(c.phone) : ""}</option>`,
+      )
+      .join("");
+    return `
+ <div class="field">
+ <label>বিদ্যমান নগদ ক্রেতা বাছাই করুন (নাহলে নিচে নতুন নাম লিখুন)</label>
+ <select id="invCustomer" onchange="invCashCustomerChange(this.value)"><option value="">— নতুন নগদ ক্রেতা —</option>${opts}</select>
+ </div>
+ <div class="field"><label>ক্রেতার নাম</label><input type="text" id="invCustName" placeholder="যেমনঃ নগদ ক্রেতা"></div>
+ <div class="field"><label>ক্রেতার ঠিকানা</label><input type="text" id="invCustAddress" placeholder="যেমনঃ বাজার রোড, সাভার"></div>
+ <div class="field"><label>মোবাইল নাম্বার (ঐচ্ছিক)</label><input type="text" id="invCustPhone" placeholder="01xxx-xxxxxx"></div>`;
+  }
+  const opts = ledger
+    .map(
+      (l) =>
+        `<option value="${l.id}">${esc(l.name)}${l.phone ? " · " + esc(l.phone) : ""}</option>`,
+    )
+    .join("");
+  return `
+ <div class="field">
+ <label>বিদ্যমান বাকি গ্রাহক বাছাই করুন (নাহলে নিচে নতুন গ্রাহক যোগ করুন)</label>
+ <select id="invCustomer" onchange="invCustomerChange(this.value)"><option value="">— নতুন গ্রাহক —</option>${opts}</select>
+ </div>
+ <div class="field"><label>গ্রাহকের নাম</label><input type="text" id="invCustName" placeholder="যেমনঃ মোঃ করিম"></div>
+ <div class="field"><label>গ্রাহকের ঠিকানা</label><input type="text" id="invCustAddress" placeholder="যেমনঃ বাজার রোড, সাভার"></div>
+ <div class="field"><label>মোবাইল নাম্বার</label><input type="text" id="invCustPhone" placeholder="01xxx-xxxxxx"></div>`;
+}
+function invCashCustomerChange(id) {
+  const nameEl = document.getElementById("invCustName");
+  const phoneEl = document.getElementById("invCustPhone");
+  const addrEl = document.getElementById("invCustAddress");
+  if (!id) {
+    nameEl.value = "";
+    phoneEl.value = "";
+    addrEl.value = "";
+    return;
+  }
+  const cc = cashCustomers.find((c) => c.id == id);
+  if (!cc) return;
+  nameEl.value = cc.name;
+  phoneEl.value = cc.phone || "";
+  addrEl.value = cc.address || "";
+}
 function invCustomerChange(id) {
   const nameEl = document.getElementById("invCustName");
   const phoneEl = document.getElementById("invCustPhone");
@@ -2949,7 +3004,10 @@ function confirmInvoice(itemsSubtotal) {
     showToast("এই ক্যাশ মেমো নম্বর আগে থেকেই ব্যবহৃত হয়েছে — অন্য নম্বর দিন");
     return;
   }
-  const custId = document.getElementById("invCustomer").value;
+  const custId =
+    saleCustomerType === "credit"
+      ? document.getElementById("invCustomer").value
+      : "";
   const typedName = document.getElementById("invCustName").value.trim();
   const typedAddress = document.getElementById("invCustAddress").value.trim();
   const typedPhone = document.getElementById("invCustPhone").value.trim();
@@ -4923,6 +4981,13 @@ function renderSalesLedgerCatDetail() {
 function renderLedger() {
   if (ledgerDetailId) return renderCustomerDetail(ledgerDetailId);
   const q = ledgerSearch.trim().toLowerCase();
+  const dueCount = ledger.filter((l) => l.due > 0).length;
+  const paidCount = ledger.filter((l) => l.due === 0).length;
+  const ledgerTabsHtml = `
+ <div class="tab-row" style="margin-bottom:14px;">
+ <button class="btn ${ledgerTab === "due" ? "btn-primary" : "btn-outline"}" onclick="setLedgerTab('due')">📒 বাকি আছে (${dueCount})</button>
+ <button class="btn ${ledgerTab === "paid" ? "btn-primary" : "btn-outline"}" onclick="setLedgerTab('paid')">✅ পরিশোধিত কাস্টমার (${paidCount})</button>
+ </div>`;
   const searchBar = `
  <div class="search-bar ${q ? "has-val" : ""}">
  <span class="sic">🔍</span>
@@ -4955,6 +5020,7 @@ function renderLedger() {
 
   let filtered = ledger
     .map((l, idx) => ({ l, serial: idx + 1 }))
+    .filter(({ l }) => (ledgerTab === "paid" ? l.due === 0 : l.due > 0))
     .filter(
       ({ l }) =>
         q === "" ||
@@ -5026,6 +5092,7 @@ function renderLedger() {
  <div style="font-size:13px;color:var(--steel-500);">যে সিরিয়ালে গ্রাহক যুক্ত হয়েছে, পরিশোধ করলেও সেই সিরিয়ালেই থাকবে</div>
  <button class="btn btn-primary" onclick="addCustomerPrompt()">+ নতুন গ্রাহক</button>
  </div>
+ ${ledgerTabsHtml}
  ${searchBar}
  ${filterBar}
  ${list}`;
@@ -5050,6 +5117,10 @@ function ledgerMaxDueInputFn(val) {
 }
 function ledgerSortChange(val) {
   ledgerSort = val;
+  render();
+}
+function setLedgerTab(tab) {
+  ledgerTab = tab;
   render();
 }
 

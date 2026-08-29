@@ -480,7 +480,10 @@ input, select{ font-family:inherit; }
 .tx-tag.sale{ background:#FDEEE7; color:var(--rust); }
 .tx-tag.payment{ background:#E4F1E8; color:var(--green); }
 .tx-tag.expense{ background:#FCEFD8; color:var(--amber-dark, #8a5d10); }
- 
+.sale-type-toggle{ display:flex; background:var(--steel-100); border-radius:22px; padding:4px; margin-bottom:16px; max-width:320px; }
+.stt-btn{ flex:1; text-align:center; padding:10px 0; border-radius:18px; font-weight:700; font-size:13.5px; color:var(--steel-700); transition:.15s; }
+.stt-btn.active.cash{ background:var(--green); color:white; box-shadow:0 3px 8px rgba(60,122,84,0.3); }
+.stt-btn.active.credit{ background:var(--rust); color:white; box-shadow:0 3px 8px rgba(190,74,34,0.3); }
 .cat-tile{
  background:white; border:1.5px solid var(--steel-100); border-radius:var(--radius);
  padding:18px 12px; text-align:center; transition:.12s; display:flex; flex-direction:column; align-items:center; gap:6px;
