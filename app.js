@@ -460,6 +460,7 @@ function updateOfflineBadge() {
 }
 async function bootstrapApp() {
   const hint = document.getElementById("connStatusHint");
+  if (!navigator.onLine) isOffline = true;
   try {
     const { data: sessionData } = await supabaseClient.auth.getSession();
     if (!sessionData.session) {
@@ -930,8 +931,21 @@ function applyState(s) {
 let persistTimer = null;
 function persistShopData() {
   if (!SHOP_ID) return;
+  // প্রতিটা পরিবর্তন সাথে সাথেই ডিভাইসে (localStorage) সেভ হয়ে যায়,
+  // ইন্টারনেট থাকুক বা না থাকুক — তাই রিলোড/অ্যাপ বন্ধ হলেও ডেটা হারাবে না
+  try {
+    localStorage.setItem(cacheKey("data_" + SHOP_ID), JSON.stringify(collectState(false)));
+  } catch (e) {
+    /* স্টোরেজ পূর্ণ হলে সাইলেন্টলি বাদ */
+  }
   clearTimeout(persistTimer);
   persistTimer = setTimeout(async () => {
+    if (!navigator.onLine) {
+      pendingSync = true;
+      isOffline = true;
+      updateOfflineBadge();
+      return;
+    }
     try {
       await supabaseClient
         .from("shop_data")
@@ -940,8 +954,16 @@ function persistShopData() {
           updated_at: new Date().toISOString(),
         })
         .eq("shop_id", SHOP_ID);
+      pendingSync = false;
+      if (isOffline) {
+        isOffline = false;
+        updateOfflineBadge();
+        showToast("✅ ইন্টারনেট ফিরে এসেছে — সব তথ্য সার্ভারে সংরক্ষিত হয়েছে");
+      }
     } catch (e) {
-      /* সাইলেন্টলি ব্যর্থ — পরবর্তী পরিবর্তনে আবার চেষ্টা হবে */
+      pendingSync = true;
+      isOffline = true;
+      updateOfflineBadge();
     }
   }, 900);
 }
