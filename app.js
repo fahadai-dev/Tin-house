@@ -2364,7 +2364,14 @@ function cartUnitOptionsFor(brand, size, mm) {
     inventory[brand] && inventory[brand][mm] && inventory[brand][mm][size];
   const extra0 = (item0 && item0.extraUnits) || [];
   if (isWeightBrand(brand)) {
+    const pieceFactor = (item0 && item0.pieceGramFactor) || 0;
     const opts = [
+      {
+        key: "piece",
+        label: "পিস",
+        factor: pieceFactor || 1,
+        needsFactor: !pieceFactor,
+      },
       { key: "kg", label: "কেজি", factor: 1000 },
       { key: "g", label: "গ্রাম", factor: 1 },
     ];
@@ -2469,6 +2476,7 @@ function openCartItemModal(brand, mm, size, editIdx) {
   );
   cimRecalc();
   cimGramPresetsUpdate();
+  if (defaultUnit.needsFactor) cimUnitPick(defaultUnit.key);
 }
 
 function cimUnitPickerHtml() {
@@ -2544,8 +2552,26 @@ function cimUnitPickerToggle() {
     list.style.display = list.style.display === "none" ? "block" : "none";
 }
 function cimUnitPick(key) {
+  let unit = cimUnitOptions.find((u) => u.key === key) || cimUnitOptions[0];
+  if (unit.needsFactor) {
+    const val = window.prompt("১ পিস = কত গ্রাম?", "");
+    const grams = parseFloat(bnDigitsToEn(val || "")) || 0;
+    if (grams <= 0) {
+      showToast("সঠিক পরিমাণ দিন");
+      return;
+    }
+    if (
+      inventory[cimBrand] &&
+      inventory[cimBrand][cimMM] &&
+      inventory[cimBrand][cimMM][cimSize]
+    ) {
+      inventory[cimBrand][cimMM][cimSize].pieceGramFactor = grams;
+      persistShopData();
+    }
+    cimUnitOptions = cartUnitOptionsFor(cimBrand, cimSize, cimMM);
+    unit = cimUnitOptions.find((u) => u.key === key) || cimUnitOptions[0];
+  }
   cimSelectedUnitKey = key;
-  const unit = cimUnitOptions.find((u) => u.key === key) || cimUnitOptions[0];
   const list = document.getElementById("cimUnitList");
   const labelEl = document.getElementById("cimUnitPickerLabel");
   if (list) {
