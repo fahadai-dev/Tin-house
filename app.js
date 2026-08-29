@@ -934,7 +934,10 @@ function persistShopData() {
   // প্রতিটা পরিবর্তন সাথে সাথেই ডিভাইসে (localStorage) সেভ হয়ে যায়,
   // ইন্টারনেট থাকুক বা না থাকুক — তাই রিলোড/অ্যাপ বন্ধ হলেও ডেটা হারাবে না
   try {
-    localStorage.setItem(cacheKey("data_" + SHOP_ID), JSON.stringify(collectState(false)));
+    localStorage.setItem(
+      cacheKey("data_" + SHOP_ID),
+      JSON.stringify(collectState(false)),
+    );
   } catch (e) {
     /* স্টোরেজ পূর্ণ হলে সাইলেন্টলি বাদ */
   }
@@ -2431,18 +2434,6 @@ function cartUnitOptionsFor(brand, size, mm) {
   );
   return opts;
 }
-// সাধারণ পণ্য: সাইজের ঘরে সংখ্যা থাকলে ও সেই এককটা নিজেই "পিস" না হলে,
-// "পিস" অপশনও যোগ হবে — যেখানে ১ পিস = সেই সংখ্যক sizeLabel একক
-const sizeNum = parseFloat(size);
-const isAlreadyPiece = lbl.sizeLabel === "পিস";
-if (!isNaN(sizeNum) && sizeNum > 0 && !isAlreadyPiece) {
-  return [
-    { key: "unit", label: lbl.sizeLabel, factor: 1 },
-    { key: "piece", label: "পিস", factor: sizeNum },
-  ];
-}
-return [{ key: "unit", label: lbl.sizeLabel, factor: 1 }];
-
 function openCartItemModal(brand, mm, size, editIdx) {
   cimBrand = brand;
   cimMM = mm;
