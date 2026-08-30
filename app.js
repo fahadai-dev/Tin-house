@@ -2380,6 +2380,7 @@ let cimBrand = null,
   cimEditIdx = null,
   cimUnitOptions = [];
 let cimSelectedUnitKey = null,
+  cimPrevUnitKey = null,
   cimAddFormOpen = false;
 const HARDWARE_UNIT_LIST = [
   "কেজি",
@@ -2463,6 +2464,7 @@ function openCartItemModal(brand, mm, size, editIdx) {
     : invItem.sell * defaultUnit.factor;
   const itemName = `${brand} · ${itemLabelText(brand, mm, size)}`;
   cimSelectedUnitKey = defaultUnit.key;
+  cimPrevUnitKey = defaultUnit.key;
   cimAddFormOpen = false;
   const unitSelectHtml2 = cimUnitPickerHtml();
 
@@ -2607,12 +2609,22 @@ function cimUnitPick(key) {
     });
   }
   if (labelEl) labelEl.textContent = unit.label;
-  const invItem = (inventory[cimBrand] &&
-    inventory[cimBrand][cimMM] &&
-    inventory[cimBrand][cimMM][cimSize]) || { sell: 0 };
   const priceEl = document.getElementById("cimPrice");
-  if (priceEl)
-    priceEl.value = Math.round(invItem.sell * unit.factor * 100) / 100;
+  const oldUnit = cimUnitOptions.find((u) => u.key === cimPrevUnitKey);
+  if (priceEl) {
+    const curPricePerUnit = parseFloat(priceEl.value) || 0;
+    if (oldUnit && oldUnit.factor && curPricePerUnit > 0) {
+      // আগের ইউনিটের দাম থেকে নতুন ইউনিটের দামে রূপান্তর — যা আছে সেটার ভিত্তিতেই
+      const pricePerBase = curPricePerUnit / oldUnit.factor;
+      priceEl.value = Math.round(pricePerBase * unit.factor * 100) / 100;
+    } else {
+      const invItem = (inventory[cimBrand] &&
+        inventory[cimBrand][cimMM] &&
+        inventory[cimBrand][cimMM][cimSize]) || { sell: 0 };
+      priceEl.value = Math.round(invItem.sell * unit.factor * 100) / 100;
+    }
+  }
+  cimPrevUnitKey = key;
   const lblEl = document.getElementById("cimPriceLabel");
   if (lblEl) lblEl.textContent = "মূল্য (প্রতি " + unit.label + ")";
   cimRecalc();
