@@ -4024,7 +4024,7 @@ function stockSearchInputFn(val) {
 }
 function calcBuyFromBan(banPrice, sizeFeet) {
   if (!sizeFeet) return 0;
-  return Math.round((banPrice * sizeFeet) / FEET_PER_BAN);
+  return (banPrice * sizeFeet) / FEET_PER_BAN;
 }
 
 function setStockAddUnitMode(mode) {
@@ -4158,7 +4158,7 @@ function addStockPrompt() {
  </div>
  </div>
   <div id="banFieldsWrap" style="display:block;">
- <div class="field"><label>বানের দাম (৳) — ৭২ ফুট = ১ বান</label><input type="number" id="newBanPrice" value="4000" min="0" oninput="addStockRecalc()"></div>
+  <div class="field"><label>এক বানের মোট দাম (৳) — এক বানে মোট ৭২ ফুট থাকে</label><input type="number" id="newBanPrice" value="4000" min="0" oninput="addStockRecalc()"></div>
  <div class="field"><label>কয় বান কিনলেন</label><input type="number" id="newBanQty" value="1" min="0" step="0.5" oninput="addStockRecalc()"></div>
  <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;">
  <div id="newPiecesInfo">এক বানে (৭২ ফুট) প্রায় — পিস আসে</div>
@@ -4306,7 +4306,7 @@ function editStockPrompt(brand, mm, sz) {
 
   const banSectionHtml = usesBan
     ? `
- <div class="field"><label>বানের দাম (৳) — ৭২ ফুট = ১ বান</label><input type="number" id="editBanPrice" value="${banStart}" min="0" oninput="editStockRecalc(${sz})"></div>
+  <div class="field"><label>এক বানের মোট দাম (৳) — এক বানে মোট ৭২ ফুট থাকে</label><input type="number" id="editBanPrice" value="${banStart}" min="0" oninput="editStockRecalc(${sz})"></div>
  <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;">
  <div style="display:flex;justify-content:space-between;"><span>এক বানে (৭২ ফুট) প্রায়</span><b class="mono">${(FEET_PER_BAN / sz).toFixed(1)} পিস</b></div>
  <div style="display:flex;justify-content:space-between;margin-top:6px;"><span>প্রতি পিস ক্রয়মূল্য (স্বয়ংক্রিয়)</span><b class="mono" id="editBuyComputed">${fmt(v.buy)}</b></div>
@@ -4555,7 +4555,7 @@ function editPurchasePrompt(id) {
     `
  <div style="font-size:11.5px;color:var(--steel-500);margin-bottom:10px;line-height:1.5;">বান সংখ্যা বা দাম বদলালে স্টকের পরিমাণও সেই অনুযায়ী সমন্বয় হয়ে যাবে।</div>
  <div class="field"><label>বান সংখ্যা</label><input type="number" id="editPurchaseBanQty" value="${p.banQty}" min="0" step="0.5"></div>
- <div class="field"><label>বানের দাম (৳)</label><input type="number" id="editPurchaseBanPrice" value="${p.banPrice}" min="0"></div>
+  <div class="field"><label>এক বানের মোট দাম (৳) — এক বানে মোট ৭২ ফুট থাকে</label><input type="number" id="editPurchaseBanPrice" value="${p.banPrice}" min="0"></div>
  <div class="field"><label>তারিখ</label><input type="date" id="editPurchaseDate" value="${toDateInputValue(p.date)}"></div>
  `,
     `
