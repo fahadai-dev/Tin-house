@@ -2402,6 +2402,11 @@ function posSelectCategory(id) {
   scrollContentTop();
 }
 function posSelectBrand(b) {
+  const cat = getCategoryOf(b);
+  if (cat.simpleMode) {
+    openCartItemModal(b, "1", "1");
+    return;
+  }
   posBrand = b;
   posStep = 2;
   posItemSearch = "";
@@ -3741,7 +3746,7 @@ function renderStock() {
  </div>
  <div class="mgmt-toolbar">
  <div style="font-size:13px;color:var(--steel-500);">একটি ব্র্যান্ডের ঘরে ক্লিক করে স্টক পরিচালনা করুন</div>
- <button class="btn btn-primary" onclick="addBrandPrompt()">+ নতুন ব্র্যান্ড</button>
+ <button class="btn btn-primary" onclick="${(PRODUCT_CATEGORIES.find((c) => c.id === stockCategory) || {}).simpleMode ? "addSimpleProductPrompt()" : "addBrandPrompt()"}">+ নতুন ব্র্যান্ড</button>
  </div>
  <div class="brand-grid">
  ${catBrandsList
@@ -3890,6 +3895,7 @@ function addCategoryPrompt() {
     <div class="field"><label>প্রথম ঘরের একক/লেবেল</label>${unitSelectHtml("newCatUnitLabel", "পণ্যের নাম")}</div>
  <div class="field"><label>দ্বিতীয় ঘরের একক/লেবেল (পরিমাণের একক)</label>${unitSelectHtml("newCatSizeLabel", "পরিমাণ")}</div>
  <div class="field"><label><input type="checkbox" id="newCatUsesBan" style="width:auto;margin-right:6px;"> বান (bundle) হিসেবে স্টক ও দাম হিসাব হবে — শুধু টিনের মতো পণ্যের জন্য টিক দিন, বাকি সাধারণ পণ্যের জন্য খালি রাখুন</label></div>
+ <div class="field"><label><input type="checkbox" id="newCatSimpleMode" style="width:auto;margin-right:6px;"> সহজ পণ্য মোড — ব্র্যান্ড/সাইজ লাগবে না, শুধু নাম-দাম-স্টক দিয়ে পণ্য যোগ হবে</label></div>
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -3922,6 +3928,7 @@ function saveNewCategory() {
     unitLabel,
     sizeLabel,
     usesBan,
+    simpleMode: document.getElementById("newCatSimpleMode").checked,
   };
   PRODUCT_CATEGORIES.push(cat);
   ensureCategoryPseudoBrand(cat);
@@ -3941,6 +3948,7 @@ function editCategoryPrompt(id) {
   <div class="field"><label>প্রথম মাপের একক/লেবেল</label>${unitSelectHtml("editCatUnitLabel", cat.unitLabel)}</div>
  <div class="field"><label>দ্বিতীয় মাপের একক/লেবেল (পরিমাণের একক)</label>${unitSelectHtml("editCatSizeLabel", cat.sizeLabel)}</div>
  <div class="field"><label><input type="checkbox" id="editCatUsesBan" ${cat.usesBan ? "checked" : ""} style="width:auto;margin-right:6px;"> বান (bundle) হিসেবে স্টক ও দাম হিসাব হবে (যেমন টিন)</label></div>
+ <div class="field"><label><input type="checkbox" id="editCatSimpleMode" ${cat.simpleMode ? "checked" : ""} style="width:auto;margin-right:6px;"> সহজ পণ্য মোড — ব্র্যান্ড/সাইজ লাগবে না, শুধু নাম-দাম-স্টক দিয়ে পণ্য যোগ হবে</label></div>
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -3973,12 +3981,18 @@ function saveCategoryEdit(id) {
   cat.sizeLabel =
     document.getElementById("editCatSizeLabel").value.trim() || cat.sizeLabel;
   cat.usesBan = document.getElementById("editCatUsesBan").checked;
+  cat.simpleMode = document.getElementById("editCatSimpleMode").checked;
   closeModal();
   render();
   showToast("ক্যাটাগরি আপডেট হয়েছে");
   persistShopData();
 }
 function stockSelectBrand(b) {
+  const cat = getCategoryOf(b);
+  if (cat.simpleMode) {
+    editSimpleProductPrompt(b);
+    return;
+  }
   stockBrand = b;
   stockStep = 2;
   stockSearch = "";
@@ -4088,6 +4102,108 @@ function deleteBrandConfirmed(name) {
   closeModal();
   render();
   showToast("ব্র্যান্ড মুছে ফেলা হয়েছে");
+  persistShopData();
+}
+function addSimpleProductPrompt() {
+  openModal(
+    "নতুন পণ্য যোগ করুন",
+    `
+ <div class="field"><label>পণ্যের নাম</label><input type="text" id="newSimpleName" placeholder="যেমনঃ ফোম সাদা ৩৯ ইঞ্চি"></div>
+ <div class="field"><label>পরিমাণ (স্টক)</label><input type="number" id="newSimpleQty" min="0" value="0"></div>
+ <div class="field"><label>ক্রয়মূল্য (৳)</label><input type="number" id="newSimpleBuy" min="0" value="0"></div>
+ <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="newSimpleSell" min="0" value="0"></div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveSimpleProduct()">যোগ করুন</button>
+ `,
+  );
+}
+function saveSimpleProduct() {
+  const name = document.getElementById("newSimpleName").value.trim();
+  if (!name) {
+    showToast("পণ্যের নাম আবশ্যক");
+    return;
+  }
+  if (BRANDS.includes(name)) {
+    showToast("এই নামে পণ্য আগে থেকেই আছে");
+    return;
+  }
+  const qty = Math.max(
+    0,
+    parseInt(document.getElementById("newSimpleQty").value) || 0,
+  );
+  const buy = Math.max(
+    0,
+    parseInt(document.getElementById("newSimpleBuy").value) || 0,
+  );
+  const sell = Math.max(
+    0,
+    parseInt(document.getElementById("newSimpleSell").value) || 0,
+  );
+  BRANDS.push(name);
+  brandCategory[name] = stockCategory;
+  inventory[name] = { 1: { 1: { buy, sell, stock: qty } } };
+  if (qty > 0 && buy > 0)
+    recordPurchase(name, "1", "1", 0, buy, qty, buy, qty * buy);
+  closeModal();
+  render();
+  showToast("নতুন পণ্য যুক্ত হয়েছে");
+  persistShopData();
+}
+function editSimpleProductPrompt(name) {
+  const v = (inventory[name] &&
+    inventory[name]["1"] &&
+    inventory[name]["1"]["1"]) || { buy: 0, sell: 0, stock: 0 };
+  openModal(
+    `পণ্য এডিট — ${esc(name)}`,
+    `
+ <div class="field"><label>পণ্যের নাম</label><input type="text" id="editSimpleName" value="${esc(name)}"></div>
+ <div class="field"><label>ক্রয়মূল্য (৳)</label><input type="number" id="editSimpleBuy" value="${v.buy}" min="0"></div>
+ <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="editSimpleSell" value="${v.sell}" min="0"></div>
+ <div class="field"><label>স্টক (পরিমাণ)</label><input type="number" id="editSimpleStock" value="${v.stock}" min="0"></div>
+ `,
+    `
+ <button class="btn btn-outline" style="color:var(--red);" onclick="deleteBrandPrompt('${jsq(name)}')">🗑️ মুছুন</button>
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveSimpleProductEdit('${jsq(name)}')">সংরক্ষণ করুন</button>
+ `,
+  );
+}
+function saveSimpleProductEdit(oldName) {
+  const newName = document.getElementById("editSimpleName").value.trim();
+  if (!newName) {
+    showToast("নাম আবশ্যক");
+    return;
+  }
+  const buy = Math.max(
+    0,
+    parseInt(document.getElementById("editSimpleBuy").value) || 0,
+  );
+  const sell = Math.max(
+    0,
+    parseInt(document.getElementById("editSimpleSell").value) || 0,
+  );
+  const stock = Math.max(
+    0,
+    parseInt(document.getElementById("editSimpleStock").value) || 0,
+  );
+  if (newName !== oldName) {
+    if (BRANDS.includes(newName)) {
+      showToast("এই নামে আরেকটা পণ্য আছে");
+      return;
+    }
+    const idx = BRANDS.indexOf(oldName);
+    if (idx > -1) BRANDS[idx] = newName;
+    inventory[newName] = inventory[oldName];
+    delete inventory[oldName];
+    brandCategory[newName] = brandCategory[oldName];
+    delete brandCategory[oldName];
+  }
+  inventory[newName]["1"]["1"] = { buy, sell, stock };
+  closeModal();
+  render();
+  showToast("পণ্য আপডেট হয়েছে");
   persistShopData();
 }
 function stockSearchInputFn(val) {
