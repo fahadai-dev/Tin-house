@@ -392,6 +392,8 @@ let dashboardPeriod = "day"; // 'day' | 'month'
 
 // শেষ ব্যাকআপের সময় (shop_data এর সাথেই সংরক্ষিত হয়)
 let lastBackupAt = null;
+// সার্ভারে সর্বশেষ যে ভার্সন পড়া হয়েছিল, তার updated_at — একাধিক ডিভাইস সিঙ্কের জন্য
+let lastKnownUpdatedAt = null;
 
 const OWNER_ONLY_VIEWS = [
   "report",
@@ -533,11 +535,12 @@ async function bootstrapApp() {
     try {
       const { data: dataRow, error: dataErr } = await supabaseClient
         .from("shop_data")
-        .select("data")
+        .select("data, updated_at")
         .eq("shop_id", SHOP_ID)
         .maybeSingle();
       if (dataErr) throw dataErr;
       shopData = (dataRow && dataRow.data) || {};
+      lastKnownUpdatedAt = dataRow ? dataRow.updated_at : null;
       localStorage.setItem(
         cacheKey("data_" + SHOP_ID),
         JSON.stringify(shopData),
@@ -937,6 +940,66 @@ function applyState(s) {
   brandSizeLabel = s.brandSizeLabel || {};
   initCategoryPseudoBrands();
 }
+function mergeArraysById(localArr, serverArr) {
+  const map = new Map();
+  (serverArr || []).forEach((item) => {
+    if (item && item.id != null) map.set(item.id, item);
+  });
+  (localArr || []).forEach((item) => {
+    if (item && item.id != null) map.set(item.id, item);
+  });
+  return Array.from(map.values());
+}
+function applyMergedListsAndCounters(serverData) {
+  if (!serverData) return;
+  invoices = mergeArraysById(invoices, serverData.invoices);
+  payments = mergeArraysById(payments, serverData.payments);
+  purchases = mergeArraysById(purchases, serverData.purchases);
+  expenses = mergeArraysById(expenses, serverData.expenses);
+  incomes = mergeArraysById(incomes, serverData.incomes);
+  returns = mergeArraysById(returns, serverData.returns);
+  quickSales = mergeArraysById(quickSales, serverData.quickSales);
+  activityLog = mergeArraysById(activityLog, serverData.activityLog);
+  customerDueEntries = mergeArraysById(
+    customerDueEntries,
+    serverData.customerDueEntries,
+  );
+  supplierDueEntries = mergeArraysById(
+    supplierDueEntries,
+    serverData.supplierDueEntries,
+  );
+  cashCustomers = mergeArraysById(cashCustomers, serverData.cashCustomers);
+  invoiceCounter = Math.max(invoiceCounter, serverData.invoiceCounter || 0);
+  paymentCounter = Math.max(paymentCounter, serverData.paymentCounter || 0);
+  purchaseCounter = Math.max(purchaseCounter, serverData.purchaseCounter || 0);
+  ledgerNextId = Math.max(ledgerNextId, serverData.ledgerNextId || 0);
+  cashNextId = Math.max(cashNextId, serverData.cashNextId || 0);
+  expenseNextId = Math.max(expenseNextId, serverData.expenseNextId || 0);
+  incomeNextId = Math.max(incomeNextId, serverData.incomeNextId || 0);
+  returnNextId = Math.max(returnNextId, serverData.returnNextId || 0);
+  quickSaleNextId = Math.max(quickSaleNextId, serverData.quickSaleNextId || 0);
+  activityLogNextId = Math.max(
+    activityLogNextId,
+    serverData.activityLogNextId || 0,
+  );
+  customerDueNextId = Math.max(
+    customerDueNextId,
+    serverData.customerDueNextId || 0,
+  );
+  supplierDueNextId = Math.max(
+    supplierDueNextId,
+    serverData.supplierDueNextId || 0,
+  );
+  supplierNextId = Math.max(supplierNextId, serverData.supplierNextId || 0);
+  expensePersonNextId = Math.max(
+    expensePersonNextId,
+    serverData.expensePersonNextId || 0,
+  );
+  incomePersonNextId = Math.max(
+    incomePersonNextId,
+    serverData.incomePersonNextId || 0,
+  );
+}
 let persistTimer = null;
 function persistShopData() {
   if (!SHOP_ID) return;
@@ -959,13 +1022,43 @@ function persistShopData() {
       return;
     }
     try {
-      await supabaseClient
+      const { data: serverRow, error: fetchErr } = await supabaseClient
+        .from("shop_data")
+        .select("data, updated_at")
+        .eq("shop_id", SHOP_ID)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+
+      const serverChangedByOther =
+        serverRow &&
+        serverRow.updated_at &&
+        serverRow.updated_at !== lastKnownUpdatedAt;
+
+      if (serverChangedByOther) {
+        applyMergedListsAndCounters(serverRow.data);
+      }
+
+      const { data: updatedRow, error: updateErr } = await supabaseClient
         .from("shop_data")
         .update({
           data: collectState(false),
           updated_at: new Date().toISOString(),
         })
-        .eq("shop_id", SHOP_ID);
+        .eq("shop_id", SHOP_ID)
+        .select("updated_at")
+        .maybeSingle();
+      if (updateErr) throw updateErr;
+      lastKnownUpdatedAt = updatedRow
+        ? updatedRow.updated_at
+        : lastKnownUpdatedAt;
+
+      if (serverChangedByOther) {
+        render();
+        showToast(
+          "🔄 অন্য একটি ডিভাইসের নতুন তথ্যের সাথে মিলিয়ে সংরক্ষণ করা হয়েছে",
+        );
+      }
+
       pendingSync = false;
       if (isOffline) {
         isOffline = false;
@@ -2773,41 +2866,7 @@ function updateCartBanPrice(idx, val) {
   item.sellPrice = Math.round(banPrice / ppb);
   render();
 }
-function updateCartTotalAmount(idx, val) {
-  const item = cart[idx];
-  if (val === "") {
-    render();
-    return;
-  }
-  function updateCartWeight(idx) {
-    const item = cart[idx];
-    const kgEl = document.getElementById("wqKg" + idx);
-    const gEl = document.getElementById("wqG" + idx);
-    const kg = kgEl ? Math.max(0, parseFloat(kgEl.value) || 0) : 0;
-    const g = gEl ? Math.max(0, parseFloat(gEl.value) || 0) : 0;
-    item.qtyPieces = Math.round(kg * 1000 + g);
-    render();
-  }
-  function updateCartPricePerKg(idx, val) {
-    const item = cart[idx];
-    if (val === "") {
-      render();
-      return;
-    }
-    const perKg = Math.max(0, parseFloat(val) || 0);
-    item.sellPrice = perKg / 1000;
-    render();
-  }
-  const totalAmt = Math.max(0, parseFloat(val) || 0);
-  if (item.sellPrice > 0) {
-    item.qtyPieces = Math.round(totalAmt / item.sellPrice);
-  } else if (item.qtyPieces > 0) {
-    item.sellPrice = Math.round(totalAmt / item.qtyPieces);
-  } else {
-    showToast("আগে পিস সংখ্যা অথবা দর/পিস লিখুন");
-  }
-  render();
-}
+
 function setCartQtyMode(idx, mode) {
   // আর ব্যবহার হচ্ছে না — এখন সব ঘর একসাথে দেখা যায়, রেখে দেওয়া নিরাপদ
   render();
