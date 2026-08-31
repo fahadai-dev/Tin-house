@@ -143,6 +143,10 @@ function formatItemQty(brand, qty) {
 function itemLabelText(brand, mm, size) {
   if (isWeightBrand(brand)) return "ওজন অনুযায়ী";
   const lbl = getBrandLabels(brand);
+  const sizeNum = parseFloat(size);
+  if (!sizeNum || sizeNum === 0) {
+    return `${mm} ${lbl.unitLabel}`;
+  }
   return `${mm} ${lbl.unitLabel} · ${size} ${lbl.sizeLabel}`;
 }
 const MM_LIST = [12, 13, 14, 15, 16, 17, 18, 19, 20];
@@ -2160,7 +2164,7 @@ function renderSalesPicker() {
               return `<div class="result-row">
  <div class="result-serial">${i + 1}</div>
  <div class="result-info">
-  <div class="rname">${esc(posBrand)} <span class="rdim">· ${r.mm} ${esc(lbl.unitLabel)} · ${r.sz} ${esc(lbl.sizeLabel)}</span></div>
+  <div class="rname">${esc(posBrand)} <span class="rdim">· ${r.mm} ${esc(lbl.unitLabel)}${parseFloat(r.sz) ? ` · ${r.sz} ${esc(lbl.sizeLabel)}` : ""}</span></div>
  <div class="rmeta">ক্রয়ঃ <b>${fmt(r.v.buy)}</b> &nbsp;বিক্রয়ঃ <b>${fmt(r.v.sell)}</b> &nbsp;স্টকঃ <b class="${r.v.stock <= 3 ? "stock-low" : ""}">${r.v.stock} পিস</b></div>
  </div>
     <button class="result-add" onclick="openCartItemModal('${jsq(posBrand)}', ${r.mm}, ${r.sz})">+ যোগ করুন</button>
