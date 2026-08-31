@@ -141,13 +141,15 @@ function formatItemQty(brand, qty) {
   return unit ? `${qty} ${unit}` : String(qty);
 }
 function itemLabelText(brand, mm, size) {
-  if (isWeightBrand(brand)) return "ওজন অনুযায়ী";
+  if (isWeightBrand(brand)) return " (ওজন অনুযায়ী)";
+  const cat = getCategoryOf(brand);
+  if (cat.simpleMode) return "";
   const lbl = getBrandLabels(brand);
   const sizeNum = parseFloat(size);
   if (!sizeNum || sizeNum === 0) {
-    return `${mm} ${lbl.unitLabel}`;
+    return ` · ${mm} ${lbl.unitLabel}`;
   }
-  return `${mm} ${lbl.unitLabel} · ${size} ${lbl.sizeLabel}`;
+  return ` · ${mm} ${lbl.unitLabel} · ${size} ${lbl.sizeLabel}`;
 }
 const MM_LIST = [12, 13, 14, 15, 16, 17, 18, 19, 20];
 const SIZE_LIST = [6, 7, 8, 9, 10, 11, 12];
@@ -1611,7 +1613,7 @@ function buildThermalInvoiceHtml(inv, widthMm) {
       const weight = isWeightBrand(it.brand);
       const nameLine = weight
         ? `${esc(it.brand)} (ওজন)`
-        : `${esc(it.brand)} ${itemLabelText(it.brand, it.mm, it.size)}${it.banQty ? ` (${it.banQty} বান)` : ""}`;
+        : `${esc(it.brand)}${itemLabelText(it.brand, it.mm, it.size)}${it.banQty ? ` (${it.banQty} বান)` : ""}`;
       const priceLine = weight
         ? fmt(it.sellPrice * 1000) + "/কেজি"
         : fmt(it.sellPrice);
@@ -2013,7 +2015,7 @@ function renderSales() {
             return `
  <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
  <div class="cart-item-top">
- <span style="font-weight:700;">${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}</span>
+ <span style="font-weight:700;">${esc(item.brand)}${itemLabelText(item.brand, item.mm, item.size)}</span>
  <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
  </div>
  <div class="cart-sub" style="text-align:left;margin-top:6px;">পরিমাণঃ ${formatItemQty(item.brand, eff)} · দরঃ ${fmt(item.sellPrice)} · মোটঃ ${fmt(totalAmt)}</div>
@@ -2221,7 +2223,7 @@ function renderCartPage() {
       return `
  <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
  <div class="cart-item-top">
- <span style="font-weight:700;">${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}</span>
+ <span style="font-weight:700;">${esc(item.brand)}${itemLabelText(item.brand, item.mm, item.size)}</span>
  <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
  </div>
  <div class="cart-sub" style="text-align:left;margin-top:6px;">পরিমাণঃ ${formatItemQty(item.brand, eff)} · দরঃ ${fmt(item.sellPrice)} · মোটঃ ${fmt(totalAmt)}</div>
@@ -2461,7 +2463,7 @@ function addToCart(brand, mm, size) {
   const eff2 = cartEffectiveQty(updated);
   const label = weight
     ? `${brand} — ${formatQtyByMode("weight", eff2)}`
-    : `${brand} ${itemLabelText(brand, mm, size)}`;
+    : `${brand}${itemLabelText(brand, mm, size)}`;
   showToast(
     eff2 > item.stock
       ? `${label} কার্টে যোগ হয়েছে — স্টক মাইনাসে যাবে`
@@ -2564,7 +2566,7 @@ function openCartItemModal(brand, mm, size, editIdx) {
   const existingPricePerUnit = existing
     ? Math.round(existing.sellPrice * defaultUnit.factor * 1000000) / 1000000
     : Math.round(invItem.sell * defaultUnit.factor * 1000000) / 1000000;
-  const itemName = `${brand} · ${itemLabelText(brand, mm, size)}`;
+  const itemName = `${brand}${itemLabelText(brand, mm, size)}`;
   cimSelectedUnitKey = defaultUnit.key;
   cimPrevUnitKey = defaultUnit.key;
   cimAddFormOpen = false;
@@ -2956,7 +2958,7 @@ function renderCheckout() {
       const weight = isWeightBrand(item.brand);
       const nameHtml = weight
         ? esc(item.brand)
-        : `${esc(item.brand)} · ${itemLabelText(item.brand, item.mm, item.size)}`;
+        : `${esc(item.brand)}${itemLabelText(item.brand, item.mm, item.size)}`;
       return `<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--steel-100);">
  <span>${nameHtml} <span class="mono" style="color:var(--steel-500);">× ${formatItemQty(item.brand, eff)}</span></span>
  <b class="mono">${fmt(eff * item.sellPrice)}</b>
@@ -3391,7 +3393,7 @@ function buildInvoiceHtml(inv) {
       const weight = isWeightBrand(it.brand);
       const nameHtml = weight
         ? `${esc(it.brand)} <span style="font-size:10px;color:#6B7A82;">(ওজন অনুযায়ী)</span>`
-        : `${esc(it.brand)} · ${itemLabelText(it.brand, it.mm, it.size)}${it.banQty ? ` <span style="font-size:10px;color:#6B7A82;">(${it.banQty} বান)</span>` : ""}`;
+        : `${esc(it.brand)}${itemLabelText(it.brand, it.mm, it.size)}${it.banQty ? ` <span style="font-size:10px;color:#6B7A82;">(${it.banQty} বান)</span>` : ""}`;
       const priceHtml = weight
         ? fmt(it.sellPrice * 1000) + "/কেজি"
         : fmt(it.sellPrice);
@@ -3518,7 +3520,7 @@ function editInvoicePrompt(invId) {
     .map(
       (it, idx) => `
  <div style="border:1px solid var(--steel-100);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
- <div style="font-weight:600;font-size:13px;margin-bottom:6px;">${esc(it.brand)} · ${itemLabelText(it.brand, it.mm, it.size)}</div>
+  <div style="font-weight:600;font-size:13px;margin-bottom:6px;">${esc(it.brand)}${itemLabelText(it.brand, it.mm, it.size)}</div>
  <div style="display:flex;gap:8px;">
  <div style="flex:1;"><label style="font-size:11px;">পরিমাণ (পিস)</label><input type="number" min="0" id="editInvQty${idx}" value="${it.qty}"></div>
  <div style="flex:1;"><label style="font-size:11px;">দর/পিস (৳)</label><input type="number" min="0" id="editInvPrice${idx}" value="${it.sellPrice}"></div>
@@ -8048,7 +8050,7 @@ function returnPrompt(invId) {
       (it, idx) => `
  <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--steel-100);font-size:13px;">
  <div style="flex:1;">
-  <div style="font-weight:600;">${esc(it.brand)} · ${itemLabelText(it.brand, it.mm, it.size)}</div>
+    <div style="font-weight:600;">${esc(it.brand)}${itemLabelText(it.brand, it.mm, it.size)}</div>
  <div style="color:var(--steel-500);font-size:11.5px;">বিক্রিত ${it.qty} পিস @ ${fmt(it.sellPrice)}</div>
  </div>
  <div style="display:flex; align-items:center; gap:6px;">
@@ -8759,7 +8761,7 @@ function profitInvoiceDetail(invId) {
   );
 }
 function inv_item_label_(it) {
-  return `${it.brand} · ${itemLabelText(it.brand, it.mm, it.size)}`;
+  return `${it.brand}${itemLabelText(it.brand, it.mm, it.size)}`;
 }
 
 /* ============================================================
@@ -8973,7 +8975,7 @@ function openCashboxMemoDetail(invId) {
     .map(
       (it) => `
  <tr>
- <td>${esc(it.brand)} · ${itemLabelText(it.brand, it.mm, it.size)}</td>
+  <td>${esc(it.brand)}${itemLabelText(it.brand, it.mm, it.size)}</td>
  <td class="r">${it.qty}</td>
  <td class="r">${fmt(it.sellPrice)}</td>
  <td class="r">${fmt(it.qty * it.sellPrice)}</td>
