@@ -1293,6 +1293,14 @@ function periodTabsHtml(pageKey) {
 function goHome() {
   switchView("dashboard");
 }
+function goBackStep() {
+  try {
+    history.back();
+  } catch (e) {
+    goHome();
+  }
+}
+
 function switchView(id, opts) {
   opts = opts || {};
   const isOwner = currentUser && currentUser.role === "owner";
@@ -1410,6 +1418,8 @@ function switchView(id, opts) {
       : titles[id];
   const homeBtnEl = document.getElementById("homeBtn");
   if (homeBtnEl) homeBtnEl.classList.toggle("hidden", id === "dashboard");
+  const backBtnEl = document.getElementById("backBtn");
+  if (backBtnEl) backBtnEl.classList.toggle("hidden", id === "dashboard");
   render();
   scrollContentTop();
   // মোবাইলে ব্যাক বাটন চাপলে যেন পুরো অ্যাপ থেকে বের না হয়ে শুধু একধাপ পেছনে যায়

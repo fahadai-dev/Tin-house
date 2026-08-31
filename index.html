@@ -316,9 +316,7 @@ input, select{ font-family:inherit; }
 .cim-add-unit-form{ display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
 .cim-add-unit-form input{ flex:1 1 120px; min-width:0; border:1.5px solid var(--steel-100); border-radius:7px; padding:9px 10px; font-size:13.5px; }
 .cim-add-unit-form button{ flex-shrink:0; }
-#homeBtn {
-  display: none !important;
-}
+
 .field{ margin-bottom:14px; }
 .field label{ display:block; font-size:12.5px; font-weight:600; color:var(--steel-700); margin-bottom:5px; }
 .field input, .field select{
@@ -332,6 +330,19 @@ input, select{ font-family:inherit; }
 .btn-outline:hover{ border-color:var(--rust); color:var(--rust); }
 .btn-ghost{ color:var(--steel-500); font-size:13px; }
 .logout-btn{ background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); color:white; padding:8px 14px; font-size:12.5px; border-radius:9px; flex-shrink:0; }
+
+.topbar-nav-btn{
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.18);
+  color:white;
+  padding:8px 13px;
+  font-size:12.5px;
+  border-radius:8px;
+  flex-shrink:0;
+}
+.topbar-nav-btn:hover{ background:rgba(255,255,255,0.18); }
+.topbar-nav-btn.hidden{ display:none !important; }
+
 .logout-btn:hover{ background:rgba(255,255,255,0.14); border-color:rgba(255,255,255,0.3); }
  
 .modal-overlay{ position:fixed; inset:0; background:rgba(20,24,27,0.55); display:none; align-items:center; justify-content:center; z-index:80; padding:20px; }
@@ -561,7 +572,7 @@ input, select{ font-family:inherit; }
 .dt-ic.c-slate{ background:#EEF0F2; }
 .dt-ic.c-purple{ background:#F2E7F7; }
 .dt-ic.c-gray{ background:#EDEFF0; }
- 
+
 @media (max-width: 860px){
  .sidebar{
  display:flex; position:fixed; top:0; left:0; bottom:0; z-index:70;
@@ -597,6 +608,7 @@ input, select{ font-family:inherit; }
  .dash-section-label{ font-size:13px; margin:16px 2px 8px; }
  .dash-actions{ gap:8px; }
  .dash-action-btn{ padding:13px 6px; font-size:13.5px; }
+ .topbar-nav-btn{ display:none !important; }
 }
 </style>
 </head>
@@ -620,12 +632,14 @@ input, select{ font-family:inherit; }
  <div class="main">
  <div class="topbar">
   <div class="topbar-left">
+ <button class="btn topbar-nav-btn" id="backBtn" onclick="goBackStep()" title="আগের পেজে যান">← পেছনে</button>
+ <button class="btn topbar-nav-btn" id="homeBtn" onclick="goHome()" title="হোমে যান">🏠 হোম</button>
  <div class="topbar-brand-icon" id="topbarBrandIcon">🏪</div>
  <div class="topbar-brand-text">
  <div class="topbar-shopname" id="topbarShopName">আমার দোকান</div>
  <div class="topbar-pagetitle" id="pageTitle">ড্যাশবোর্ড</div>
  </div>
- </div>
+</div>
  <span class="offline-badge hidden" id="offlineBadge">📡 অফলাইন</span>
  <button class="btn logout-btn" onclick="logout()">🔓 লগ-আউট</button>
  </div>
