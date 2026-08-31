@@ -4117,6 +4117,14 @@ function addStockRecalc() {
   if (sellEl && !stockSellManualOverride)
     sellEl.value = buyPerPiece > 0 ? buyPerPiece + 10 : "";
 }
+function editStockRecalc(sz) {
+  const banPriceEl = document.getElementById("editBanPrice");
+  const buyEl = document.getElementById("editBuyComputed");
+  if (!banPriceEl || !buyEl) return;
+  const banPrice = parseFloat(banPriceEl.value) || 0;
+  const buyPerPiece = calcBuyFromBan(banPrice, sz);
+  buyEl.textContent = fmt(buyPerPiece);
+}
 function editNewBanRecalc(sz) {
   const qtyEl = document.getElementById("editNewBanQty");
   const infoEl = document.getElementById("editNewBanInfo");
