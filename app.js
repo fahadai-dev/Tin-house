@@ -2460,8 +2460,8 @@ function openCartItemModal(brand, mm, size, editIdx) {
     ? existingBaseQty / defaultUnit.factor
     : existingBaseQty;
   const existingPricePerUnit = existing
-    ? existing.sellPrice * defaultUnit.factor
-    : invItem.sell * defaultUnit.factor;
+    ? Math.round(existing.sellPrice * defaultUnit.factor * 1000000) / 1000000
+    : Math.round(invItem.sell * defaultUnit.factor * 1000000) / 1000000;
   const itemName = `${brand} · ${itemLabelText(brand, mm, size)}`;
   cimSelectedUnitKey = defaultUnit.key;
   cimPrevUnitKey = defaultUnit.key;
@@ -2482,7 +2482,7 @@ function openCartItemModal(brand, mm, size, editIdx) {
  ${[100, 200, 300, 400, 500, 600, 700, 800, 900, 1000].map((g) => `<button type="button" class="cim-gram-chip" onclick="cimSetQty(${g})">${g}</button>`).join("")}
  </div>
  </div>
- <div class="field"><label id="cimPriceLabel">মূল্য (প্রতি ${esc(defaultUnit.label)})</label><input type="number" id="cimPrice" min="0" value="${Math.round(existingPricePerUnit) || invItem.sell}" oninput="cimRecalc()"></div>
+ <div class="field"><label id="cimPriceLabel">মূল্য (প্রতি ${esc(defaultUnit.label)})</label><input type="number" id="cimPrice" min="0" step="any" value="${existingPricePerUnit || invItem.sell}" oninput="cimRecalc()"></div>
   <div style="font-weight:600;color:var(--rust);margin:14px 0 6px;">ডিসকাউন্ট</div>
  <div class="cim-disc-row">
  <div class="cim-disc-box"><input type="number" id="cimDiscPercent" min="0" max="100" value="0" oninput="cimRecalc()"><span class="cim-disc-tag amber">%</span></div>
@@ -2616,12 +2616,14 @@ function cimUnitPick(key) {
     if (oldUnit && oldUnit.factor && curPricePerUnit > 0) {
       // আগের ইউনিটের দাম থেকে নতুন ইউনিটের দামে রূপান্তর — যা আছে সেটার ভিত্তিতেই
       const pricePerBase = curPricePerUnit / oldUnit.factor;
-      priceEl.value = Math.round(pricePerBase * unit.factor * 100) / 100;
+      priceEl.value =
+        Math.round(pricePerBase * unit.factor * 1000000) / 1000000;
     } else {
       const invItem = (inventory[cimBrand] &&
         inventory[cimBrand][cimMM] &&
         inventory[cimBrand][cimMM][cimSize]) || { sell: 0 };
-      priceEl.value = Math.round(invItem.sell * unit.factor * 100) / 100;
+      priceEl.value =
+        Math.round(invItem.sell * unit.factor * 1000000) / 1000000;
     }
   }
   cimPrevUnitKey = key;
@@ -2701,7 +2703,7 @@ function cimSave() {
   if (cimEditIdx != null) {
     const item = cart[cimEditIdx];
     item.qtyPieces = baseQty;
-    item.sellPrice = Math.round(finalPricePerBase * 100) / 100;
+    item.sellPrice = Math.round(finalPricePerBase * 1000000) / 1000000;
     item.banQty = banQtyVal;
   } else {
     cart.push({
@@ -2709,11 +2711,12 @@ function cimSave() {
       mm: cimMM,
       size: cimSize,
       qtyPieces: baseQty,
-      sellPrice: Math.round(finalPricePerBase * 100) / 100,
+      sellPrice: Math.round(finalPricePerBase * 1000000) / 1000000,
       buyPrice: invItem.buy,
       banQty: banQtyVal,
     });
   }
+
   closeModal();
   showToast(
     cimEditIdx != null ? "আইটেম আপডেট হয়েছে" : "আইটেম কার্টে যোগ হয়েছে",
