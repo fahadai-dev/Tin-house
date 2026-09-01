@@ -322,7 +322,129 @@ function logActivity(action, detail) {
   if (activityLog.length > 500) activityLog.length = 500;
   persistShopData();
 }
-
+/* ============================================================
+ ট্র্যাশ / রিস্টোর সিস্টেম
+ ============================================================ */
+function moveToTrash(type, label, detail, data) {
+  trashBin.unshift({
+    id: trashNextId++,
+    type,
+    label,
+    detail: detail || "",
+    data,
+    deletedAt: new Date(),
+    deletedBy: currentUser ? currentUser.full_name : "অজানা",
+  });
+  if (trashBin.length > 300) trashBin.length = 300;
+}
+function trashTypeLabel(type) {
+  return (
+    {
+      stockItem: "📦 স্টক আইটেম",
+      brand: "🏷️ ব্র্যান্ড",
+      customer: "🧑 গ্রাহক (বাকির খাতা)",
+      supplier: "🚚 সাপ্লায়ার",
+      employee: "👷 কর্মচারী",
+      purchase: "🛒 ক্রয়ের এন্ট্রি",
+      expense: "💸 খরচের এন্ট্রি",
+      income: "💰 আয়ের এন্ট্রি",
+      payment: "🧾 পেমেন্ট রশিদ",
+      quickSale: "⚡ দ্রুত বিক্রি",
+    }[type] || "🗑️ আইটেম"
+  );
+}
+function restoreFromTrash(trashId) {
+  const t = trashBin.find((x) => x.id === trashId);
+  if (!t) return;
+  const d = t.data;
+  if (t.type === "stockItem") {
+    if (!inventory[d.brand]) inventory[d.brand] = {};
+    if (!inventory[d.brand][d.mm]) inventory[d.brand][d.mm] = {};
+    inventory[d.brand][d.mm][d.sz] = d.item;
+  } else if (t.type === "brand") {
+    if (!BRANDS.includes(d.name)) BRANDS.push(d.name);
+    inventory[d.name] = d.inventory;
+    brandCategory[d.name] = d.category;
+  } else if (t.type === "customer") {
+    ledger.push(d);
+  } else if (t.type === "supplier") {
+    suppliers.push(d);
+  } else if (t.type === "employee") {
+    expensePeople.push(d);
+  } else if (t.type === "purchase") {
+    purchases.push(d);
+    if (
+      inventory[d.brand] &&
+      inventory[d.brand][d.mm] &&
+      inventory[d.brand][d.mm][d.size]
+    ) {
+      inventory[d.brand][d.mm][d.size].stock += d.pieces;
+    }
+  } else if (t.type === "expense") {
+    expenses.push(d);
+  } else if (t.type === "income") {
+    incomes.push(d);
+  } else if (t.type === "payment") {
+    payments.push(d);
+    const cust = ledger.find((l) => l.id === d.custId);
+    if (cust) {
+      cust.due = Math.max(0, cust.due - d.amount - (d.discount || 0));
+      cust.paidTotal = (cust.paidTotal || 0) + d.amount;
+    }
+  } else if (t.type === "quickSale") {
+    quickSales.push(d);
+  }
+  trashBin = trashBin.filter((x) => x.id !== trashId);
+  logActivity(
+    "ট্র্যাশ থেকে রিস্টোর করা হয়েছে",
+    `${trashTypeLabel(t.type)} · ${t.label}`,
+  );
+  showToast("✅ ফিরিয়ে আনা হয়েছে");
+  render();
+  persistShopData();
+}
+function permanentDeletePrompt(trashId) {
+  const t = trashBin.find((x) => x.id === trashId);
+  if (!t) return;
+  openModal(
+    "স্থায়ীভাবে মুছবেন?",
+    `<p style="font-size:13.5px;line-height:1.7;">"${esc(t.label)}" ট্র্যাশ থেকেও স্থায়ীভাবে মুছে ফেলা হবে। এরপর আর কোনোভাবেই ফিরিয়ে আনা যাবে না।</p>`,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('স্থায়ীভাবে মুছুন', () => permanentDeleteConfirmed(${trashId}))">হ্যাঁ, স্থায়ীভাবে মুছুন</button>
+ `,
+  );
+}
+function permanentDeleteConfirmed(trashId) {
+  trashBin = trashBin.filter((x) => x.id !== trashId);
+  closeModal();
+  render();
+  showToast("স্থায়ীভাবে মুছে ফেলা হয়েছে");
+  persistShopData();
+}
+function renderTrash() {
+  if (trashBin.length === 0) {
+    return `<div class="empty-state"><div class="ic">🗑️</div>ট্র্যাশ খালি<br><span style="font-size:12px;">কোনো কিছু মুছে ফেললে সেটা প্রথমে এখানে জমা থাকবে</span></div>`;
+  }
+  const rows = trashBin
+    .map(
+      (t) => `
+ <div class="day-tx">
+ <div>
+ <div class="txname">${trashTypeLabel(t.type)} — ${esc(t.label)}</div>
+ <div class="txmeta">${esc(t.detail)}${t.detail ? " · " : ""}${new Date(t.deletedAt).toLocaleString("bn-BD")} · মুছেছেন ${esc(t.deletedBy)}</div>
+ </div>
+ <div style="display:flex; gap:8px;">
+ <button class="btn btn-primary" onclick="restoreFromTrash(${t.id})">♻️ ফিরিয়ে আনুন</button>
+ <button class="btn btn-outline" style="color:var(--red);border-color:var(--red);" onclick="permanentDeletePrompt(${t.id})">🗑️ স্থায়ী মুছুন</button>
+ </div>
+ </div>`,
+    )
+    .join("");
+  return `
+ <div style="font-size:12.5px;color:var(--steel-500);margin-bottom:14px;">সর্বশেষ ৩০০টি ডিলিট হওয়া জিনিস এখানে জমা থাকে — যেকোনোটি ফিরিয়ে আনতে পারবেন, অথবা স্থায়ীভাবে মুছে ফেলতে পারবেন</div>
+ ${rows}`;
+}
 let LOW_STOCK_THRESHOLD = 5;
 
 let returns = [];
@@ -330,6 +452,9 @@ let returnNextId = 1;
 
 let quickSales = [];
 let quickSaleNextId = 1;
+
+let trashBin = [];
+let trashNextId = 1;
 
 let currentView = "dashboard";
 let lastInvoiceId = null;
@@ -428,6 +553,7 @@ const nav = [
   { id: "report", label: "ব্যবসার রিপোর্ট", icon: "📋" },
   { id: "aiAssistant", label: "AI সহকারী", icon: "🤖" },
   { id: "staff", label: "স্টাফ ও লগ", icon: "👥" },
+  { id: "trash", label: "রিস্টোর/ট্র্যাশ", icon: "🗑️" },
   { id: "settings", label: "দোকানের তথ্য", icon: "⚙️" },
 ];
 
@@ -869,6 +995,8 @@ function collectState(isNewShop) {
     returnNextId,
     quickSales,
     quickSaleNextId,
+    trashBin,
+    trashNextId,
     shopPhone: SHOP_PHONE,
     shopAddress: SHOP_ADDRESS,
     shopEmail: SHOP_EMAIL,
@@ -924,6 +1052,8 @@ function applyState(s) {
   returnNextId = s.returnNextId || 1;
   quickSales = s.quickSales || [];
   quickSaleNextId = s.quickSaleNextId || 1;
+  trashBin = s.trashBin || [];
+  trashNextId = s.trashNextId || 1;
   SHOP_PHONE = s.shopPhone || "";
   SHOP_ADDRESS = s.shopAddress || "";
   SHOP_EMAIL = s.shopEmail || "";
@@ -1410,6 +1540,7 @@ function switchView(id, opts) {
     aiAssistant: "AI সহকারী",
     cashbox: "ক্যাশবক্স",
     staff: "স্টাফ ও লগ",
+    trash: "রিস্টোর/ট্র্যাশ",
     settings: "দোকানের তথ্য",
   };
   document.getElementById("pageTitle").textContent =
@@ -1529,6 +1660,7 @@ function render() {
   else if (currentView === "aiAssistant") c.innerHTML = renderAIAssistant();
   else if (currentView === "cashbox") c.innerHTML = renderCashbox();
   else if (currentView === "staff") c.innerHTML = renderStaff();
+  else if (currentView === "trash") c.innerHTML = renderTrash();
   else if (currentView === "settings") c.innerHTML = renderSettings();
 }
 
@@ -1945,6 +2077,7 @@ function renderDashboard() {
         tile("report", "c-slate", "📊", "ব্যবসার রিপোর্ট"),
         tile("aiAssistant", "c-purple", "🤖", "AI সহকারী"),
         tile("staff", "c-gray", "👥", "অ্যাপ অ্যাক্সেস (স্টাফ)"),
+        tile("trash", "c-red", "🗑️", "রিস্টোর/ট্র্যাশ"),
         tile("settings", "c-teal", "⚙️", "দোকানের তথ্য"),
       ].join("")
     : "";
@@ -2392,8 +2525,13 @@ function confirmQuickSale() {
   persistShopData();
 }
 function deleteQuickSale(id) {
-  quickSales = quickSales.filter((q) => q.id !== id);
+  const q = quickSales.find((x) => x.id === id);
+  if (q) {
+    moveToTrash("quickSale", q.name || "নাম নেই", fmt(q.totalAmount), q);
+  }
+  quickSales = quickSales.filter((x) => x.id !== id);
   render();
+  showToast("ট্র্যাশে সরানো হয়েছে — চাইলে ফিরিয়ে আনতে পারবেন");
   persistShopData();
 }
 function posGoStep(step) {
@@ -4135,12 +4273,18 @@ function deleteBrandPrompt(name) {
   );
 }
 function deleteBrandConfirmed(name) {
+  moveToTrash(
+    "brand",
+    name,
+    `${Object.keys(inventory[name] || {}).length} টি আইটেম সহ`,
+    { name, inventory: inventory[name] || {}, category: brandCategory[name] },
+  );
   BRANDS = BRANDS.filter((b) => b !== name);
   delete inventory[name];
   logActivity("ব্র্যান্ড মুছে ফেলা হয়েছে", name);
   closeModal();
   render();
-  showToast("ব্র্যান্ড মুছে ফেলা হয়েছে");
+  showToast("ব্র্যান্ড ট্র্যাশে সরানো হয়েছে — চাইলে ফিরিয়ে আনতে পারবেন");
   persistShopData();
 }
 function addSimpleProductPrompt() {
@@ -4648,7 +4792,13 @@ function deleteStockItemPrompt(brand, mm, sz) {
   );
 }
 function deleteStockItemConfirmed(brand, mm, sz) {
-  if (inventory[brand] && inventory[brand][mm]) {
+  if (inventory[brand] && inventory[brand][mm] && inventory[brand][mm][sz]) {
+    moveToTrash(
+      "stockItem",
+      `${brand} · ${mm} · ${sz}`,
+      `স্টক ছিল ${inventory[brand][mm][sz].stock}`,
+      { brand, mm, sz, item: inventory[brand][mm][sz] },
+    );
     delete inventory[brand][mm][sz];
     if (Object.keys(inventory[brand][mm]).length === 0) {
       delete inventory[brand][mm];
@@ -4657,7 +4807,7 @@ function deleteStockItemConfirmed(brand, mm, sz) {
   logActivity("স্টক আইটেম মুছে ফেলা হয়েছে", `${brand} · ${mm} · ${sz}`);
   closeModal();
   render();
-  showToast("আইটেম মুছে ফেলা হয়েছে");
+  showToast("আইটেম ট্র্যাশে সরানো হয়েছে — চাইলে ফিরিয়ে আনতে পারবেন");
   persistShopData();
 }
 
@@ -4872,6 +5022,12 @@ function deletePurchasePrompt(id) {
 function deletePurchaseConfirmed(id) {
   const p = purchases.find((x) => x.id === id);
   if (!p) return;
+  moveToTrash(
+    "purchase",
+    `${p.brand} · ${p.mm}মি:লি: · ${p.size}ফুট`,
+    fmt(p.cost),
+    p,
+  );
   if (
     inventory[p.brand] &&
     inventory[p.brand][p.mm] &&
@@ -4887,7 +5043,7 @@ function deletePurchaseConfirmed(id) {
   );
   closeModal();
   render();
-  showToast("মুছে ফেলা হয়েছে");
+  showToast("ট্র্যাশে সরানো হয়েছে — চাইলে ফিরিয়ে আনতে পারবেন");
   persistShopData();
 }
 function purchaseSearchInputFn(val) {
@@ -5705,11 +5861,14 @@ function deleteEmployeePrompt(id) {
 }
 function deleteEmployeeConfirmed(id) {
   const p = expensePeople.find((x) => x.id === id);
+  if (p) {
+    moveToTrash("employee", p.name, "", p);
+  }
   expensePeople = expensePeople.filter((x) => x.id !== id);
   employeeDetailId = null;
   closeModal();
   render();
-  showToast("কর্মচারী মুছে ফেলা হয়েছে");
+  showToast("কর্মচারী ট্র্যাশে সরানো হয়েছে — চাইলে ফিরিয়ে আনতে পারবেন");
   if (p) logActivity("কর্মচারী মুছে ফেলা হয়েছে", p.name);
   persistShopData();
 }
@@ -5994,11 +6153,14 @@ function deleteSupplierPrompt(id) {
 }
 function deleteSupplierConfirmed(id) {
   const s = suppliers.find((x) => x.id === id);
+  if (s) {
+    moveToTrash("supplier", s.name, `বাকি ছিল ${fmt(s.due || 0)}`, s);
+  }
   suppliers = suppliers.filter((x) => x.id !== id);
   supplierDetailId = null;
   closeModal();
   render();
-  showToast("সাপ্লায়ার মুছে ফেলা হয়েছে");
+  showToast("সাপ্লায়ার ট্র্যাশে সরানো হয়েছে — চাইলে ফিরিয়ে আনতে পারবেন");
   if (s) logActivity("সাপ্লায়ার মুছে ফেলা হয়েছে", s.name);
   persistShopData();
 }
@@ -6439,7 +6601,12 @@ function renderCustomerDetail(id) {
     (inv) => inv.custId === id && !inv.cancelled,
   );
   const custPayments = payments.filter((p) => p.custId === id);
-  const totalSales = custInvoices.reduce((s, inv) => s + inv.total, 0);
+  const custDueEntriesForTotal = customerDueEntries.filter(
+    (d) => d.custId === id,
+  );
+  const totalSales =
+    custInvoices.reduce((s, inv) => s + inv.total, 0) +
+    custDueEntriesForTotal.reduce((s, d) => s + d.amount, 0);
   const totalPaidAllTime = cust.paidTotal || 0;
 
   const backRow = `<div class="back-row">
@@ -6772,11 +6939,15 @@ function deleteCustomerPrompt(id) {
   );
 }
 function deleteCustomerConfirmed(id) {
+  const cust = ledger.find((x) => x.id === id);
+  if (cust) {
+    moveToTrash("customer", cust.name, `বাকি ছিল ${fmt(cust.due)}`, cust);
+  }
   ledger = ledger.filter((x) => x.id !== id);
   ledgerDetailId = null;
   closeModal();
   render();
-  showToast("গ্রাহক মুছে ফেলা হয়েছে");
+  showToast("গ্রাহক ট্র্যাশে সরানো হয়েছে — চাইলে ফিরিয়ে আনতে পারবেন");
   persistShopData();
   switchView("ledger");
 }
@@ -6917,6 +7088,7 @@ function deletePaymentPrompt(id) {
 function deletePaymentConfirmed(id) {
   const p = payments.find((x) => x.id === id);
   if (!p) return;
+  moveToTrash("payment", `${p.custName} · রশিদ #${p.id}`, fmt(p.amount), p);
   const cust = ledger.find((l) => l.id === p.custId);
   if (cust) {
     cust.due = (cust.due || 0) + p.amount + (p.discount || 0);
@@ -6930,7 +7102,7 @@ function deletePaymentConfirmed(id) {
     `#${p.id} · ${p.custName} · ${fmt(p.amount)} (বাকিতে ফিরিয়ে দেওয়া হয়েছে)`,
   );
   closeModal();
-  showToast("রশিদ মুছে ফেলা হয়েছে, টাকা আবার বাকিতে যোগ হয়েছে");
+  showToast("রশিদ ট্র্যাশে সরানো হয়েছে, টাকা আবার বাকিতে যোগ হয়েছে");
   persistShopData();
   switchView("ledger");
 }
@@ -7359,10 +7531,19 @@ function deleteIncomePrompt(id) {
   );
 }
 function deleteIncomeConfirmed(id) {
+  const inc = incomes.find((x) => x.id === id);
+  if (inc) {
+    moveToTrash(
+      "income",
+      `${inc.personName} · ${inc.categoryName}`,
+      fmt(inc.amount),
+      inc,
+    );
+  }
   incomes = incomes.filter((x) => x.id !== id);
   closeModal();
   render();
-  showToast("আয় মুছে ফেলা হয়েছে");
+  showToast("আয় ট্র্যাশে সরানো হয়েছে — চাইলে ফিরিয়ে আনতে পারবেন");
   persistShopData();
 }
 function buildIncomeReceiptHtml(inc) {
@@ -7940,10 +8121,19 @@ function deleteExpensePrompt(id) {
   );
 }
 function deleteExpenseConfirmed(id) {
+  const e = expenses.find((x) => x.id === id);
+  if (e) {
+    moveToTrash(
+      "expense",
+      `${e.personName} · ${e.categoryName}`,
+      fmt(e.amount),
+      e,
+    );
+  }
   expenses = expenses.filter((x) => x.id !== id);
   closeModal();
   render();
-  showToast("খরচ মুছে ফেলা হয়েছে");
+  showToast("খরচ ট্র্যাশে সরানো হয়েছে — চাইলে ফিরিয়ে আনতে পারবেন");
   persistShopData();
 }
 
