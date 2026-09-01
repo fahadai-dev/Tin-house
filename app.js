@@ -164,6 +164,8 @@ const UNIT_OPTIONS = [
   "প্যাকেট",
   "কেজি",
   "গ্রাম",
+  "লিটার",
+  "মিলি লিটার",
   "সেট",
   "বক্স",
   "বান্ডেল",
@@ -217,7 +219,94 @@ function unitSelectPick(fieldId, val) {
     input.value = val;
   }
 }
-
+/* ============================================================
+ সহজ পণ্যের ইউনিট রূপান্তর (কেজি↔গ্রাম, লিটার↔মিলি লিটার ইত্যাদি)
+ ============================================================ */
+const UNIT_CONVERSION_GROUPS = [
+  { কেজি: 1000, গ্রাম: 1 },
+  { লিটার: 1000, "মিলি লিটার": 1 },
+];
+function unitConversionFactor(fromUnit, toUnit) {
+  if (!fromUnit || !toUnit || fromUnit === toUnit) return null;
+  for (const g of UNIT_CONVERSION_GROUPS) {
+    if (g[fromUnit] != null && g[toUnit] != null) {
+      return g[fromUnit] / g[toUnit];
+    }
+  }
+  return null;
+}
+let spuQtyFieldId = null,
+  spuBuyFieldId = null,
+  spuSellFieldId = null,
+  spuPrevUnit = null;
+function initSimpleUnitTracking(qtyId, buyId, sellId, initialUnit) {
+  spuQtyFieldId = qtyId;
+  spuBuyFieldId = buyId;
+  spuSellFieldId = sellId;
+  spuPrevUnit = initialUnit || "পিস";
+}
+function spuConvertFields(oldUnit, newUnit) {
+  const factor = unitConversionFactor(oldUnit, newUnit);
+  if (factor == null) return;
+  const qtyEl = document.getElementById(spuQtyFieldId);
+  const buyEl = document.getElementById(spuBuyFieldId);
+  const sellEl = document.getElementById(spuSellFieldId);
+  if (qtyEl) {
+    const q = parseFloat(qtyEl.value) || 0;
+    qtyEl.value = Math.round(q * factor * 1000000) / 1000000;
+  }
+  if (buyEl) {
+    const b = parseFloat(buyEl.value) || 0;
+    buyEl.value = Math.round((b / factor) * 1000000) / 1000000;
+  }
+  if (sellEl) {
+    const s = parseFloat(sellEl.value) || 0;
+    sellEl.value = Math.round((s / factor) * 1000000) / 1000000;
+  }
+  showToast(
+    `${oldUnit} → ${newUnit}: পরিমাণ ও দাম স্বয়ংক্রিয়ভাবে রূপান্তরিত হয়েছে`,
+  );
+}
+function simpleUnitFieldHtml(fieldId, currentValue) {
+  const cur = currentValue || "";
+  const isCustom = cur !== "" && !UNIT_OPTIONS.includes(cur);
+  const displayLabel = cur === "" ? "— বাছুন —" : cur;
+  const opts = UNIT_OPTIONS.map(
+    (u) =>
+      `<div class="unit-opt ${cur === u ? "active" : ""}" onclick="simpleUnitPick('${fieldId}','${jsq(u)}')">${esc(u)}</div>`,
+  ).join("");
+  return `
+ <div class="unit-picker">
+   <button type="button" class="unit-picker-btn" onclick="unitPickerToggle('${fieldId}')">
+     <span id="${fieldId}PickerLabel">${esc(displayLabel)}</span><span class="unit-picker-arrow">▾</span>
+   </button>
+   <div class="unit-picker-list" id="${fieldId}List" style="display:none;">
+     ${opts}
+     <div class="unit-opt custom ${isCustom ? "active" : ""}" onclick="simpleUnitPick('${fieldId}','__custom__')">✏️ নিজে লিখুন (অন্য কিছু)</div>
+   </div>
+ </div>
+ <input type="text" id="${fieldId}" value="${esc(cur)}" placeholder="যেমনঃ প্যাক, বোতল" style="margin-top:8px; ${isCustom || cur === "" ? "" : "display:none;"}" onchange="spuPrevUnit=this.value;">`;
+}
+function simpleUnitPick(fieldId, val) {
+  const input = document.getElementById(fieldId);
+  const labelEl = document.getElementById(fieldId + "PickerLabel");
+  const list = document.getElementById(fieldId + "List");
+  if (list) list.style.display = "none";
+  if (!input) return;
+  if (val === "__custom__") {
+    if (labelEl) labelEl.textContent = "✏️ নিজে লিখুন (অন্য কিছু)";
+    input.style.display = "";
+    input.value = "";
+    input.focus();
+    return;
+  }
+  const oldUnit = spuPrevUnit;
+  if (labelEl) labelEl.textContent = val;
+  input.style.display = "none";
+  input.value = val;
+  spuConvertFields(oldUnit, val);
+  spuPrevUnit = val;
+}
 function seededRand(seed) {
   let x = Math.sin(seed) * 10000;
   return x - Math.floor(x);
@@ -4283,15 +4372,22 @@ function addSimpleProductPrompt() {
     "নতুন পণ্য যোগ করুন",
     `
  <div class="field"><label>পণ্যের নাম</label><input type="text" id="newSimpleName" placeholder="যেমনঃ ফোম সাদা ৩৯ ইঞ্চি"></div>
- <div class="field"><label>প্রাইমারি ইউনিট (যেমনঃ পিস, ফুট, কেজি, গ্রাম)</label>${unitSelectHtml("newSimpleUnit", "পিস")}</div>
+ <div class="field"><label>প্রাইমারি ইউনিট (যেমনঃ পিস, ফুট, কেজি, গ্রাম)</label>${simpleUnitFieldHtml("newSimpleUnit", "পিস")}</div>
  <div class="field"><label>পরিমাণ (স্টক) — উপরের ইউনিট অনুযায়ী</label><input type="number" id="newSimpleQty" min="0" step="any" value="0"></div>
  <div class="field"><label>ক্রয়মূল্য (৳ — প্রতি ইউনিট)</label><input type="number" id="newSimpleBuy" min="0" step="any" value="0"></div>
  <div class="field"><label>বিক্রয়মূল্য (৳ — প্রতি ইউনিট)</label><input type="number" id="newSimpleSell" min="0" step="any" value="0"></div>
+ <div style="font-size:11px;color:var(--steel-500);">💡 ইউনিট বদলালে (যেমন কেজি → গ্রাম) পরিমাণ ও দাম স্বয়ংক্রিয়ভাবে হিসাব হয়ে যাবে</div>
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
  <button class="btn btn-primary" onclick="saveSimpleProduct()">যোগ করুন</button>
  `,
+  );
+  initSimpleUnitTracking(
+    "newSimpleQty",
+    "newSimpleBuy",
+    "newSimpleSell",
+    "পিস",
   );
 }
 function saveSimpleProduct() {
@@ -4337,8 +4433,8 @@ function editSimpleProductPrompt(name) {
     `পণ্য এডিট — ${esc(name)}`,
     `
  <div class="field"><label>পণ্যের নাম</label><input type="text" id="editSimpleName" value="${esc(name)}"></div>
- <div class="field"><label>প্রাইমারি ইউনিট</label>${unitSelectHtml("editSimpleUnit", currentUnit)}</div>
- <div style="font-size:11px;color:var(--steel-500);margin:-8px 0 12px;">⚠️ ইউনিট বদলালে নিচের দাম ও স্টকের সংখ্যা নিজে থেকে রূপান্তর হবে না — প্রয়োজনে নিজে হিসাব করে বসিয়ে দিন।</div>
+ <div class="field"><label>প্রাইমারি ইউনিট</label>${simpleUnitFieldHtml("editSimpleUnit", currentUnit)}</div>
+ <div style="font-size:11px;color:var(--steel-500);margin:-8px 0 12px;">💡 পরিচিত জোড়ায় (কেজি↔গ্রাম, লিটার↔মিলি লিটার) ইউনিট বদলালে পরিমাণ ও দাম স্বয়ংক্রিয়ভাবে রূপান্তরিত হবে। অন্য কাস্টম ইউনিটে শুধু নামটাই বদলাবে, নিজে হিসাব করে বসাতে হবে।</div>
  <div class="field"><label>ক্রয়মূল্য (৳ — প্রতি ইউনিট)</label><input type="number" id="editSimpleBuy" value="${v.buy}" min="0" step="any"></div>
  <div class="field"><label>বিক্রয়মূল্য (৳ — প্রতি ইউনিট)</label><input type="number" id="editSimpleSell" value="${v.sell}" min="0" step="any"></div>
  <div class="field"><label>স্টক (পরিমাণ)</label><input type="number" id="editSimpleStock" value="${v.stock}" min="0" step="any"></div>
@@ -4348,6 +4444,12 @@ function editSimpleProductPrompt(name) {
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
  <button class="btn btn-primary" onclick="saveSimpleProductEdit('${jsq(name)}')">সংরক্ষণ করুন</button>
  `,
+  );
+  initSimpleUnitTracking(
+    "editSimpleStock",
+    "editSimpleBuy",
+    "editSimpleSell",
+    currentUnit,
   );
 }
 function saveSimpleProductEdit(oldName) {
