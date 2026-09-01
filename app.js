@@ -2205,9 +2205,9 @@ function renderSales() {
  <div class="field"><label>অন্যান্য খরচের বিবরণ (ঐচ্ছিক)</label><input type="text" id="invExpenseLabel" placeholder="যেমনঃ লেবার খরচ, লোড-আনলোড"></div>
  <div class="field"><label>অন্যান্য খরচের পরিমাণ (৳)</label><input type="number" id="invExpenseAmt" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
  <div class="field"><label>ছাড়/ডিসকাউন্ট (৳)</label><input type="number" id="invDiscount" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
- <div class="field">
+  <div class="field">
  <label>জমার পরিমাণ</label>
- <input type="number" id="invPaid" value="${itemsSubtotal}" min="0" oninput="checkoutRecalc(${itemsSubtotal})">
+ <input type="number" id="invPaid" value="${saleCustomerType === "credit" ? "" : itemsSubtotal}" min="0" placeholder="${saleCustomerType === "credit" ? "খালি রাখলে সম্পূর্ণ বাকি হবে" : "0"}" oninput="checkoutRecalc(${itemsSubtotal})">
  </div>
  <div style="background:var(--steel-100); border-radius:8px; padding:12px 14px; font-size:13.5px;">
  <div style="display:flex;justify-content:space-between;"><span>সর্বমোট বিল</span><b class="mono" id="invGrandVal">${fmt(itemsSubtotal)}</b></div>
@@ -3154,9 +3154,9 @@ function renderCheckout() {
  <div class="field"><label>অন্যান্য খরচের বিবরণ (ঐচ্ছিক)</label><input type="text" id="invExpenseLabel" placeholder="যেমনঃ লেবার খরচ, লোড-আনলোড"></div>
  <div class="field"><label>অন্যান্য খরচের পরিমাণ (৳)</label><input type="number" id="invExpenseAmt" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
  <div class="field"><label>ছাড়/ডিসকাউন্ট (৳)</label><input type="number" id="invDiscount" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
-  <div class="field">
+   <div class="field">
  <label>জমার পরিমাণ</label>
- <input type="number" id="invPaid" value="${itemsSubtotal}" min="0" oninput="checkoutRecalc(${itemsSubtotal})">
+ <input type="number" id="invPaid" value="${saleCustomerType === "credit" ? "" : itemsSubtotal}" min="0" placeholder="${saleCustomerType === "credit" ? "খালি রাখলে সম্পূর্ণ বাকি হবে" : "0"}" oninput="checkoutRecalc(${itemsSubtotal})">
  </div>
  <div style="background:var(--steel-100); border-radius:8px; padding:12px 14px; font-size:13.5px;">
  <div style="display:flex;justify-content:space-between;"><span>সর্বমোট বিল</span><b class="mono" id="invGrandVal">${fmt(itemsSubtotal)}</b></div>
@@ -3344,7 +3344,7 @@ function confirmInvoice(itemsSubtotal) {
     customerName = typedName || "নগদ ক্রেতা";
     customerPhone = typedPhone;
     customerAddress = typedAddress;
-    if (due > 0) {
+    if (saleCustomerType === "credit" || due > 0) {
       const existingDup = ledger.find(
         (l) =>
           normalizeStr(l.name) === normalizeStr(customerName) &&
@@ -3353,7 +3353,7 @@ function confirmInvoice(itemsSubtotal) {
       if (existingDup) {
         // নাম ও নাম্বার আগের কারো সাথে হুবহু মিলে গেলে নতুন এন্ট্রি না বানিয়ে পুরনোটাতেই বাকি যোগ হবে
         duePrevVal = existingDup.due;
-        existingDup.due += due;
+        if (due > 0) existingDup.due += due;
         existingDup.paidTotal = (existingDup.paidTotal || 0) + paid;
         custIdFinal = existingDup.id;
         dueTotalAfterVal = existingDup.due;
