@@ -2255,21 +2255,7 @@ function renderSales() {
   const itemRows =
     cart.length === 0
       ? `<div class="no-match" style="margin-bottom:14px;">এখনো কোনো পণ্য যোগ করা হয়নি — নিচে "আইটেম যোগ করুন" চাপুন</div>`
-      : cart
-          .map((item, idx) => {
-            const eff = cartEffectiveQty(item);
-            const totalAmt = eff * item.sellPrice;
-            return `
- <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
- <div class="cart-item-top">
- <span style="font-weight:700;">${esc(item.brand)}${itemLabelText(item.brand, item.mm, item.size)}</span>
- <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
- </div>
- <div class="cart-sub" style="text-align:left;margin-top:6px;">পরিমাণঃ ${formatItemQty(item.brand, eff)} · দরঃ ${fmt(item.sellPrice)} · মোটঃ ${fmt(totalAmt)}</div>
- <button class="btn btn-outline" style="margin-top:8px;padding:6px 12px;font-size:12px;" onclick="openCartItemModal('${jsq(item.brand)}', ${item.mm}, ${item.size}, ${idx})">✏️ এডিট</button>
- </div>`;
-          })
-          .join("");
+      : cart.map((item, idx) => cartItemRowHtml(item, idx)).join("");
 
   return `
  <div class="panel" style="margin-bottom:16px;">
@@ -2463,21 +2449,7 @@ function renderCartPage() {
     return `<div class="empty-state"><div class="ic">🛒</div>কার্ট খালি<br><span style="font-size:12px;">আগে "বিক্রয়" থেকে পণ্য যোগ করুন</span></div>
  <div style="text-align:center;margin-top:14px;"><button class="btn btn-primary" onclick="switchView('sales')">← বিক্রয়ে ফিরে যান</button></div>`;
   }
-  const rows = cart
-    .map((item, idx) => {
-      const eff = cartEffectiveQty(item);
-      const totalAmt = eff * item.sellPrice;
-      return `
- <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
- <div class="cart-item-top">
- <span style="font-weight:700;">${esc(item.brand)}${itemLabelText(item.brand, item.mm, item.size)}</span>
- <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
- </div>
- <div class="cart-sub" style="text-align:left;margin-top:6px;">পরিমাণঃ ${formatItemQty(item.brand, eff)} · দরঃ ${fmt(item.sellPrice)} · মোটঃ ${fmt(totalAmt)}</div>
- <button class="btn btn-outline" style="margin-top:8px;padding:6px 12px;font-size:12px;" onclick="openCartItemModal('${jsq(item.brand)}', ${item.mm}, ${item.size}, ${idx})">✏️ এডিট</button>
- </div>`;
-    })
-    .join("");
+  const rows = cart.map((item, idx) => cartItemRowHtml(item, idx)).join("");
   const totalPieces = cart.reduce((s, i) => s + cartEffectiveQty(i), 0);
   const totalAmt = cart.reduce(
     (s, i) => s + cartEffectiveQty(i) * i.sellPrice,
@@ -2708,6 +2680,7 @@ function addToCart(brand, mm, size) {
       qtyPieces: increment,
       sellPrice: item.sell,
       buyPrice: item.buy,
+      unitKey: defaultCartUnitKey(brand),
     });
   const updated = cart.find(
     (c) => c.brand === brand && c.mm === mm && c.size === size,
@@ -2750,7 +2723,105 @@ const HARDWARE_UNIT_LIST = [
   "বান্ডেল",
   "স্কয়ার ফুট",
 ];
-
+/* ============================================================
+ কার্টের প্রতিটা লাইনে সরাসরি ইনলাইন পরিমাণ/ইউনিট/দাম এডিট
+ ============================================================ */
+function defaultCartUnitKey(brand) {
+  if (isWeightBrand(brand)) return "kg";
+  const cat = getCategoryOf(brand);
+  if (cat.usesBan) return "piece";
+  return "base";
+}
+function cartRowUnits(item) {
+  return cartUnitOptionsFor(item.brand, item.size, item.mm);
+}
+function cartRowCurrentUnit(item) {
+  const units = cartRowUnits(item);
+  return units.find((u) => u.key === item.unitKey) || units[0];
+}
+function cartRowSetUnit(idx, key) {
+  const item = cart[idx];
+  if (!item) return;
+  const units = cartRowUnits(item);
+  let unit = units.find((u) => u.key === key);
+  if (unit && unit.needsFactor) {
+    const val = window.prompt("১ পিস = কত গ্রাম?", "");
+    const grams = parseFloat(bnDigitsToEn(val || "")) || 0;
+    if (grams <= 0) {
+      showToast("সঠিক পরিমাণ দিন");
+      return;
+    }
+    if (
+      inventory[item.brand] &&
+      inventory[item.brand][item.mm] &&
+      inventory[item.brand][item.mm][item.size]
+    ) {
+      inventory[item.brand][item.mm][item.size].pieceGramFactor = grams;
+      persistShopData();
+    }
+  }
+  item.unitKey = key;
+  render();
+}
+function cartRowQtyInput(idx, val) {
+  const item = cart[idx];
+  if (!item) return;
+  const unit = cartRowCurrentUnit(item);
+  const qtyDisplay = Math.max(0, parseFloat(val) || 0);
+  item.qtyPieces = Math.round(qtyDisplay * unit.factor * 1000000) / 1000000;
+  render();
+}
+function cartRowPriceInput(idx, val) {
+  const item = cart[idx];
+  if (!item) return;
+  const unit = cartRowCurrentUnit(item);
+  const priceDisplay = Math.max(0, parseFloat(val) || 0);
+  item.sellPrice = unit.factor
+    ? Math.round((priceDisplay / unit.factor) * 1000000) / 1000000
+    : priceDisplay;
+  render();
+}
+function cartItemRowHtml(item, idx) {
+  const units = cartRowUnits(item);
+  if (!item.unitKey || !units.find((u) => u.key === item.unitKey)) {
+    item.unitKey = defaultCartUnitKey(item.brand);
+  }
+  const unit = cartRowCurrentUnit(item) || units[0];
+  const qtyDisplay = unit.factor
+    ? Math.round((item.qtyPieces / unit.factor) * 1000000) / 1000000
+    : item.qtyPieces;
+  const priceDisplay =
+    Math.round(item.sellPrice * unit.factor * 1000000) / 1000000;
+  const total = item.qtyPieces * item.sellPrice;
+  const unitOptsHtml = units
+    .map(
+      (u) =>
+        `<option value="${u.key}" ${u.key === unit.key ? "selected" : ""}>${esc(u.label)}</option>`,
+    )
+    .join("");
+  return `
+ <div class="cart-item" style="background:white;border:1px solid var(--steel-100);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
+ <div class="cart-item-top">
+ <span style="font-weight:700;">${esc(item.brand)}${itemLabelText(item.brand, item.mm, item.size)}</span>
+ <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
+ </div>
+ <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; align-items:flex-end;">
+ <div style="flex:1; min-width:80px;">
+ <label style="font-size:11px;color:var(--steel-500);">পরিমাণ</label>
+ <input type="number" min="0" step="any" value="${qtyDisplay}" oninput="cartRowQtyInput(${idx}, this.value)">
+ </div>
+ <div style="flex:1; min-width:90px;">
+ <label style="font-size:11px;color:var(--steel-500);">ইউনিট</label>
+ <select onchange="cartRowSetUnit(${idx}, this.value)">${unitOptsHtml}</select>
+ </div>
+ <div style="flex:1; min-width:90px;">
+ <label style="font-size:11px;color:var(--steel-500);">মূল্য (প্রতি ${esc(unit.label)})</label>
+ <input type="number" min="0" step="any" value="${priceDisplay}" oninput="cartRowPriceInput(${idx}, this.value)">
+ </div>
+ </div>
+ <div class="cart-sub" style="text-align:right;margin-top:8px;font-weight:700;">মোটঃ ${fmt(total)}</div>
+ </div>`;
+}
 function cartUnitOptionsFor(brand, size, mm) {
   const item0 =
     inventory[brand] && inventory[brand][mm] && inventory[brand][mm][size];
