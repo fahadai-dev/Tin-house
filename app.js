@@ -2854,16 +2854,20 @@ function cartUnitOptionsFor(brand, size, mm) {
   const lbl = getBrandLabels(brand);
   const baseUnit = lbl.sizeLabel;
   let opts = [{ key: "base", label: baseUnit, factor: 1 }];
-  // যদি প্রাইমারি ইউনিট পরিচিত জোড়ার (কেজি/গ্রাম, লিটার/মিলি লিটার) অংশ হয়,
-  // তাহলে বাকি ইউনিটগুলো স্বয়ংক্রিয়ভাবে যোগ হবে, factor দিয়ে দাম/পরিমাণ হিসাব হবে
-  const group = UNIT_CONVERSION_GROUPS.find((g) => g[baseUnit] != null);
+  // পরিচিত জোড়ার (কেজি/গ্রাম, লিটার/মিলি লিটার) সাথে মিলে গেলে বাকি ইউনিট স্বয়ংক্রিয়ভাবে যোগ হবে
+  const group = UNIT_CONVERSION_GROUPS.find((g) =>
+    Object.keys(g).some((k) => normalizeStr(k) === normalizeStr(baseUnit)),
+  );
   if (group) {
+    const matchedKey = Object.keys(group).find(
+      (k) => normalizeStr(k) === normalizeStr(baseUnit),
+    );
     Object.keys(group).forEach((u, i) => {
-      if (u === baseUnit) return;
+      if (normalizeStr(u) === normalizeStr(baseUnit)) return;
       opts.push({
         key: "conv" + i,
         label: u,
-        factor: group[u] / group[baseUnit],
+        factor: group[u] / group[matchedKey],
       });
     });
   }
