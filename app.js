@@ -2805,23 +2805,24 @@ function cartItemRowHtml(item, idx) {
  <span style="font-weight:700;">${esc(item.brand)}${itemLabelText(item.brand, item.mm, item.size)}</span>
  <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
  </div>
- <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; align-items:flex-end;">
- <div style="flex:1; min-width:80px;">
- <label style="font-size:11px;color:var(--steel-500);">পরিমাণ</label>
+ <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+ <div class="cart-box cart-box-ban" style="flex:1; min-width:110px;">
+ <label class="cart-box-label">পরিমাণ</label>
  <input type="number" min="0" step="any" value="${qtyDisplay}" oninput="cartRowQtyInput(${idx}, this.value)">
  </div>
- <div style="flex:1; min-width:90px;">
- <label style="font-size:11px;color:var(--steel-500);">ইউনিট</label>
+ <div class="cart-box cart-box-piece" style="flex:1; min-width:110px;">
+ <label class="cart-box-label">প্রাইমারি ইউনিট</label>
  <select onchange="cartRowSetUnit(${idx}, this.value)">${unitOptsHtml}</select>
  </div>
- <div style="flex:1; min-width:90px;">
- <label style="font-size:11px;color:var(--steel-500);">মূল্য (প্রতি ${esc(unit.label)})</label>
+ <div class="cart-box cart-box-price" style="flex:1; min-width:130px;">
+ <label class="cart-box-label">মূল্য (প্রতি ${esc(unit.label)})</label>
  <input type="number" min="0" step="any" value="${priceDisplay}" oninput="cartRowPriceInput(${idx}, this.value)">
  </div>
  </div>
- <div class="cart-sub" style="text-align:right;margin-top:8px;font-weight:700;">মোটঃ ${fmt(total)}</div>
+ <div class="cart-sub" style="text-align:right;margin-top:10px;font-weight:700;font-size:14.5px;">মোটঃ ${fmt(total)}</div>
  </div>`;
 }
+
 function cartUnitOptionsFor(brand, size, mm) {
   const item0 =
     inventory[brand] && inventory[brand][mm] && inventory[brand][mm][size];
