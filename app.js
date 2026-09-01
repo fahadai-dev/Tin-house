@@ -6687,8 +6687,8 @@ function renderCustomerDetail(id) {
         html: `
  <div class="day-tx">
  <div>
- <div class="txname"><span class="tx-tag payment">জমা</span>রশিদ #${p.id} · ${new Date(p.date).toLocaleDateString("bn-BD")}</div>
- <div class="txmeta">জমা ${fmt(p.amount)}${p.discount > 0 ? " · ছাড় " + fmt(p.discount) : ""} · মাধ্যমঃ ${esc(p.method || "ক্যাশ")}</div>
+  <div class="txname"><span class="tx-tag payment">জমা</span>রশিদ #${p.id} · ${new Date(p.date).toLocaleDateString("bn-BD")}</div>
+ <div class="txmeta">জমা ${fmt(p.amount)}${p.discount > 0 ? " · ছাড় " + fmt(p.discount) : ""} · মাধ্যমঃ ${esc(p.method || "ক্যাশ")}${p.note ? " · " + esc(p.note) : ""}</div>
  </div>
  <button class="btn btn-outline" onclick="viewPaymentReceipt(${p.id})">দেখুন</button>
  </div>`,
@@ -6969,8 +6969,9 @@ function paymentPrompt(id) {
  <option value="অন্যান্য">✏️ অন্যান্য</option>
  </select>
  </div>
- <div class="field"><label>ছাড়/ডিসকাউন্ট (৳) — থাকলে লিখুন</label><input type="number" id="payDiscount" value="0" min="0" max="${cust.due}" oninput="paymentRecalc(${cust.due})"></div>
+  <div class="field"><label>ছাড়/ডিসকাউন্ট (৳) — থাকলে লিখুন</label><input type="number" id="payDiscount" value="0" min="0" max="${cust.due}" oninput="paymentRecalc(${cust.due})"></div>
  <div class="field"><label>পরিশোধের পরিমাণ (৳)</label><input type="number" id="payAmt" value="${cust.due}" min="0" max="${cust.due}" oninput="paymentRecalc(${cust.due})"></div>
+ <div class="field"><label>বিবরণ (ঐচ্ছিক)</label><input type="text" id="payNote" placeholder="যেমনঃ নগদ জমা দিয়েছেন দোকানে এসে"></div>
  <div style="background:var(--steel-100); border-radius:8px; padding:10px 14px; font-size:13px; display:flex; justify-content:space-between;">
  <span>জমার পর বাকি থাকবে</span><b class="mono" id="payRemainVal">${fmt(0)}</b>
  </div>
@@ -7008,6 +7009,8 @@ function applyPayment(id) {
   const payDate = dateFromInput(document.getElementById("payDate").value);
   const methodEl = document.getElementById("payMethod");
   const method = methodEl ? methodEl.value : "ক্যাশ";
+  const noteEl = document.getElementById("payNote");
+  const note = noteEl ? noteEl.value.trim() : "";
   cust.due -= amt + disc;
   cust.paidTotal += amt;
   cust.discountTotal = (cust.discountTotal || 0) + disc;
@@ -7022,6 +7025,7 @@ function applyPayment(id) {
     method,
     amount: amt,
     discount: disc,
+    note,
     dueBefore,
     dueAfter: cust.due,
     date: payDate,
@@ -7151,7 +7155,8 @@ function buildPaymentReceiptHtml(p) {
  <div class="si-cust-row"><span class="si-lbl">প্রদানকারী:</span><span>${esc(p.custName)}</span></div>
  ${p.custPhone ? `<div class="si-cust-row"><span class="si-lbl">ফোন:</span><span>${telHtml(p.custPhone)}</span></div>` : ""}
  ${p.custAddress ? `<div class="si-cust-row"><span class="si-lbl">ঠিকানা:</span><span>${esc(p.custAddress)}</span></div>` : ""}
- <div class="si-cust-row"><span class="si-lbl">মাধ্যম:</span><span>${esc(p.method || "ক্যাশ")}</span></div>
+  <div class="si-cust-row"><span class="si-lbl">মাধ্যম:</span><span>${esc(p.method || "ক্যাশ")}</span></div>
+ ${p.note ? `<div class="si-cust-row"><span class="si-lbl">বিবরণ:</span><span>${esc(p.note)}</span></div>` : ""}
  </div>
  <div class="si-summary-wrap">
  <div class="si-summary">
@@ -8670,8 +8675,8 @@ function renderDaily() {
       html: `
  <div class="day-tx">
  <div>
- <div class="txname"><span class="tx-tag payment">জমা</span>${esc(p.custName)}${p.custPhone ? " · " + telHtml(p.custPhone) : ""}</div>
- <div class="txmeta">রশিদ #${p.id} · জমা ${fmt(p.amount)}${p.discount > 0 ? " · ছাড় " + fmt(p.discount) : ""} · বাকি ছিল ${fmt(p.dueBefore)} → এখন ${fmt(p.dueAfter)}</div>
+  <div class="txname"><span class="tx-tag payment">জমা</span>${esc(p.custName)}${p.custPhone ? " · " + telHtml(p.custPhone) : ""}</div>
+ <div class="txmeta">রশিদ #${p.id} · জমা ${fmt(p.amount)}${p.discount > 0 ? " · ছাড় " + fmt(p.discount) : ""} · বাকি ছিল ${fmt(p.dueBefore)} → এখন ${fmt(p.dueAfter)}${p.note ? " · " + esc(p.note) : ""}</div>
  </div>
  <button class="btn btn-outline" onclick="viewPaymentReceipt(${p.id})">দেখুন</button>
  </div>`,
