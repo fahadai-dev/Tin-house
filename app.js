@@ -1546,6 +1546,18 @@ function esc(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+function normalizeStr(s) {
+  return String(s || "")
+    .trim()
+    .toLowerCase();
+}
+function isDuplicateEntry(list, name, phone) {
+  const n = normalizeStr(name);
+  const p = normalizeStr(phone);
+  return list.some(
+    (x) => normalizeStr(x.name) === n && normalizeStr(x.phone) === p,
+  );
+}
 function jsq(str) {
   return String(str ?? "")
     .replace(/\\/g, "\\\\")
@@ -3195,19 +3207,34 @@ function confirmInvoice(itemsSubtotal) {
     customerPhone = typedPhone;
     customerAddress = typedAddress;
     if (due > 0) {
-      duePrevVal = 0;
-      const newCust = {
-        id: ledgerNextId++,
-        name: customerName,
-        address: customerAddress,
-        phone: customerPhone,
-        due: due,
-        paidTotal: paid,
-        discountTotal: 0,
-      };
-      ledger.push(newCust);
-      custIdFinal = newCust.id;
-      dueTotalAfterVal = newCust.due;
+      const existingDup = ledger.find(
+        (l) =>
+          normalizeStr(l.name) === normalizeStr(customerName) &&
+          normalizeStr(l.phone) === normalizeStr(customerPhone),
+      );
+      if (existingDup) {
+        // নাম ও নাম্বার আগের কারো সাথে হুবহু মিলে গেলে নতুন এন্ট্রি না বানিয়ে পুরনোটাতেই বাকি যোগ হবে
+        duePrevVal = existingDup.due;
+        existingDup.due += due;
+        existingDup.paidTotal = (existingDup.paidTotal || 0) + paid;
+        custIdFinal = existingDup.id;
+        dueTotalAfterVal = existingDup.due;
+      } else {
+        duePrevVal = 0;
+        const newCust = {
+          id: ledgerNextId++,
+          name: customerName,
+          address: customerAddress,
+          phone: customerPhone,
+          due: due,
+          paidTotal: paid,
+          discountTotal: 0,
+          addedDate: invDate,
+        };
+        ledger.push(newCust);
+        custIdFinal = newCust.id;
+        dueTotalAfterVal = newCust.due;
+      }
     } else {
       isCash = true;
       let cc = cashCustomers.find(
@@ -5873,6 +5900,13 @@ function saveNewSupplier() {
     showToast("নাম আবশ্যক");
     return;
   }
+  const phone = document.getElementById("supPhone").value.trim();
+  if (isDuplicateEntry(suppliers, name, phone)) {
+    showToast(
+      "এই নাম ও মোবাইল নাম্বারে আগে থেকেই একজন সাপ্লায়ার আছে — নাম বা নাম্বারে কিছু একটা পরিবর্তন করুন",
+    );
+    return;
+  }
   const startDue = Math.max(
     0,
     parseInt(document.getElementById("supStartDue").value) || 0,
@@ -5880,7 +5914,7 @@ function saveNewSupplier() {
   const sup = {
     id: supplierNextId++,
     name,
-    phone: document.getElementById("supPhone").value.trim(),
+    phone,
     address: document.getElementById("supAddress").value.trim(),
     brands: document.getElementById("supBrands").value.trim(),
     due: startDue,
@@ -5922,8 +5956,21 @@ function saveSupplierEdit(id) {
     showToast("নাম আবশ্যক");
     return;
   }
+  const phone = document.getElementById("supEditPhone").value.trim();
+  const dupExists = suppliers.some(
+    (x) =>
+      x.id !== id &&
+      normalizeStr(x.name) === normalizeStr(name) &&
+      normalizeStr(x.phone) === normalizeStr(phone),
+  );
+  if (dupExists) {
+    showToast(
+      "এই নাম ও মোবাইল নাম্বারে আগে থেকেই একজন সাপ্লায়ার আছে — নাম বা নাম্বারে কিছু একটা পরিবর্তন করুন",
+    );
+    return;
+  }
   s.name = name;
-  s.phone = document.getElementById("supEditPhone").value.trim();
+  s.phone = phone;
   s.address = document.getElementById("supEditAddress").value.trim();
   s.brands = document.getElementById("supEditBrands").value.trim();
   closeModal();
@@ -6580,13 +6627,20 @@ function saveNewCustomer() {
     showToast("নাম আবশ্যক");
     return;
   }
+  const phone = document.getElementById("custPhone").value.trim();
+  if (isDuplicateEntry(ledger, name, phone)) {
+    showToast(
+      "এই নাম ও মোবাইল নাম্বারে আগে থেকেই একজন গ্রাহক আছে — নাম বা নাম্বারে কিছু একটা পরিবর্তন করুন",
+    );
+    return;
+  }
   const startDue = parseInt(document.getElementById("custDue").value) || 0;
   const custDate = dateFromInput(document.getElementById("custDate").value);
   ledger.push({
     id: ledgerNextId++,
     name,
     address: document.getElementById("custAddr").value.trim(),
-    phone: document.getElementById("custPhone").value.trim(),
+    phone,
     due: startDue,
     paidTotal: 0,
     discountTotal: 0,
@@ -6629,9 +6683,22 @@ function saveCustomerEdit(id) {
     showToast("নাম আবশ্যক");
     return;
   }
+  const phone = document.getElementById("custEditPhone").value.trim();
+  const dupExists = ledger.some(
+    (l) =>
+      l.id !== id &&
+      normalizeStr(l.name) === normalizeStr(name) &&
+      normalizeStr(l.phone) === normalizeStr(phone),
+  );
+  if (dupExists) {
+    showToast(
+      "এই নাম ও মোবাইল নাম্বারে আগে থেকেই একজন গ্রাহক আছে — নাম বা নাম্বারে কিছু একটা পরিবর্তন করুন",
+    );
+    return;
+  }
   cust.name = name;
   cust.address = document.getElementById("custEditAddr").value.trim();
-  cust.phone = document.getElementById("custEditPhone").value.trim();
+  cust.phone = phone;
   cust.due = Math.max(
     0,
     parseInt(document.getElementById("custEditDue").value) || 0,
