@@ -2781,7 +2781,21 @@ function cartUnitOptionsFor(brand, size, mm) {
     ];
   }
   const lbl = getBrandLabels(brand);
-  let opts = [{ key: "base", label: lbl.sizeLabel, factor: 1 }];
+  const baseUnit = lbl.sizeLabel;
+  let opts = [{ key: "base", label: baseUnit, factor: 1 }];
+  // যদি প্রাইমারি ইউনিট পরিচিত জোড়ার (কেজি/গ্রাম, লিটার/মিলি লিটার) অংশ হয়,
+  // তাহলে বাকি ইউনিটগুলো স্বয়ংক্রিয়ভাবে যোগ হবে, factor দিয়ে দাম/পরিমাণ হিসাব হবে
+  const group = UNIT_CONVERSION_GROUPS.find((g) => g[baseUnit] != null);
+  if (group) {
+    Object.keys(group).forEach((u, i) => {
+      if (u === baseUnit) return;
+      opts.push({
+        key: "conv" + i,
+        label: u,
+        factor: group[u] / group[baseUnit],
+      });
+    });
+  }
   extra0.forEach((u, i) =>
     opts.push({ key: "ex" + i, label: u.label, factor: u.factor }),
   );
