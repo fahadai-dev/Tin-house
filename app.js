@@ -2887,8 +2887,8 @@ function cartUnitOptionsFor(brand, size, mm) {
   if (cat.id === "tin" && cat.usesBan) {
     const ppb = piecesPerBan(size);
     return [
-      { key: "piece", label: "পিস", factor: 1 },
       { key: "ban", label: "বান", factor: ppb },
+      { key: "piece", label: "পিস", factor: 1 },
     ];
   }
   const lbl = getBrandLabels(brand);
@@ -4619,7 +4619,12 @@ function editSimpleProductPrompt(name) {
  <div style="font-size:11px;color:var(--steel-500);margin:-8px 0 12px;">💡 পরিচিত জোড়ায় (কেজি↔গ্রাম, লিটার↔মিলি লিটার) ইউনিট বদলালে পরিমাণ ও দাম স্বয়ংক্রিয়ভাবে রূপান্তরিত হবে। অন্য কাস্টম ইউনিটে শুধু নামটাই বদলাবে, নিজে হিসাব করে বসাতে হবে।</div>
  <div class="field"><label>ক্রয়মূল্য (৳ — প্রতি ইউনিট)</label><input type="number" id="editSimpleBuy" value="${v.buy}" min="0" step="any"></div>
  <div class="field"><label>বিক্রয়মূল্য (৳ — প্রতি ইউনিট)</label><input type="number" id="editSimpleSell" value="${v.sell}" min="0" step="any"></div>
- <div class="field"><label>স্টক (পরিমাণ)</label><input type="number" id="editSimpleStock" value="${v.stock}" min="0" step="any"></div>
+ <div class="field"><label>স্টক (পরিমাণ)</label><input type="number" id="editSimpleStock" value="${v.stock}" min="0" step="any"></div> <div style="border-top:1px dashed var(--steel-300); padding-top:12px; margin-top:4px; margin-bottom:12px;">
+ <div style="font-size:12.5px;font-weight:600;color:var(--steel-700);margin-bottom:8px;">নতুন মাল কিনলে এখানে যোগ করুন (বর্তমান স্টকের সাথে যোগ হয়ে যাবে)</div>
+ <div class="field"><label>কত ${esc(currentUnit)} নতুন যোগ করবেন</label><input type="number" id="editSimpleAddQty" value="" min="0" step="any" placeholder="যেমনঃ ৫০"></div>
+ <div class="field"><label>প্রতি ${esc(currentUnit)} ক্রয়মূল্য (৳)</label><input type="number" id="editSimpleAddBuyPrice" value="${v.buy}" min="0" step="any"></div>
+ <button type="button" class="btn btn-outline" style="width:100%; justify-content:center;" onclick="editSimpleAddQtyToStock('${jsq(name)}')">+ উপরের স্টকে যোগ করুন</button>
+ </div>
  ${crossFieldsHtml ? `<div style="font-size:12.5px;font-weight:600;color:var(--steel-700);margin:14px 0 4px;">এই ক্যাটাগরির অতিরিক্ত ইউনিট</div>${crossFieldsHtml}<div style="font-size:11px;color:var(--steel-500);margin-top:-8px;">এখানে লিখে রাখলে বিক্রির সময় আর জিজ্ঞেস করবে না।</div>` : ""}
  `,
 
@@ -4635,6 +4640,45 @@ function editSimpleProductPrompt(name) {
     "editSimpleSell",
     currentUnit,
   );
+}
+function editSimpleAddQtyToStock(name) {
+  const qtyEl = document.getElementById("editSimpleAddQty");
+  const buyEl = document.getElementById("editSimpleAddBuyPrice");
+  const stockEl = document.getElementById("editSimpleStock");
+  const curBuyEl = document.getElementById("editSimpleBuy");
+  if (!qtyEl || !stockEl) return;
+  const addQty = Math.max(0, parseFloat(qtyEl.value) || 0);
+  if (addQty <= 0) {
+    showToast("কত পরিমাণ যোগ হয়েছে তা লিখুন");
+    return;
+  }
+  const buyPrice = buyEl ? Math.max(0, parseFloat(buyEl.value) || 0) : 0;
+  const currentStock = parseFloat(stockEl.value) || 0;
+  const oldBuy = curBuyEl ? parseFloat(curBuyEl.value) || 0 : 0;
+  if (buyPrice > 0) {
+    const newBuy =
+      currentStock + addQty > 0
+        ? Math.round(
+            ((currentStock * oldBuy + addQty * buyPrice) /
+              (currentStock + addQty)) *
+              1000,
+          ) / 1000
+        : buyPrice;
+    if (curBuyEl) curBuyEl.value = newBuy;
+    recordPurchase(
+      name,
+      "1",
+      "1",
+      0,
+      buyPrice,
+      addQty,
+      buyPrice,
+      addQty * buyPrice,
+    );
+  }
+  stockEl.value = Math.round((currentStock + addQty) * 1000) / 1000;
+  qtyEl.value = "";
+  showToast("নতুন পরিমাণ স্টকে যোগ হয়েছে — এখন 'সংরক্ষণ করুন' চাপুন");
 }
 function saveSimpleProductEdit(oldName) {
   const newName = document.getElementById("editSimpleName").value.trim();
@@ -4826,6 +4870,45 @@ function editAddBanToStock(brand, mm, sz) {
     `${addPieces} পিস স্টকে যোগ হয়েছে ও কেনার খাতায় লেখা হয়েছে — সংরক্ষণ করতে "সংরক্ষণ করুন" চাপুন`,
   );
 }
+function editAddQtyToStock(brand, mm, sz) {
+  const qtyEl = document.getElementById("editAddQty");
+  const buyEl = document.getElementById("editAddBuyPrice");
+  const stockEl = document.getElementById("editStock");
+  const buyDirectEl = document.getElementById("editBuyDirect");
+  if (!qtyEl || !stockEl) return;
+  const addQty = Math.max(0, parseFloat(qtyEl.value) || 0);
+  if (addQty <= 0) {
+    showToast("কত পরিমাণ যোগ হয়েছে তা লিখুন");
+    return;
+  }
+  const buyPrice = buyEl ? Math.max(0, parseFloat(buyEl.value) || 0) : 0;
+  const currentStock = parseFloat(stockEl.value) || 0;
+  const oldBuy = buyDirectEl ? parseFloat(buyDirectEl.value) || 0 : 0;
+  if (buyPrice > 0) {
+    const newBuy =
+      currentStock + addQty > 0
+        ? Math.round(
+            ((currentStock * oldBuy + addQty * buyPrice) /
+              (currentStock + addQty)) *
+              1000,
+          ) / 1000
+        : buyPrice;
+    if (buyDirectEl) buyDirectEl.value = newBuy;
+    recordPurchase(
+      brand,
+      mm,
+      sz,
+      0,
+      buyPrice,
+      addQty,
+      buyPrice,
+      addQty * buyPrice,
+    );
+  }
+  stockEl.value = Math.round((currentStock + addQty) * 1000) / 1000;
+  qtyEl.value = "";
+  showToast("নতুন পরিমাণ স্টকে যোগ হয়েছে — এখন 'সংরক্ষণ করুন' চাপুন");
+}
 
 function addStockPrompt() {
   stockSellManualOverride = false;
@@ -5013,7 +5096,13 @@ function editStockPrompt(brand, mm, sz) {
  </div>
   <button type="button" class="btn btn-outline" style="width:100%; justify-content:center;" onclick="editAddBanToStock('${jsq(brand)}', '${jsq(mm)}', '${jsq(sz)}')">+ উপরের স্টকে যোগ করুন</button>
  </div>`
-    : "";
+    : `
+ <div style="border-top:1px dashed var(--steel-300); padding-top:12px; margin-top:4px;">
+ <div style="font-size:12.5px;font-weight:600;color:var(--steel-700);margin-bottom:8px;">নতুন মাল কিনলে এখানে যোগ করুন (বর্তমান স্টকের সাথে যোগ হয়ে যাবে)</div>
+ <div class="field"><label>কত ${esc(cat.sizeLabel)} নতুন যোগ করবেন</label><input type="number" id="editAddQty" value="" min="0" step="any" placeholder="যেমনঃ ৫০"></div>
+ <div class="field"><label>প্রতি ${esc(cat.sizeLabel)} ক্রয়মূল্য (৳)</label><input type="number" id="editAddBuyPrice" value="${v.buy}" min="0" step="any"></div>
+  <button type="button" class="btn btn-outline" style="width:100%; justify-content:center;" onclick="editAddQtyToStock('${jsq(brand)}', '${jsq(mm)}', '${jsq(sz)}')">+ উপরের স্টকে যোগ করুন</button>
+ </div>`;
 
   openModal(
     `এডিট — ${esc(brand)} · ${esc(cat.unitLabel)} ${mm} · ${esc(cat.sizeLabel)} ${sz}`,
@@ -5025,7 +5114,7 @@ function editStockPrompt(brand, mm, sz) {
  </div>
  ${banSectionHtml}
  <div class="field"><label>বিক্রয়মূল্য (৳)</label><input type="number" id="editSell" value="${v.sell}" min="0"></div>
- <div class="field"><label>স্টক (${usesBan ? "পিস" : esc(cat.sizeLabel)})</label><input type="number" id="editStock" value="${v.stock}" min="0"></div>
+  <div class="field"><label>স্টক (${usesBan ? "পিস" : esc(cat.sizeLabel)}) — বর্তমান মোট। নতুন মাল যোগ করতে নিচের অংশ ব্যবহার করুন</label><input type="number" id="editStock" value="${v.stock}" min="0"></div>
  ${banAddSectionHtml}
  `,
     `
