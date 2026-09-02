@@ -1856,17 +1856,12 @@ function tryPrint() {
 function buildThermalInvoiceHtml(inv, widthMm) {
   const rows = inv.items
     .map((it) => {
-      const weight = isWeightBrand(it.brand);
-      const nameLine = weight
-        ? `${esc(it.brand)} (ওজন)`
-        : `${esc(it.brand)}${itemLabelText(it.brand, it.mm, it.size)}${it.banQty ? ` (${it.banQty} বান)` : ""}`;
-      const priceLine = weight
-        ? fmt(it.sellPrice * 1000) + "/কেজি"
-        : fmt(it.sellPrice);
+      const disp = invoiceItemDisplay(it);
+      const nameLine = `${esc(it.brand)}${itemLabelText(it.brand, it.mm, it.size)}${it.banQty ? ` (${it.banQty} বান)` : ""}`;
       return `
  <div class="th-item">
  <div>${nameLine}</div>
- <div class="th-row"><span>${formatItemQty(it.brand, it.qty)} × ${priceLine}</span><span>${fmt(it.qty * it.sellPrice)}</span></div>
+ <div class="th-row"><span>${disp.qtyLabel} × ${disp.priceLabel}</span><span>${fmt(it.qty * it.sellPrice)}</span></div>
  </div>`;
     })
     .join("");
@@ -2822,6 +2817,27 @@ function cartItemRowHtml(item, idx) {
  <div class="cart-sub" style="text-align:right;margin-top:10px;font-weight:700;font-size:14.5px;">মোটঃ ${fmt(total)}</div>
  </div>`;
 }
+function cartRowDisplayInfo(item) {
+  const unit = cartRowCurrentUnit(item) || cartRowUnits(item)[0];
+  const qty = unit.factor
+    ? Math.round((item.qtyPieces / unit.factor) * 1000000) / 1000000
+    : item.qtyPieces;
+  const price = Math.round(item.sellPrice * unit.factor * 1000000) / 1000000;
+  return { qty, price, label: unit.label };
+}
+function invoiceItemDisplay(it) {
+  if (it.displayUnit != null) {
+    return {
+      qtyLabel: `${it.displayQty} ${it.displayUnit}`,
+      priceLabel: `${fmt(it.displayPrice)}/${it.displayUnit}`,
+    };
+  }
+  const weight = isWeightBrand(it.brand);
+  return {
+    qtyLabel: formatItemQty(it.brand, it.qty),
+    priceLabel: weight ? fmt(it.sellPrice * 1000) + "/কেজি" : fmt(it.sellPrice),
+  };
+}
 
 function cartUnitOptionsFor(brand, size, mm) {
   const item0 =
@@ -3483,15 +3499,21 @@ function confirmInvoice(itemsSubtotal) {
   cart.forEach((item) => {
     inventory[item.brand][item.mm][item.size].stock -= cartEffectiveQty(item);
   });
-  const finalCartItems = cart.map((item) => ({
-    brand: item.brand,
-    mm: item.mm,
-    size: item.size,
-    qty: cartEffectiveQty(item),
-    sellPrice: item.sellPrice,
-    buyPrice: item.buyPrice,
-    banQty: item.banQty != null ? item.banQty : null,
-  }));
+  const finalCartItems = cart.map((item) => {
+    const disp = cartRowDisplayInfo(item);
+    return {
+      brand: item.brand,
+      mm: item.mm,
+      size: item.size,
+      qty: cartEffectiveQty(item),
+      sellPrice: item.sellPrice,
+      buyPrice: item.buyPrice,
+      banQty: item.banQty != null ? item.banQty : null,
+      displayQty: disp.qty,
+      displayPrice: disp.price,
+      displayUnit: disp.label,
+    };
+  });
 
   let customerName,
     customerPhone,
@@ -3734,19 +3756,14 @@ function amountToBengaliWords(num) {
 function buildInvoiceHtml(inv) {
   const rows = inv.items
     .map((it, idx) => {
-      const weight = isWeightBrand(it.brand);
-      const nameHtml = weight
-        ? `${esc(it.brand)} <span style="font-size:10px;color:#6B7A82;">(ওজন অনুযায়ী)</span>`
-        : `${esc(it.brand)}${itemLabelText(it.brand, it.mm, it.size)}${it.banQty ? ` <span style="font-size:10px;color:#6B7A82;">(${it.banQty} বান)</span>` : ""}`;
-      const priceHtml = weight
-        ? fmt(it.sellPrice * 1000) + "/কেজি"
-        : fmt(it.sellPrice);
+      const disp = invoiceItemDisplay(it);
+      const nameHtml = `${esc(it.brand)}${itemLabelText(it.brand, it.mm, it.size)}${it.banQty ? ` <span style="font-size:10px;color:#6B7A82;">(${it.banQty} বান)</span>` : ""}`;
       return `
  <tr>
  <td><span class="si-serial">${idx + 1}</span></td>
  <td>${nameHtml}</td>
- <td class="r num" style="text-align:center;">${formatItemQty(it.brand, it.qty)}</td>
- <td class="r num">${priceHtml}</td>
+ <td class="r num" style="text-align:center;">${disp.qtyLabel}</td>
+ <td class="r num">${disp.priceLabel}</td>
  <td class="r num">${fmt(it.qty * it.sellPrice)}</td>
  </tr>`;
     })
