@@ -1160,7 +1160,7 @@ function applyState(s) {
   categoryNextId = s.categoryNextId || categoryNextId;
 
   PRODUCT_CATEGORIES.forEach((c) => {
-    if (c.usesBan === undefined) c.usesBan = c.id === "tin";
+    c.usesBan = c.id === "tin";
     c.hasBrands = true;
   });
   brandCategory = s.brandCategory || {};
@@ -2740,19 +2740,42 @@ function cartRowSetUnit(idx, key) {
   const units = cartRowUnits(item);
   let unit = units.find((u) => u.key === key);
   if (unit && unit.needsFactor) {
-    const val = window.prompt("১ পিস = কত গ্রাম?", "");
-    const grams = parseFloat(bnDigitsToEn(val || "")) || 0;
-    if (grams <= 0) {
-      showToast("সঠিক পরিমাণ দিন");
-      return;
-    }
-    if (
-      inventory[item.brand] &&
-      inventory[item.brand][item.mm] &&
-      inventory[item.brand][item.mm][item.size]
-    ) {
-      inventory[item.brand][item.mm][item.size].pieceGramFactor = grams;
-      persistShopData();
+    if (unit.crossUnit) {
+      const lbl = getBrandLabels(item.brand);
+      const val = window.prompt(
+        `১ ${unit.crossUnit} = কত ${lbl.sizeLabel}?`,
+        "",
+      );
+      const factor = parseFloat(bnDigitsToEn(val || "")) || 0;
+      if (factor <= 0) {
+        showToast("সঠিক পরিমাণ দিন");
+        return;
+      }
+      if (
+        inventory[item.brand] &&
+        inventory[item.brand][item.mm] &&
+        inventory[item.brand][item.mm][item.size]
+      ) {
+        const invItem = inventory[item.brand][item.mm][item.size];
+        if (!invItem.crossFactors) invItem.crossFactors = {};
+        invItem.crossFactors[unit.crossUnit] = factor;
+        persistShopData();
+      }
+    } else {
+      const val = window.prompt("১ পিস = কত গ্রাম?", "");
+      const grams = parseFloat(bnDigitsToEn(val || "")) || 0;
+      if (grams <= 0) {
+        showToast("সঠিক পরিমাণ দিন");
+        return;
+      }
+      if (
+        inventory[item.brand] &&
+        inventory[item.brand][item.mm] &&
+        inventory[item.brand][item.mm][item.size]
+      ) {
+        inventory[item.brand][item.mm][item.size].pieceGramFactor = grams;
+        persistShopData();
+      }
     }
   }
   item.unitKey = key;
@@ -2803,7 +2826,7 @@ function cartItemRowHtml(item, idx) {
  <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
  <div class="cart-box cart-box-ban" style="flex:1; min-width:110px;">
  <label class="cart-box-label">পরিমাণ</label>
- <input type="number" min="0" step="any" value="${qtyDisplay}" oninput="cartRowQtyInput(${idx}, this.value)">
+ <input type="number" min="0" step="any" value="${qtyDisplay}" style="text-align:center;" oninput="cartRowQtyInput(${idx}, this.value)">
  </div>
  <div class="cart-box cart-box-piece" style="flex:1; min-width:110px;">
  <label class="cart-box-label">প্রাইমারি ইউনিট</label>
@@ -2811,7 +2834,7 @@ function cartItemRowHtml(item, idx) {
  </div>
  <div class="cart-box cart-box-price" style="flex:1; min-width:130px;">
  <label class="cart-box-label">মূল্য (প্রতি ${esc(unit.label)})</label>
- <input type="number" min="0" step="any" value="${priceDisplay}" oninput="cartRowPriceInput(${idx}, this.value)">
+ <input type="number" min="0" step="any" value="${priceDisplay}" style="text-align:center;" oninput="cartRowPriceInput(${idx}, this.value)">
  </div>
  </div>
  <div class="cart-sub" style="text-align:right;margin-top:10px;font-weight:700;font-size:14.5px;">মোটঃ ${fmt(total)}</div>
@@ -2861,7 +2884,7 @@ function cartUnitOptionsFor(brand, size, mm) {
     return opts;
   }
   const cat = getCategoryOf(brand);
-  if (cat.usesBan) {
+  if (cat.id === "tin" && cat.usesBan) {
     const ppb = piecesPerBan(size);
     return [
       { key: "piece", label: "পিস", factor: 1 },
@@ -2875,12 +2898,14 @@ function cartUnitOptionsFor(brand, size, mm) {
   const group = UNIT_CONVERSION_GROUPS.find((g) =>
     Object.keys(g).some((k) => normalizeStr(k) === normalizeStr(baseUnit)),
   );
+  let groupUnits = [];
   if (group) {
     const matchedKey = Object.keys(group).find(
       (k) => normalizeStr(k) === normalizeStr(baseUnit),
     );
     Object.keys(group).forEach((u, i) => {
       if (normalizeStr(u) === normalizeStr(baseUnit)) return;
+      groupUnits.push(normalizeStr(u));
       opts.push({
         key: "conv" + i,
         label: u,
@@ -2888,6 +2913,21 @@ function cartUnitOptionsFor(brand, size, mm) {
       });
     });
   }
+  // ক্যাটাগরিতে ঠিক করে দেওয়া "অতিরিক্ত ইউনিট" (যেমন পিস) — প্রথমবার সিলেক্ট করলে ফ্যাক্টর জিজ্ঞেস করবে
+  const crossUnits = cat.crossUnits || [];
+  crossUnits.forEach((cu, i) => {
+    const cuN = normalizeStr(cu);
+    if (cuN === normalizeStr(baseUnit)) return;
+    if (groupUnits.includes(cuN)) return;
+    const stored = item0 && item0.crossFactors && item0.crossFactors[cu];
+    opts.push({
+      key: "cross" + i,
+      label: cu,
+      factor: stored || 1,
+      needsFactor: !stored,
+      crossUnit: cu,
+    });
+  });
   extra0.forEach((u, i) =>
     opts.push({ key: "ex" + i, label: u.label, factor: u.factor }),
   );
@@ -4258,8 +4298,8 @@ function addCategoryPrompt() {
  <div class="field"><label>আইকন (ইমোজি)</label><input type="text" id="newCatIcon2" value="📦"></div>
     <div class="field"><label>প্রথম ঘরের একক/লেবেল</label>${unitSelectHtml("newCatUnitLabel", "পণ্যের নাম")}</div>
  <div class="field"><label>দ্বিতীয় ঘরের একক/লেবেল (পরিমাণের একক)</label>${unitSelectHtml("newCatSizeLabel", "পরিমাণ")}</div>
- <div class="field"><label><input type="checkbox" id="newCatUsesBan" style="width:auto;margin-right:6px;"> বান (bundle) হিসেবে স্টক ও দাম হিসাব হবে — শুধু টিনের মতো পণ্যের জন্য টিক দিন, বাকি সাধারণ পণ্যের জন্য খালি রাখুন</label></div>
- <div class="field"><label><input type="checkbox" id="newCatSimpleMode" style="width:auto;margin-right:6px;"> সহজ পণ্য মোড — ব্র্যান্ড/সাইজ লাগবে না, শুধু নাম-দাম-স্টক দিয়ে পণ্য যোগ হবে</label></div>
+  <div class="field"><label>অতিরিক্ত ইউনিট (ঐচ্ছিক, কমা দিয়ে লিখুন)</label><input type="text" id="newCatCrossUnits" placeholder="যেমনঃ পিস"></div>
+ <div style="font-size:11px;color:var(--steel-500);margin-top:-8px;margin-bottom:12px;">উদাহরণঃ তারকাটার ক্ষেত্রে প্রাইমারি ইউনিট কেজি রেখে এখানে "পিস" লিখুন। টুয়ার ক্ষেত্রে প্রাইমারি ইউনিট ফুট রেখে এখানে "পিস" লিখুন। প্রথমবার ওই ইউনিটে বিক্রি করার সময় ১টি সমান কত (প্রাইমারি ইউনিটে) জিজ্ঞেস করবে, এরপর থেকে মনে রাখবে।</div>
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -4278,12 +4318,17 @@ function saveNewCategory() {
     return;
   }
   const icon = document.getElementById("newCatIcon2").value.trim() || "📦";
-  const hasBrands = true; // এখন থেকে সব ক্যাটাগরিতেই সবসময় আগে ব্র্যান্ড যোগ করতে হবে (টিনের মতো)
+  const hasBrands = true;
   const unitLabel =
     document.getElementById("newCatUnitLabel").value.trim() || "পণ্যের নাম";
   const sizeLabel =
     document.getElementById("newCatSizeLabel").value.trim() || "পরিমাণ";
-  const usesBan = document.getElementById("newCatUsesBan").checked;
+  const crossUnits = document
+    .getElementById("newCatCrossUnits")
+    .value.trim()
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
   const cat = {
     id: "cat" + categoryNextId++,
     name,
@@ -4291,8 +4336,8 @@ function saveNewCategory() {
     hasBrands,
     unitLabel,
     sizeLabel,
-    usesBan,
-    simpleMode: document.getElementById("newCatSimpleMode").checked,
+    usesBan: false,
+    crossUnits,
   };
   PRODUCT_CATEGORIES.push(cat);
   ensureCategoryPseudoBrand(cat);
@@ -4311,8 +4356,8 @@ function editCategoryPrompt(id) {
  <div class="field"><label>আইকন (ইমোজি)</label><input type="text" id="editCatIcon2" value="${esc(cat.icon)}"></div>
   <div class="field"><label>প্রথম মাপের একক/লেবেল</label>${unitSelectHtml("editCatUnitLabel", cat.unitLabel)}</div>
  <div class="field"><label>দ্বিতীয় মাপের একক/লেবেল (পরিমাণের একক)</label>${unitSelectHtml("editCatSizeLabel", cat.sizeLabel)}</div>
- <div class="field"><label><input type="checkbox" id="editCatUsesBan" ${cat.usesBan ? "checked" : ""} style="width:auto;margin-right:6px;"> বান (bundle) হিসেবে স্টক ও দাম হিসাব হবে (যেমন টিন)</label></div>
- <div class="field"><label><input type="checkbox" id="editCatSimpleMode" ${cat.simpleMode ? "checked" : ""} style="width:auto;margin-right:6px;"> সহজ পণ্য মোড — ব্র্যান্ড/সাইজ লাগবে না, শুধু নাম-দাম-স্টক দিয়ে পণ্য যোগ হবে</label></div>
+  <div class="field"><label>অতিরিক্ত ইউনিট (ঐচ্ছিক, কমা দিয়ে লিখুন)</label><input type="text" id="editCatCrossUnits" value="${esc((cat.crossUnits || []).join(", "))}" placeholder="যেমনঃ পিস"></div>
+ <div style="font-size:11px;color:var(--steel-500);margin-top:-8px;margin-bottom:12px;">এই ক্যাটাগরির পণ্য বিক্রির সময় প্রাইমারি ইউনিট ছাড়া আর কোন কোন ইউনিটে হিসাব করা যাবে তা এখানে লিখুন।</div>
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -4344,8 +4389,13 @@ function saveCategoryEdit(id) {
     document.getElementById("editCatUnitLabel").value.trim() || cat.unitLabel;
   cat.sizeLabel =
     document.getElementById("editCatSizeLabel").value.trim() || cat.sizeLabel;
-  cat.usesBan = document.getElementById("editCatUsesBan").checked;
-  cat.simpleMode = document.getElementById("editCatSimpleMode").checked;
+  cat.usesBan = cat.id === "tin";
+  cat.crossUnits = document
+    .getElementById("editCatCrossUnits")
+    .value.trim()
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
   closeModal();
   render();
   showToast("ক্যাটাগরি আপডেট হয়েছে");
