@@ -4525,6 +4525,13 @@ function deleteBrandConfirmed(name) {
   persistShopData();
 }
 function addSimpleProductPrompt() {
+  const cat = PRODUCT_CATEGORIES.find((c) => c.id === stockCategory) || {};
+  const crossFieldsHtml = (cat.crossUnits || [])
+    .map(
+      (cu) =>
+        `<div class="field"><label>১ ${esc(cu)} = কত (উপরের প্রাইমারি ইউনিটে)?</label><input type="number" id="newSimpleCross_${cu}" min="0" step="any" placeholder="যেমনঃ ৯ — পরেও ঠিক করতে পারবেন"></div>`,
+    )
+    .join("");
   openModal(
     "নতুন পণ্য যোগ করুন",
     `
@@ -4534,6 +4541,7 @@ function addSimpleProductPrompt() {
  <div class="field"><label>ক্রয়মূল্য (৳ — প্রতি ইউনিট)</label><input type="number" id="newSimpleBuy" min="0" step="any" value="0"></div>
  <div class="field"><label>বিক্রয়মূল্য (৳ — প্রতি ইউনিট)</label><input type="number" id="newSimpleSell" min="0" step="any" value="0"></div>
  <div style="font-size:11px;color:var(--steel-500);">💡 ইউনিট বদলালে (যেমন কেজি → গ্রাম) পরিমাণ ও দাম স্বয়ংক্রিয়ভাবে হিসাব হয়ে যাবে</div>
+ ${crossFieldsHtml ? `<div style="font-size:12.5px;font-weight:600;color:var(--steel-700);margin:14px 0 4px;">এই ক্যাটাগরির অতিরিক্ত ইউনিট</div>${crossFieldsHtml}<div style="font-size:11px;color:var(--steel-500);margin-top:-8px;">এখানে একবার লিখে রাখলে বিক্রির সময় আর জিজ্ঞেস করবে না।</div>` : ""}
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -4547,6 +4555,7 @@ function addSimpleProductPrompt() {
     "পিস",
   );
 }
+
 function saveSimpleProduct() {
   const name = document.getElementById("newSimpleName").value.trim();
   if (!name) {
@@ -4570,10 +4579,18 @@ function saveSimpleProduct() {
     0,
     parseFloat(document.getElementById("newSimpleSell").value) || 0,
   );
+  const catForCross =
+    PRODUCT_CATEGORIES.find((c) => c.id === stockCategory) || {};
+  const crossFactors = {};
+  (catForCross.crossUnits || []).forEach((cu) => {
+    const el = document.getElementById("newSimpleCross_" + cu);
+    const val = el ? parseFloat(el.value) || 0 : 0;
+    if (val > 0) crossFactors[cu] = val;
+  });
   BRANDS.push(name);
   brandCategory[name] = stockCategory;
   brandSizeLabel[name] = unit;
-  inventory[name] = { 1: { 1: { buy, sell, stock: qty } } };
+  inventory[name] = { 1: { 1: { buy, sell, stock: qty, crossFactors } } };
   if (qty > 0 && buy > 0)
     recordPurchase(name, "1", "1", 0, buy, qty, buy, qty * buy);
   closeModal();
@@ -4586,6 +4603,14 @@ function editSimpleProductPrompt(name) {
     inventory[name]["1"] &&
     inventory[name]["1"]["1"]) || { buy: 0, sell: 0, stock: 0 };
   const currentUnit = getBrandLabels(name).sizeLabel || "পিস";
+  const cat = getCategoryOf(name);
+  const crossFieldsHtml = (cat.crossUnits || [])
+    .filter((cu) => normalizeStr(cu) !== normalizeStr(currentUnit))
+    .map((cu) => {
+      const stored = (v.crossFactors && v.crossFactors[cu]) || "";
+      return `<div class="field"><label>১ ${esc(cu)} = কত ${esc(currentUnit)}?</label><input type="number" id="editSimpleCross_${cu}" value="${stored}" min="0" step="any" placeholder="যেমনঃ ৯"></div>`;
+    })
+    .join("");
   openModal(
     `পণ্য এডিট — ${esc(name)}`,
     `
@@ -4595,7 +4620,9 @@ function editSimpleProductPrompt(name) {
  <div class="field"><label>ক্রয়মূল্য (৳ — প্রতি ইউনিট)</label><input type="number" id="editSimpleBuy" value="${v.buy}" min="0" step="any"></div>
  <div class="field"><label>বিক্রয়মূল্য (৳ — প্রতি ইউনিট)</label><input type="number" id="editSimpleSell" value="${v.sell}" min="0" step="any"></div>
  <div class="field"><label>স্টক (পরিমাণ)</label><input type="number" id="editSimpleStock" value="${v.stock}" min="0" step="any"></div>
+ ${crossFieldsHtml ? `<div style="font-size:12.5px;font-weight:600;color:var(--steel-700);margin:14px 0 4px;">এই ক্যাটাগরির অতিরিক্ত ইউনিট</div>${crossFieldsHtml}<div style="font-size:11px;color:var(--steel-500);margin-top:-8px;">এখানে লিখে রাখলে বিক্রির সময় আর জিজ্ঞেস করবে না।</div>` : ""}
  `,
+
     `
  <button class="btn btn-outline" style="color:var(--red);" onclick="deleteBrandPrompt('${jsq(name)}')">🗑️ মুছুন</button>
  <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -4628,6 +4655,21 @@ function saveSimpleProductEdit(oldName) {
     0,
     parseFloat(document.getElementById("editSimpleStock").value) || 0,
   );
+  const cat = getCategoryOf(oldName);
+  const oldCrossFactors =
+    (inventory[oldName] &&
+      inventory[oldName]["1"] &&
+      inventory[oldName]["1"]["1"] &&
+      inventory[oldName]["1"]["1"].crossFactors) ||
+    {};
+  const crossFactors = {};
+  (cat.crossUnits || []).forEach((cu) => {
+    if (normalizeStr(cu) === normalizeStr(unit)) return;
+    const el = document.getElementById("editSimpleCross_" + cu);
+    const val = el ? parseFloat(el.value) || 0 : 0;
+    if (val > 0) crossFactors[cu] = val;
+    else if (oldCrossFactors[cu]) crossFactors[cu] = oldCrossFactors[cu];
+  });
   if (newName !== oldName) {
     if (BRANDS.includes(newName)) {
       showToast("এই নামে আরেকটা পণ্য আছে");
@@ -4644,12 +4686,13 @@ function saveSimpleProductEdit(oldName) {
   } else {
     brandSizeLabel[newName] = unit;
   }
-  inventory[newName]["1"]["1"] = { buy, sell, stock };
+  inventory[newName]["1"]["1"] = { buy, sell, stock, crossFactors };
   closeModal();
   render();
   showToast("পণ্য আপডেট হয়েছে");
   persistShopData();
 }
+
 function stockSearchInputFn(val) {
   stockSearch = val;
   render();
@@ -9041,8 +9084,9 @@ function profitComputeMetrics(list) {
     deliveryExpense += (inv.delivery || 0) + (inv.expenseAmt || 0);
   });
   const grossProfit = sales - cogs;
-  const netProfit = grossProfit;
+  const netProfit = grossProfit - discount;
   const margin = sales > 0 ? (netProfit / sales) * 100 : 0;
+
   return {
     sales,
     cogs,
@@ -9064,7 +9108,7 @@ function invoiceProfitInfo(inv) {
     0,
   );
   const gross = itemsRevenue - itemCogs;
-  const net = gross;
+  const net = gross - (inv.discount || 0);
   const total = inv.total || 0;
   const dueRatio = total > 0 ? Math.min(1, Math.max(0, inv.due / total)) : 0;
   const pendingProfit = net * dueRatio;
@@ -9102,7 +9146,8 @@ function metricCardsHtml(m) {
  <div class="stat-card" style="--accent:var(--steel-700)"><div class="lbl">পণ্য বিক্রয়</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.sales)}</div></div>
  <div class="stat-card" style="--accent:var(--amber)"><div class="lbl">ক্রয়মূল্য (COGS)</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.cogs)}</div></div>
  <div class="stat-card" style="--accent:${m.grossProfit >= 0 ? "var(--green)" : "var(--red)"}"><div class="lbl">গ্রস মুনাফা</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.grossProfit)}</div></div>
-  <div class="stat-card" style="--accent:var(--steel-500)"><div class="lbl">ছাড় (তথ্যের জন্য, লাভে প্রভাব ফেলে না)</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.discount)}</div></div>
+  <div class="stat-card" style="--accent:var(--steel-500)"><div class="lbl">ছাড় (মালিকের লাভ থেকে বিয়োগ হয়েছে)</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.discount)}</div></div>
+
  <div class="stat-card" style="--accent:${m.netProfit >= 0 ? "var(--green)" : "var(--red)"}"><div class="lbl">নিট মুনাফা</div><div class="val" style="font-size:16px;word-break:break-word;color:${m.netProfit >= 0 ? "var(--green)" : "var(--red)"}">${fmt(m.netProfit)}</div></div>
  </div>
  <div class="panel" style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
