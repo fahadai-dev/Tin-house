@@ -2824,17 +2824,17 @@ function cartItemRowHtml(item, idx) {
  <span class="remove" onclick="removeFromCart(${idx})">✕ বাদ</span>
  </div>
  <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
- <div class="cart-box cart-box-ban" style="flex:1; min-width:110px;">
- <label class="cart-box-label">পরিমাণ</label>
- <input type="number" min="0" step="any" value="${qtyDisplay}" style="text-align:center;" oninput="cartRowQtyInput(${idx}, this.value)">
+  <div class="cart-box cart-box-ban" style="flex:1; min-width:110px; text-align:center;">
+ <label class="cart-box-label" style="display:block; text-align:center;">পরিমাণ</label>
+ <input type="number" min="0" step="any" value="${qtyDisplay}" style="text-align:center; width:100%;" oninput="cartRowQtyInput(${idx}, this.value)">
  </div>
- <div class="cart-box cart-box-piece" style="flex:1; min-width:110px;">
- <label class="cart-box-label">প্রাইমারি ইউনিট</label>
- <select onchange="cartRowSetUnit(${idx}, this.value)">${unitOptsHtml}</select>
+ <div class="cart-box cart-box-piece" style="flex:1; min-width:110px; text-align:center;">
+ <label class="cart-box-label" style="display:block; text-align:center;">প্রাইমারি ইউনিট</label>
+ <select onchange="cartRowSetUnit(${idx}, this.value)" style="text-align:center; text-align-last:center; width:100%;">${unitOptsHtml}</select>
  </div>
- <div class="cart-box cart-box-price" style="flex:1; min-width:130px;">
- <label class="cart-box-label">মূল্য (প্রতি ${esc(unit.label)})</label>
- <input type="number" min="0" step="any" value="${priceDisplay}" style="text-align:center;" oninput="cartRowPriceInput(${idx}, this.value)">
+ <div class="cart-box cart-box-price" style="flex:1; min-width:130px; text-align:center;">
+ <label class="cart-box-label" style="display:block; text-align:center;">মূল্য (প্রতি ${esc(unit.label)})</label>
+ <input type="number" min="0" step="any" value="${priceDisplay}" style="text-align:center; width:100%;" oninput="cartRowPriceInput(${idx}, this.value)">
  </div>
  </div>
  <div class="cart-sub" style="text-align:right;margin-top:10px;font-weight:700;font-size:14.5px;">মোটঃ ${fmt(total)}</div>
@@ -3194,6 +3194,7 @@ function cimSave() {
     item.qtyPieces = baseQty;
     item.sellPrice = Math.round(finalPricePerBase * 1000000) / 1000000;
     item.banQty = banQtyVal;
+    item.unitKey = unit.key;
   } else {
     cart.push({
       brand: cimBrand,
@@ -3203,6 +3204,7 @@ function cimSave() {
       sellPrice: Math.round(finalPricePerBase * 1000000) / 1000000,
       buyPrice: invItem.buy,
       banQty: banQtyVal,
+      unitKey: unit.key,
     });
   }
 
