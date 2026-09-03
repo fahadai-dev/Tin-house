@@ -1762,6 +1762,14 @@ function render() {
 function fmt(n) {
   return "৳ " + Math.round(Number(n) || 0).toLocaleString("en-IN");
 }
+function fmtPerUnit(amount, unit) {
+  return (
+    "৳ " +
+    Math.round(Number(amount) || 0).toLocaleString("en-IN") +
+    "/= " +
+    unit
+  );
+}
 function esc(str) {
   return String(str ?? "")
     .replace(/&/g, "&amp;")
@@ -2852,13 +2860,15 @@ function invoiceItemDisplay(it) {
   if (it.displayUnit != null) {
     return {
       qtyLabel: `${it.displayQty} ${it.displayUnit}`,
-      priceLabel: `${fmt(it.displayPrice)}/${it.displayUnit}`,
+      priceLabel: fmtPerUnit(it.displayPrice, it.displayUnit),
     };
   }
   const weight = isWeightBrand(it.brand);
   return {
     qtyLabel: formatItemQty(it.brand, it.qty),
-    priceLabel: weight ? fmt(it.sellPrice * 1000) + "/কেজি" : fmt(it.sellPrice),
+    priceLabel: weight
+      ? fmtPerUnit(it.sellPrice * 1000, "কেজি")
+      : fmt(it.sellPrice),
   };
 }
 
