@@ -6143,7 +6143,7 @@ function openEmployeePaymentModal(personId, kind) {
     `
  <div class="field"><label>পরিমাণ (৳)</label><input type="number" id="empPayAmount" min="0" placeholder="যেমনঃ ৫০০০"></div>
  <div class="field"><label>এটা কোন মাসের ${kind === "salary" ? "বেতন" : "বেতনের বিপরীতে অগ্রিম"} হিসেবে গণ্য হবে</label>
- <select id="empPayMonth">${employeeMonthOptionsHtml(defaultMonth)}</select>
+ <input type="month" id="empPayMonth" value="${defaultMonth}">
  </div>
  <div class="field"><label>তারিখ (আজকে দিলে যেই তারিখে দিয়েছেন)</label><input type="date" id="empPayDate" value="${toDateInputValue(new Date())}"></div>
  <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="empPayNote" placeholder="যেমনঃ ঈদ বোনাস, জরুরি প্রয়োজন"></div>
@@ -6397,9 +6397,7 @@ function renderEmployeeDetail(id) {
  <div class="panel" style="margin-bottom:16px;">
  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
  <h3 style="margin-bottom:0;">📅 মাসিক বেতনের হিসাব</h3>
- <select onchange="setEmployeeSalaryMonth(${id}, this.value)" style="padding:9px 14px; border-radius:9px; border:1.5px solid var(--steel-100); font-size:13px; font-weight:600; background:var(--paper);">
- ${employeeMonthOptionsHtml(salaryMonth)}
- </select>
+ <input type="month" value="${salaryMonth}" onchange="setEmployeeSalaryMonth(${id}, this.value)" style="padding:9px 14px; border-radius:9px; border:1.5px solid var(--steel-100); font-size:13px; font-weight:600; background:var(--paper);">
  </div>
  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;">
  ${emCard("var(--steel-700)", "মাসিক বেতন", salary > 0 ? fmt(salary) : "নির্ধারিত নয়")}
