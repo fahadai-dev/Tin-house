@@ -3352,12 +3352,13 @@ function renderCheckout() {
   const cartSummaryRows = cart
     .map((item) => {
       const eff = cartEffectiveQty(item);
+      const disp = cartRowDisplayInfo(item);
       const weight = isWeightBrand(item.brand);
       const nameHtml = weight
         ? esc(item.brand)
         : `${esc(item.brand)}${itemLabelText(item.brand, item.mm, item.size)}`;
       return `<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--steel-100);">
- <span>${nameHtml} <span class="mono" style="color:var(--steel-500);">× ${formatItemQty(item.brand, eff)}</span></span>
+ <span>${nameHtml} <span class="mono" style="color:var(--steel-500);">× ${disp.qty} ${esc(disp.label)}</span></span>
  <b class="mono">${fmt(eff * item.sellPrice)}</b>
  </div>`;
     })
