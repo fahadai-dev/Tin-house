@@ -1760,7 +1760,7 @@ function render() {
  সাধারণ হেল্পার
  ============================================================ */
 function fmt(n) {
-  return "৳ " + Number(n).toLocaleString("en-IN");
+  return "৳ " + Math.round(Number(n) || 0).toLocaleString("en-IN");
 }
 function esc(str) {
   return String(str ?? "")
