@@ -570,6 +570,7 @@ let stockStep = 0;
 let stockCategory = null;
 let stockBrand = null;
 let stockSearch = "";
+let stockBrandSearch = "";
 let stockAddUnitMode = "ban"; // 'ban' | 'piece'
 let invoiceSearch = "";
 let ledgerSearch = "";
@@ -4112,34 +4113,39 @@ function cancelInvoiceConfirmed(id) {
   render();
 }
 function openReceiptModal(kind, id) {
-  let html, filename;
+  let html, filename, summary;
   if (kind === "invoice") {
     const inv = invoices.find((x) => x.id === id);
     html = buildInvoiceHtml(inv);
     filename = "ক্যাশ মেমো-" + inv.id;
+    summary = `${SHOP_NAME} — ক্যাশ মেমো #${inv.id} — ${inv.customer} — মোট ${fmt(inv.total)}`;
   } else if (kind === "payment") {
     const p = payments.find((x) => x.id === id);
     html = buildPaymentReceiptHtml(p);
     filename = "রশিদ-" + p.id;
+    summary = `${SHOP_NAME} — প্রাপ্তি রশিদ #${p.id} — ${p.custName} — জমা ${fmt(p.amount)}`;
   } else if (kind === "income") {
     const inc = incomes.find((x) => x.id === id);
     html = buildIncomeReceiptHtml(inc);
     filename = "আয়-রশিদ-" + inc.id;
+    summary = `${SHOP_NAME} — আয়ের রশিদ #${inc.id} — ${inc.personName} — ${fmt(inc.amount)}`;
   } else {
     const e = expenses.find((x) => x.id === id);
     html = buildExpenseReceiptHtml(e);
     filename = "খরচ-রশিদ-" + e.id;
+    summary = `${SHOP_NAME} — খরচের রশিদ #${e.id} — ${e.personName} — ${fmt(e.amount)}`;
   }
   document.getElementById("printArea").innerHTML = html;
   openModal(
-    "প্রিভিউ — প্রিন্ট বা ডাউনলোড করুন",
+    "প্রিভিউ — প্রিন্ট, ডাউনলোড বা শেয়ার করুন",
     `
  <div style="max-height:50vh; overflow:auto; border:1px solid var(--steel-100); border-radius:8px; padding:10px; background:var(--paper);">${html}</div>
- <div style="font-size:11.5px;color:var(--steel-500);margin-top:10px;">প্রিন্ট বাটনে কাজ না করলে (কিছু ব্রাউজার/ডিভাইসে ব্লক হতে পারে) "ডাউনলোড করুন" চাপুন — এটি সবসময় কাজ করবে এবং ফাইলটি খুলে যেকোনো প্রিন্টার থেকে প্রিন্ট করা যাবে।</div>
+ <div style="font-size:11.5px;color:var(--steel-500);margin-top:10px;">প্রিন্ট বাটনে কাজ না করলে (কিছু ব্রাউজার/ডিভাইসে ব্লক হতে পারে) "ডাউনলোড করুন" চাপুন — এটি সবসময় কাজ করবে এবং ফাইলটি খুলে যেকোনো প্রিন্টার থেকে প্রিন্ট করা যাবে। "শেয়ার করুন" চাপলে সরাসরি WhatsApp, Gmail, Imo বা যেকোনো অ্যাপে পাঠাতে পারবেন।</div>
  `,
     `
  <button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>
  <button class="btn btn-outline" onclick="downloadPrintArea('${jsq(filename)}')">⬇ ডাউনলোড করুন</button>
+ <button class="btn btn-primary" onclick="shareHtmlFile('${jsq(filename)}', document.getElementById('printArea').innerHTML, '${jsq(summary)}')">📤 শেয়ার করুন</button>
  <button class="btn btn-primary" onclick="tryPrint()">🖨 প্রিন্ট করুন</button>
  `,
   );
@@ -4152,8 +4158,12 @@ function renderStock() {
   if (stockStep === 0) return categoryCardsHtml("stock");
 
   if (stockStep === 1) {
-    const catBrandsList = BRANDS.filter(
+    const q = stockBrandSearch.trim().toLowerCase();
+    const catBrandsListAll = BRANDS.filter(
       (b) => brandCategory[b] === stockCategory,
+    );
+    const catBrandsList = catBrandsListAll.filter((b) =>
+      b.toLowerCase().includes(q),
     );
     return `
  <div class="back-row">
@@ -4164,25 +4174,35 @@ function renderStock() {
  <div style="font-size:13px;color:var(--steel-500);">${isSimpleCategory(PRODUCT_CATEGORIES.find((c) => c.id === stockCategory)) ? "একটি পণ্যের ঘরে ক্লিক করে এডিট করুন" : "একটি ব্র্যান্ডের ঘরে ক্লিক করে স্টক পরিচালনা করুন"}</div>
  <button class="btn btn-primary" onclick="${isSimpleCategory(PRODUCT_CATEGORIES.find((c) => c.id === stockCategory)) ? "addSimpleProductPrompt()" : "addBrandPrompt()"}">${isSimpleCategory(PRODUCT_CATEGORIES.find((c) => c.id === stockCategory)) ? "+ নতুন পণ্য" : "+ নতুন ব্র্যান্ড"}</button>
  </div>
+ <div class="search-bar ${q ? "has-val" : ""}">
+ <span class="sic">🔍</span>
+ <input type="text" id="stockBrandSearchInput" value="${esc(stockBrandSearch)}" placeholder="নাম দিয়ে সার্চ করুন..."
+ oninput="stockBrandSearchInputFn(this.value)" autocomplete="off">
+ <span class="sclear" onclick="stockBrandSearchInputFn('')">✕</span>
+ </div>
   <div class="brand-grid">
- ${catBrandsList
-   .map((b) => {
-     let itemCount = 0,
-       totalStock = 0;
-     Object.values(inventory[b] || {}).forEach((szObj) =>
-       Object.values(szObj).forEach((v) => {
-         itemCount++;
-         totalStock += v.stock;
-       }),
-     );
-     const bIsSimple = isSimpleCategory(getCategoryOf(b));
-     return `<div class="brand-tile" style="position:relative; cursor:pointer;" onclick="stockSelectBrand('${jsq(b)}')">
+ ${
+   catBrandsList.length === 0
+     ? `<div class="no-match">🔍 "${esc(stockBrandSearch)}" নামে কিছু পাওয়া যায়নি</div>`
+     : catBrandsList
+         .map((b) => {
+           let itemCount = 0,
+             totalStock = 0;
+           Object.values(inventory[b] || {}).forEach((szObj) =>
+             Object.values(szObj).forEach((v) => {
+               itemCount++;
+               totalStock += v.stock;
+             }),
+           );
+           const bIsSimple = isSimpleCategory(getCategoryOf(b));
+           return `<div class="brand-tile" style="position:relative; cursor:pointer;" onclick="stockSelectBrand('${jsq(b)}')">
  <button type="button" onclick="event.stopPropagation(); ${bIsSimple ? `editSimpleProductPrompt('${jsq(b)}')` : `editBrandPrompt('${jsq(b)}')`}" title="${bIsSimple ? "পণ্য এডিট/মুছুন" : "ব্র্যান্ড এডিট/মুছুন"}" style="position:absolute; top:8px; right:8px; background:var(--steel-100); border:none; border-radius:8px; width:28px; height:28px; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✏️</button>
  <div class="bname">${esc(b)}</div>
  <div class="bmeta">${itemCount} টি আইটেম · ${totalStock} ${bIsSimple ? esc(getBrandLabels(b).sizeLabel) : "পিস"} স্টক</div>
  </div>`;
-   })
-   .join("")}
+         })
+         .join("")
+ }
  </div>`;
   }
 
@@ -4254,10 +4274,12 @@ function stockGoStep(step) {
     stockCategory = null;
     stockBrand = null;
     stockSearch = "";
+    stockBrandSearch = "";
   }
   if (step === 1) {
     stockBrand = null;
     stockSearch = "";
+    stockBrandSearch = "";
   }
   render();
   scrollContentTop();
@@ -4754,6 +4776,16 @@ function stockSearchInputFn(val) {
   stockSearch = val;
   render();
   const el = document.getElementById("stockSearchInput");
+  if (el) {
+    el.focus();
+    const p = el.value.length;
+    el.setSelectionRange(p, p);
+  }
+}
+function stockBrandSearchInputFn(val) {
+  stockBrandSearch = val;
+  render();
+  const el = document.getElementById("stockBrandSearchInput");
   if (el) {
     el.focus();
     const p = el.value.length;
