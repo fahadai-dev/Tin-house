@@ -8265,13 +8265,14 @@ function renderExpenseEntriesTab() {
  <div class="mgmt-toolbar">
  <div style="font-size:13px;color:var(--steel-500);">একটি খাতে ক্লিক করে দ্রুত নতুন খরচ যোগ করুন</div>
  </div>
- <div class="brand-grid" style="margin-bottom:22px;">
+  <div class="brand-grid" style="margin-bottom:22px;">
  ${expenseCategories
    .map(
      (c) => `
- <button class="cat-tile" onclick="openAddExpenseModal(${c.id})">
+ <div class="cat-tile" style="position:relative; cursor:pointer;" onclick="openAddExpenseModal(${c.id})">
+ <button type="button" onclick="event.stopPropagation(); editExpenseCategoryPrompt(${c.id})" title="খাত এডিট/মুছুন" style="position:absolute; top:6px; right:6px; background:var(--steel-100); border:none; border-radius:8px; width:26px; height:26px; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✏️</button>
  <div class="cic">${c.icon}</div><div class="cname">${esc(c.name)}</div>
- </button>`,
+ </div>`,
    )
    .join("")}
  <button class="cat-tile add-cat" onclick="addExpenseCategoryPrompt()">
@@ -8425,6 +8426,70 @@ function saveNewExpenseCategory() {
   closeModal();
   render();
   showToast("নতুন খাত যুক্ত হয়েছে");
+  persistShopData();
+}
+function editExpenseCategoryPrompt(id) {
+  const cat = expenseCategories.find((c) => c.id === id);
+  if (!cat) return;
+  const usedCount = expenses.filter((e) => e.categoryId === id).length;
+  openModal(
+    `খাত এডিট — ${esc(cat.name)}`,
+    `
+ <div class="field"><label>খাতের নাম</label><input type="text" id="editExpCatName" value="${esc(cat.name)}"></div>
+ <div class="field"><label>আইকন (ইমোজি)</label><input type="text" id="editExpCatIcon" value="${esc(cat.icon)}"></div>
+ <div style="font-size:11.5px;color:var(--steel-500);">এই খাতে এখন পর্যন্ত ${usedCount} টি খরচের এন্ট্রি আছে।</div>
+ `,
+    `
+ <button class="btn btn-outline" style="color:var(--red);" onclick="deleteExpenseCategoryPrompt(${id})">🗑️ খাত মুছুন</button>
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveExpenseCategoryEdit(${id})">সংরক্ষণ করুন</button>
+ `,
+  );
+}
+function saveExpenseCategoryEdit(id) {
+  const cat = expenseCategories.find((c) => c.id === id);
+  if (!cat) return;
+  const name = document.getElementById("editExpCatName").value.trim();
+  if (!name) {
+    showToast("নাম আবশ্যক");
+    return;
+  }
+  const icon =
+    document.getElementById("editExpCatIcon").value.trim() || cat.icon;
+  const oldName = cat.name;
+  cat.name = name;
+  cat.icon = icon;
+  if (oldName !== name) {
+    expenses.forEach((e) => {
+      if (e.categoryId === id) e.categoryName = name;
+    });
+  }
+  closeModal();
+  render();
+  showToast("খাত আপডেট হয়েছে");
+  persistShopData();
+}
+function deleteExpenseCategoryPrompt(id) {
+  const cat = expenseCategories.find((c) => c.id === id);
+  if (!cat) return;
+  const usedCount = expenses.filter((e) => e.categoryId === id).length;
+  openModal(
+    "খাত মুছবেন?",
+    `
+ <p style="font-size:13.5px;line-height:1.7;">"${esc(cat.name)}" খাতটি খাতের তালিকা থেকে মুছে ফেলা হবে।${usedCount > 0 ? ` এই খাতে আগে থেকে ${usedCount} টি খরচের এন্ট্রি আছে — সেগুলো মুছে যাবে না, শুধু নতুন করে এই খাতে খরচ যোগ করা যাবে না।` : ""}</p>
+ <p style="font-size:12px;color:var(--red);">এই কাজ ফিরিয়ে নেওয়া যাবে না।</p>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('খাত মুছুন', () => deleteExpenseCategoryConfirmed(${id}))">হ্যাঁ, মুছুন</button>
+ `,
+  );
+}
+function deleteExpenseCategoryConfirmed(id) {
+  expenseCategories = expenseCategories.filter((c) => c.id !== id);
+  closeModal();
+  render();
+  showToast("খাত মুছে ফেলা হয়েছে");
   persistShopData();
 }
 
