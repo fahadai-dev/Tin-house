@@ -6077,6 +6077,15 @@ function getOrCreateAdvanceCategoryId() {
   }
   return cat.id;
 }
+function getAdvanceReturnCategoryId() {
+  let cat = expenseCategories.find((c) => c.name === "অগ্রিম ফেরত");
+  if (!cat) {
+    cat = { id: expenseCatNextId++, name: "অগ্রিম ফেরত", icon: "↩️" };
+    expenseCategories.push(cat);
+    persistShopData();
+  }
+  return cat.id;
+}
 function getSalaryCategoryId() {
   let cat = expenseCategories.find((c) => c.name === "বেতন");
   if (!cat) {
@@ -6194,6 +6203,64 @@ function saveEmployeePayment(personId, kind) {
   showToast(
     `${fmt(amount)} ${kind === "salary" ? "বেতন" : "অগ্রিম"} হিসেবে যোগ হয়েছে`,
   );
+  render();
+  persistShopData();
+}
+function openEmployeeDepositModal(personId) {
+  const p = expensePeople.find((x) => x.id === personId);
+  if (!p) return;
+  const defaultMonth = employeeSalaryMonth || monthKeyOf(new Date());
+  openModal(
+    `↩️ টাকা জমা নিন (অগ্রিম ফেরত) — ${esc(p.name)}`,
+    `
+ <div style="font-size:11.5px;color:var(--steel-500);margin-bottom:14px;line-height:1.6;">কর্মচারী আগে অগ্রিম নিয়েছিলেন, এখন সেই টাকা ফেরত দিচ্ছেন — সেই পরিমাণ এখানে লিখুন। এটা ঐ মাসের "মোট নিয়েছে"-এর হিসাব থেকে বাদ যাবে।</div>
+ <div class="field"><label>পরিমাণ (৳)</label><input type="number" id="empDepositAmount" min="0" placeholder="যেমনঃ ২০০০"></div>
+ <div class="field"><label>কোন মাসের অগ্রিমের বিপরীতে জমা</label><input type="month" id="empDepositMonth" value="${defaultMonth}"></div>
+ <div class="field"><label>তারিখ</label><input type="date" id="empDepositDate" value="${toDateInputValue(new Date())}"></div>
+ <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="empDepositNote" placeholder="যেমনঃ অগ্রিমের টাকা ফেরত দিয়েছে"></div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveEmployeeDeposit(${personId})">জমা নিন</button>
+ `,
+  );
+}
+function saveEmployeeDeposit(personId) {
+  const p = expensePeople.find((x) => x.id === personId);
+  if (!p) return;
+  const amount = Math.max(
+    0,
+    parseInt(document.getElementById("empDepositAmount").value) || 0,
+  );
+  if (amount <= 0) {
+    showToast("সঠিক পরিমাণ লিখুন");
+    return;
+  }
+  const forMonth = document.getElementById("empDepositMonth").value;
+  const depDate = dateFromInput(
+    document.getElementById("empDepositDate").value,
+  );
+  const note = document.getElementById("empDepositNote").value.trim();
+  const catId = getAdvanceReturnCategoryId();
+  const cat = expenseCategories.find((c) => c.id === catId);
+  expenses.push({
+    id: expenseNextId++,
+    date: depDate,
+    categoryId: catId,
+    categoryName: cat ? cat.name : "অগ্রিম ফেরত",
+    personId,
+    personName: p.name,
+    amount,
+    note,
+    forMonth,
+  });
+  employeeSalaryMonth = forMonth;
+  logActivity(
+    "কর্মচারী থেকে অগ্রিম ফেরত পাওয়া গেছে",
+    `${p.name} · ${monthLabelOf(forMonth)} মাসের হিসাবে · ${fmt(amount)}${note ? " · " + note : ""}`,
+  );
+  closeModal();
+  showToast(`${fmt(amount)} জমা নেওয়া হয়েছে`);
   render();
   persistShopData();
 }
@@ -6363,8 +6430,14 @@ function renderEmployeeDetail(id) {
   const salaryMonth = employeeSalaryMonth;
   const salary = p.monthlySalary || 0;
   const advanceThisMonth = employeeForMonthTotal(id, salaryMonth, "অগ্রিম");
+  const advanceReturnedThisMonth = employeeForMonthTotal(
+    id,
+    salaryMonth,
+    "অগ্রিম ফেরত",
+  );
   const salaryPaidThisMonth = employeeForMonthTotal(id, salaryMonth, "বেতন");
-  const totalForMonth = advanceThisMonth + salaryPaidThisMonth;
+  const totalForMonth =
+    advanceThisMonth - advanceReturnedThisMonth + salaryPaidThisMonth;
   const remaining = salary - totalForMonth;
 
   const backRow = `<div class="back-row">
@@ -6401,12 +6474,13 @@ function renderEmployeeDetail(id) {
  </div>
  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;">
  ${emCard("var(--steel-700)", "মাসিক বেতন", salary > 0 ? fmt(salary) : "নির্ধারিত নয়")}
- ${emCard("var(--amber)", monthLabelOf(salaryMonth) + " — মোট নিয়েছে", fmt(totalForMonth), `বেতন ${fmt(salaryPaidThisMonth)} · অগ্রিম ${fmt(advanceThisMonth)}`)}
+ ${emCard("var(--amber)", monthLabelOf(salaryMonth) + " — মোট নিয়েছে", fmt(totalForMonth), `বেতন ${fmt(salaryPaidThisMonth)} · অগ্রিম ${fmt(advanceThisMonth)}${advanceReturnedThisMonth > 0 ? " · ফেরত " + fmt(advanceReturnedThisMonth) : ""}`)}
  ${emCard(remaining >= 0 ? "var(--green)" : "var(--red)", remaining >= 0 ? "এই মাসে বেতন বাকি আছে" : "বেতনের বেশি নিয়েছে", salary > 0 ? `<span style="color:${remaining >= 0 ? "var(--green)" : "var(--red)"}">${fmt(Math.abs(remaining))}</span>` : "—")}
  </div>
- <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
+  <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
  <button class="btn btn-primary" onclick="openEmployeePaymentModal(${id}, 'salary')">💰 বেতন দিন</button>
  <button class="btn btn-outline" onclick="openEmployeePaymentModal(${id}, 'advance')">🪙 অগ্রিম দিন</button>
+ <button class="btn btn-outline" onclick="openEmployeeDepositModal(${id})">↩️ টাকা জমা নিন (অগ্রিম ফেরত)</button>
  </div>
  <div style="font-size:11px;color:var(--steel-500);margin-top:12px;line-height:1.6;">💡 অগ্রিম দেওয়ার সময় যেই মাসের বেতনের বিপরীতে দিচ্ছেন সেই মাস বেছে দিন — সেই মাসের বেতন দেওয়ার সময় এই অগ্রিমের টাকা স্বয়ংক্রিয়ভাবে বাদ হয়ে হিসাব হবে।</div>
  </div>`;
@@ -6433,9 +6507,13 @@ function renderEmployeeDetail(id) {
  <div class="txname">${expenseCategoryIcon(e.categoryId)} ${esc(e.categoryName)}${e.forMonth ? ` <span style="font-size:11px;color:var(--steel-500);font-weight:400;">· ${monthLabelOf(e.forMonth)} মাসের</span>` : ""}</div>
  <div class="txmeta">${new Date(e.date).toLocaleDateString("bn-BD")}${e.note ? " · " + esc(e.note) : ""}</div>
  </div>
- <div style="text-align:right;">
+  <div style="text-align:right;">
  <div class="mono" style="font-weight:700;">${fmt(e.amount)}</div>
- <button class="btn btn-outline" style="margin-top:4px;padding:3px 8px;font-size:11px;" onclick="openReceiptModal('expense', ${e.id})">রশিদ</button>
+ <div style="display:flex;gap:6px;margin-top:5px;justify-content:flex-end;flex-wrap:wrap;">
+ <button class="btn btn-outline" style="padding:3px 8px;font-size:11px;" onclick="openReceiptModal('expense', ${e.id})">রশিদ</button>
+ <button class="btn btn-outline" style="padding:3px 8px;font-size:11px;" onclick="editExpensePrompt(${e.id})">এডিট</button>
+ <button class="btn btn-outline" style="padding:3px 8px;font-size:11px;color:var(--red);" onclick="deleteExpensePrompt(${e.id})">মুছুন</button>
+ </div>
  </div>
  </div>`,
           )
