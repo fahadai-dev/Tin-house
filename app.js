@@ -7773,7 +7773,7 @@ function renderCashCustomers() {
  <div class="lmeta">${[esc(c.address), telHtml(c.phone)].filter(Boolean).join(" · ") || "কোনো তথ্য নেই"} · সর্বমোট ক্রয় ${fmt(c.totalSpent)} · সর্বশেষ ${c.lastDate ? new Date(c.lastDate).toLocaleDateString("bn-BD") : "—"}</div>
  </div>
  <div class="ledger-due"><div class="amt clear">নগদ</div><div class="lbl">সম্পূর্ণ পরিশোধিত</div></div>
- <button class="btn btn-outline" onclick="viewCashInvoices(${c.id})">ক্যাশ মেমো</button>
+  <button class="btn btn-outline" onclick="viewCashInvoices(${c.id})">📋 বিস্তারিত</button>
  </div>`,
    )
    .join("")}
@@ -7792,27 +7792,59 @@ function cashSearchInputFn(val) {
 }
 function viewCashInvoices(ccId) {
   const cc = cashCustomers.find((c) => c.id === ccId);
+  if (!cc) return;
+  const validInvoices = cc.invoiceIds
+    .map((iid) => invoices.find((x) => x.id === iid))
+    .filter(Boolean)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const totalSpent = validInvoices.reduce(
+    (s, inv) => (inv.cancelled ? s : s + inv.total),
+    0,
+  );
+
   const rows =
-    cc.invoiceIds.length === 0
+    validInvoices.length === 0
       ? `<div class="no-match">এখনো কোনো ক্যাশ মেমো নেই</div>`
-      : cc.invoiceIds
-          .slice()
-          .reverse()
-          .map((iid) => {
-            const inv = invoices.find((x) => x.id === iid);
-            if (!inv) return "";
-            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--steel-100);font-size:13px;">
- <div>
- <div style="font-weight:600;">ক্যাশ মেমো #${inv.id} · ${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
- <div style="color:var(--steel-500);font-size:12px;">সর্বমোট ${fmt(inv.total)}</div>
+      : validInvoices
+          .map((inv) => {
+            const itemRows = inv.items
+              .map(
+                (it) => `
+ <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--steel-700);">
+ <span>${esc(it.brand)}${itemLabelText(it.brand, it.mm, it.size)} <span style="color:var(--steel-500);">× ${it.qty}</span></span>
+ <span class="mono">${fmt(it.qty * it.sellPrice)}</span>
+ </div>`,
+              )
+              .join("");
+            return `
+ <div style="border:1px solid var(--steel-100);border-radius:10px;padding:12px 14px;margin-bottom:10px;${inv.cancelled ? "opacity:0.55;" : ""}">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+ <div style="font-weight:700;font-size:13.5px;">ক্যাশ মেমো #${inv.id}${inv.cancelled ? ' <span class="pill low">বাতিল</span>' : ""}</div>
+ <div style="font-size:11.5px;color:var(--steel-500);">${new Date(inv.date).toLocaleDateString("bn-BD")}</div>
  </div>
- <button class="btn btn-outline" onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">প্রিন্ট/ডাউনলোড</button>
+ <div style="border-top:1px dashed var(--steel-100);border-bottom:1px dashed var(--steel-100);padding:6px 0;margin:6px 0;">
+ ${itemRows}
+ </div>
+ <div style="display:flex;justify-content:space-between;align-items:center;">
+ <b class="mono" style="font-size:13.5px;">মোট ${fmt(inv.total)}</b>
+ <button class="btn btn-outline" style="padding:5px 10px;font-size:11.5px;" onclick="printInvoice(invoices.find(x=>x.id===${inv.id}))">🖨️ প্রিন্ট/ডাউনলোড</button>
+ </div>
  </div>`;
           })
           .join("");
+
   openModal(
-    `ক্যাশ মেমো — ${esc(cc.name)}`,
-    rows,
+    `বিস্তারিত — ${esc(cc.name)}`,
+    `
+ <div style="background:var(--steel-100);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;">
+ <div style="display:flex;justify-content:space-between;"><span>মোট ক্যাশ মেমো</span><b class="mono">${validInvoices.length} টি</b></div>
+ <div style="display:flex;justify-content:space-between;margin-top:4px;"><span>সর্বমোট ক্রয়</span><b class="mono">${fmt(totalSpent)}</b></div>
+ ${cc.phone ? `<div style="display:flex;justify-content:space-between;margin-top:4px;"><span>মোবাইল</span><b>${telHtml(cc.phone)}</b></div>` : ""}
+ ${cc.address ? `<div style="display:flex;justify-content:space-between;margin-top:4px;"><span>ঠিকানা</span><b>${esc(cc.address)}</b></div>` : ""}
+ </div>
+ ${rows}
+ `,
     `<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>`,
   );
 }
