@@ -4598,31 +4598,60 @@ function stockSelectCategory(id) {
   pushBackStep();
   scrollContentTop();
 }
+let categorySearch = "";
+function categorySearchInputFn(val) {
+  categorySearch = val;
+  render();
+  const el = document.getElementById("categorySearchInput");
+  if (el) {
+    el.focus();
+    const p = el.value.length;
+    el.setSelectionRange(p, p);
+  }
+}
 function categoryCardsHtml(navType) {
   const selectFn =
     navType === "stock" ? "stockSelectCategory" : "posSelectCategory";
+  const q = categorySearch.trim().toLowerCase();
+  const filteredCats = PRODUCT_CATEGORIES.filter(
+    (cat) => q === "" || cat.name.toLowerCase().includes(q),
+  );
+  const searchBar = `
+ <div class="search-bar ${q ? "has-val" : ""}">
+ <span class="sic">🔍</span>
+ <input type="text" id="categorySearchInput" value="${esc(categorySearch)}" placeholder="ক্যাটাগরির নাম দিয়ে সার্চ করুন..."
+ oninput="categorySearchInputFn(this.value)" autocomplete="off">
+ <span class="sclear" onclick="categorySearchInputFn('')">✕</span>
+ </div>`;
   return `
  <div class="mgmt-toolbar">
  <div style="font-size:13px;color:var(--steel-500);">একটা ক্যাটাগরিতে ক্লিক করুন</div>
  <button class="btn btn-primary" onclick="addCategoryPrompt()">+ নতুন ক্যাটাগরি</button>
  </div>
+ ${searchBar}
  <div class="brand-grid">
- ${PRODUCT_CATEGORIES.map((cat) => {
-   let itemCount = 0;
-   Object.keys(brandCategory).forEach((b) => {
-     if (brandCategory[b] === cat.id && inventory[b]) {
-       Object.values(inventory[b]).forEach((mmObj) => {
-         itemCount += Object.keys(mmObj).length;
-       });
-     }
-   });
-   return `<div class="brand-tile" style="position:relative; cursor:pointer; transition:all 0.15s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(0,0,0,0.12)';" onmouseout="this.style.transform='none';this.style.boxShadow='';" onclick="${selectFn}('${cat.id}')">
+ ${
+   filteredCats.length === 0
+     ? `<div class="no-match">🔍 "${esc(categorySearch)}" নামে কোনো ক্যাটাগরি পাওয়া যায়নি</div>`
+     : filteredCats
+         .map((cat) => {
+           let itemCount = 0;
+           Object.keys(brandCategory).forEach((b) => {
+             if (brandCategory[b] === cat.id && inventory[b]) {
+               Object.values(inventory[b]).forEach((mmObj) => {
+                 itemCount += Object.keys(mmObj).length;
+               });
+             }
+           });
+           return `<div class="brand-tile" style="position:relative; cursor:pointer; transition:all 0.15s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(0,0,0,0.12)';" onmouseout="this.style.transform='none';this.style.boxShadow='';" onclick="${selectFn}('${cat.id}')">
  <button type="button" onclick="event.stopPropagation(); editCategoryPrompt('${cat.id}')" title="ক্যাটাগরি এডিট" style="position:absolute; top:8px; right:8px; background:var(--steel-100); border:none; border-radius:8px; width:28px; height:28px; font-size:13px; cursor:pointer;">✏️</button>
  <div style="font-size:26px;margin-bottom:6px;">${cat.icon}</div>
  <div class="bname">${esc(cat.name)}</div>
  <div class="bmeta">${itemCount} টি আইটেম</div>
  </div>`;
- }).join("")}
+         })
+         .join("")
+ }
  </div>`;
 }
 function addCategoryPrompt() {
