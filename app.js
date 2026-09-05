@@ -2586,7 +2586,7 @@ function renderSales() {
  <div class="field"><label>ছাড়/ডিসকাউন্ট (৳)</label><input type="number" id="invDiscount" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
   <div class="field">
  <label>জমার পরিমাণ</label>
- <input type="number" id="invPaid" value="${saleCustomerType === "credit" ? "" : itemsSubtotal}" min="0" placeholder="${saleCustomerType === "credit" ? "খালি রাখলে সম্পূর্ণ বাকি হবে" : "0"}" oninput="checkoutRecalc(${itemsSubtotal})">
+ <input type="number" id="invPaid" value="${saleCustomerType === "credit" ? "" : Math.round(itemsSubtotal)}" min="0" placeholder="${saleCustomerType === "credit" ? "খালি রাখলে সম্পূর্ণ বাকি হবে" : "0"}" oninput="checkoutRecalc(${itemsSubtotal})">
  </div>
  <div style="background:var(--steel-100); border-radius:8px; padding:12px 14px; font-size:13.5px;">
  <div style="display:flex;justify-content:space-between;"><span>সর্বমোট বিল</span><b class="mono" id="invGrandVal">${fmt(itemsSubtotal)}</b></div>
@@ -3695,7 +3695,7 @@ function renderCheckout() {
  <div class="field"><label>ছাড়/ডিসকাউন্ট (৳)</label><input type="number" id="invDiscount" value="0" min="0" oninput="checkoutRecalc(${itemsSubtotal})"></div>
    <div class="field">
  <label>জমার পরিমাণ</label>
- <input type="number" id="invPaid" value="${saleCustomerType === "credit" ? "" : itemsSubtotal}" min="0" placeholder="${saleCustomerType === "credit" ? "খালি রাখলে সম্পূর্ণ বাকি হবে" : "0"}" oninput="checkoutRecalc(${itemsSubtotal})">
+ <input type="number" id="invPaid" value="${saleCustomerType === "credit" ? "" : Math.round(itemsSubtotal)}" min="0" placeholder="${saleCustomerType === "credit" ? "খালি রাখলে সম্পূর্ণ বাকি হবে" : "0"}" oninput="checkoutRecalc(${itemsSubtotal})">
  </div>
  <div style="background:var(--steel-100); border-radius:8px; padding:12px 14px; font-size:13.5px;">
  <div style="display:flex;justify-content:space-between;"><span>সর্বমোট বিল</span><b class="mono" id="invGrandVal">${fmt(itemsSubtotal)}</b></div>
