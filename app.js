@@ -773,6 +773,65 @@ const nav = [
   { id: "trash", label: "রিস্টোর/ট্র্যাশ", icon: "🗑️" },
   { id: "settings", label: "দোকানের তথ্য", icon: "⚙️" },
 ];
+let staffPermissions = {}; // { [staffId]: { [viewId]: true/false } }
+const ALWAYS_OWNER_LOCKED_VIEWS = ["staff", "settings", "trash"];
+
+function isNavView(id) {
+  return nav.some((n) => n.id === id);
+}
+function staffCanAccess(viewId) {
+  if (currentUser && currentUser.role === "owner") return true;
+  if (ALWAYS_OWNER_LOCKED_VIEWS.includes(viewId)) return false;
+  if (viewId === "dashboard") return true;
+  const staffId = currentUser ? currentUser.id : null;
+  const perms = staffId ? staffPermissions[staffId] : null;
+  if (perms && Object.prototype.hasOwnProperty.call(perms, viewId)) {
+    return !!perms[viewId];
+  }
+  return !OWNER_ONLY_VIEWS.includes(viewId);
+}
+function getStaffPermission(staffId, viewId) {
+  if (
+    staffPermissions[staffId] &&
+    Object.prototype.hasOwnProperty.call(staffPermissions[staffId], viewId)
+  ) {
+    return !!staffPermissions[staffId][viewId];
+  }
+  return !OWNER_ONLY_VIEWS.includes(viewId);
+}
+function toggleStaffPermission(staffId, viewId) {
+  if (!staffPermissions[staffId]) staffPermissions[staffId] = {};
+  staffPermissions[staffId][viewId] = !getStaffPermission(staffId, viewId);
+  persistShopData();
+  openStaffPermissionsModal(staffId);
+}
+function openStaffPermissionsModal(staffId) {
+  const s = staffList.find((x) => x.id === staffId);
+  if (!s) return;
+  const permViews = nav.filter(
+    (n) => !ALWAYS_OWNER_LOCKED_VIEWS.includes(n.id) && n.id !== "dashboard",
+  );
+  const rows = permViews
+    .map((n) => {
+      const on = getStaffPermission(staffId, n.id);
+      return `
+ <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--steel-100);font-size:13px;">
+ <span>${n.icon} ${esc(n.label)}</span>
+ <button type="button" onclick="toggleStaffPermission('${staffId}','${n.id}')" style="width:46px;height:26px;border-radius:14px;border:none;cursor:pointer;background:${on ? "var(--green)" : "var(--steel-300)"};position:relative;">
+ <span style="position:absolute;top:3px;left:${on ? "23px" : "3px"};width:20px;height:20px;border-radius:50%;background:white;transition:left .15s;"></span>
+ </button>
+ </div>`;
+    })
+    .join("");
+  openModal(
+    `🔐 পারমিশন — ${esc(s.full_name)}`,
+    `
+ <div style="font-size:11.5px;color:var(--steel-500);margin-bottom:12px;line-height:1.6;">যেগুলো চালু (সবুজ) থাকবে, এই স্টাফ শুধু সেগুলোই দেখতে পারবে — বাকিগুলো দেখতে পারবে না।</div>
+ ${rows}
+ `,
+    `<button class="btn btn-primary" onclick="closeModal()">বন্ধ করুন</button>`,
+  );
+}
 
 /* ============================================================
  SESSION BOOTSTRAP
@@ -1208,6 +1267,9 @@ function collectState(isNewShop) {
     incomeNextId,
     activityLog,
     activityLogNextId,
+    activityLog,
+    activityLogNextId,
+    staffPermissions,
     LOW_STOCK_THRESHOLD,
     returns,
     returnNextId,
@@ -1265,6 +1327,8 @@ function applyState(s) {
   incomeNextId = s.incomeNextId || 1;
   activityLog = s.activityLog || [];
   activityLogNextId = s.activityLogNextId || 1;
+  activityLogNextId = s.activityLogNextId || 1;
+  staffPermissions = s.staffPermissions || {};
   LOW_STOCK_THRESHOLD = s.LOW_STOCK_THRESHOLD || 5;
   returns = s.returns || [];
   returnNextId = s.returnNextId || 1;
@@ -1656,8 +1720,8 @@ function goBackStep() {
 function switchView(id, opts) {
   opts = opts || {};
   const isOwner = currentUser && currentUser.role === "owner";
-  if (!isOwner && OWNER_ONLY_VIEWS.includes(id)) {
-    showToast("এই পেজ শুধু দোকানের মালিক দেখতে পারবেন");
+  if (!isOwner && isNavView(id) && !staffCanAccess(id)) {
+    showToast("এই পেজ দেখার অনুমতি আপনার নেই");
     return;
   }
   currentView = id;
@@ -2440,39 +2504,60 @@ function renderDashboard() {
   const periodLabel =
     dashboardPeriod === "day" ? "আজকের বিক্রয়" : "এই মাসের বিক্রয়";
 
-  const tile = (view, colorClass, icon, label) =>
-    `<div class="dash-tile" onclick="switchView('${view}')">
- <div class="dt-ic ${colorClass}">${icon}</div><div class="dt-lbl">${label}</div>
+  const tileDef = (view, colorClass, icon, label) => ({
+    view,
+    colorClass,
+    icon,
+    label,
+  });
+  const tileHtml = (t) =>
+    `<div class="dash-tile" onclick="switchView('${t.view}')">
+ <div class="dt-ic ${t.colorClass}">${t.icon}</div><div class="dt-lbl">${t.label}</div>
  </div>`;
+  const visibleFilter = (t) => isOwner || staffCanAccess(t.view);
 
   const ledgerTiles = [
-    tile("income", "c-gold", "💰", "আয়ের খাতা"),
-    tile("purchaseLedger", "c-blue", "📋", "কেনার খাতা"),
-    tile("salesLedger", "c-green", "🧾", "বেচার খাতা"),
-    tile("ledger", "c-red", "📒", "বাকির খাতা"),
-    tile("expenses", "c-amber", "💸", "খরচের খাতা"),
-    tile("employees", "c-brown", "👷", "কর্মচারী"),
-    tile("suppliers", "c-slate", "🚚", "সাপ্লায়ার"),
-  ].join("");
+    tileDef("income", "c-gold", "💰", "আয়ের খাতা"),
+    tileDef("purchaseLedger", "c-blue", "📋", "কেনার খাতা"),
+    tileDef("salesLedger", "c-green", "🧾", "বেচার খাতা"),
+    tileDef("ledger", "c-red", "📒", "বাকির খাতা"),
+    tileDef("expenses", "c-amber", "💸", "খরচের খাতা"),
+    tileDef("employees", "c-brown", "👷", "কর্মচারী"),
+    tileDef("suppliers", "c-slate", "🚚", "সাপ্লায়ার"),
+  ]
+    .filter(visibleFilter)
+    .map(tileHtml)
+    .join("");
 
   const businessTiles = [
-    tile("cashbox", "c-gold", "💰", "ক্যাশবক্স"),
-    tile("stock", "c-teal", "📦", "স্টক তালিকা"),
-    tile("invoices", "c-indigo", "🗂️", "ক্যাশ মেমো হিস্ট্রি"),
-    tile("daily", "c-cyan", "📅", "দৈনিক হিসাব"),
-    tile("returns", "c-pink", "↩️", "রিটার্ন/এক্সচেঞ্জ"),
-    tile("cash", "c-brown", "💵", "নগদ ক্রেতা"),
-  ].join("");
+    tileDef("cashbox", "c-gold", "💰", "ক্যাশবক্স"),
+    tileDef("stock", "c-teal", "📦", "স্টক তালিকা"),
+    tileDef("invoices", "c-indigo", "🗂️", "ক্যাশ মেমো হিস্ট্রি"),
+    tileDef("daily", "c-cyan", "📅", "দৈনিক হিসাব"),
+    tileDef("returns", "c-pink", "↩️", "রিটার্ন/এক্সচেঞ্জ"),
+    tileDef("cash", "c-brown", "💵", "নগদ ক্রেতা"),
+  ]
+    .filter(visibleFilter)
+    .map(tileHtml)
+    .join("");
 
-  const ownerTiles = isOwner
+  const extraTiles = [
+    tileDef("profit", "c-gold", "📈", "লাভ-ক্ষতি"),
+    tileDef("report", "c-slate", "📊", "ব্যবসার রিপোর্ট"),
+    tileDef("aiAssistant", "c-purple", "🤖", "AI সহকারী"),
+  ]
+    .filter(visibleFilter)
+    .map(tileHtml)
+    .join("");
+
+  const ownerLockedTiles = isOwner
     ? [
-        tile("profit", "c-gold", "📈", "লাভ-ক্ষতি"),
-        tile("report", "c-slate", "📊", "ব্যবসার রিপোর্ট"),
-        tile("aiAssistant", "c-purple", "🤖", "AI সহকারী"),
-        tile("staff", "c-gray", "👥", "অ্যাপ অ্যাক্সেস (স্টাফ)"),
-        tile("trash", "c-red", "🗑️", "রিস্টোর/ট্র্যাশ"),
-        tile("settings", "c-teal", "⚙️", "দোকানের তথ্য"),
-      ].join("")
+        tileDef("staff", "c-gray", "👥", "অ্যাপ অ্যাক্সেস (স্টাফ)"),
+        tileDef("trash", "c-red", "🗑️", "রিস্টোর/ট্র্যাশ"),
+        tileDef("settings", "c-teal", "⚙️", "দোকানের তথ্য"),
+      ]
+        .map(tileHtml)
+        .join("")
     : "";
 
   return `
@@ -2517,7 +2602,8 @@ function renderDashboard() {
  <div class="dash-tile-grid">${ledgerTiles}</div>
  <div class="dash-section-label">আপনার ব্যবসার জন্য</div>
  <div class="dash-tile-grid">${businessTiles}</div>
- ${isOwner ? `<div class="dash-section-label">মালিকের জন্য</div><div class="dash-tile-grid">${ownerTiles}</div>` : ""}
+  ${extraTiles ? `<div class="dash-section-label">${isOwner ? "মালিকের জন্য" : "বিশেষ অ্যাক্সেস"}</div><div class="dash-tile-grid">${extraTiles}</div>` : ""}
+ ${ownerLockedTiles ? `<div class="dash-section-label">মালিকের জন্য</div><div class="dash-tile-grid">${ownerLockedTiles}</div>` : ""}
  `;
 }
 
@@ -9704,7 +9790,9 @@ function profitComputeMetrics(list) {
   let sales = 0,
     cogs = 0,
     discount = 0,
-    deliveryExpense = 0;
+    deliveryExpense = 0,
+    realizedProfit = 0,
+    pendingProfit = 0;
   list.forEach((inv) => {
     const itemsRevenue =
       inv.itemsSubtotal != null
@@ -9718,10 +9806,13 @@ function profitComputeMetrics(list) {
     cogs += itemCogs;
     discount += inv.discount || 0;
     deliveryExpense += (inv.delivery || 0) + (inv.expenseAmt || 0);
+    const info = invoiceProfitInfo(inv);
+    realizedProfit += info.realizedProfit;
+    pendingProfit += info.pendingProfit;
   });
   const grossProfit = sales - cogs;
-  const netProfit = grossProfit - discount;
-  const margin = sales > 0 ? (netProfit / sales) * 100 : 0;
+  const netProfit = grossProfit - discount; // মোট লাভ (নগদ + বাকি একসাথে) — রেফারেন্সের জন্য
+  const margin = sales > 0 ? (realizedProfit / sales) * 100 : 0;
 
   return {
     sales,
@@ -9730,6 +9821,8 @@ function profitComputeMetrics(list) {
     deliveryExpense,
     grossProfit,
     netProfit,
+    realizedProfit,
+    pendingProfit,
     margin,
     invCount: list.length,
   };
@@ -9783,16 +9876,18 @@ function metricCardsHtml(m) {
  <div class="stat-card" style="--accent:var(--amber)"><div class="lbl">ক্রয়মূল্য (COGS)</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.cogs)}</div></div>
  <div class="stat-card" style="--accent:${m.grossProfit >= 0 ? "var(--green)" : "var(--red)"}"><div class="lbl">গ্রস মুনাফা</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.grossProfit)}</div></div>
   <div class="stat-card" style="--accent:var(--steel-500)"><div class="lbl">ছাড় (মালিকের লাভ থেকে বিয়োগ হয়েছে)</div><div class="val" style="font-size:16px;word-break:break-word;">${fmt(m.discount)}</div></div>
-
- <div class="stat-card" style="--accent:${m.netProfit >= 0 ? "var(--green)" : "var(--red)"}"><div class="lbl">নিট মুনাফা</div><div class="val" style="font-size:16px;word-break:break-word;color:${m.netProfit >= 0 ? "var(--green)" : "var(--red)"}">${fmt(m.netProfit)}</div></div>
+ <div class="stat-card" style="--accent:${m.realizedProfit >= 0 ? "var(--green)" : "var(--red)"}"><div class="lbl">নিট মুনাফা (হাতে পাওয়া টাকা থেকে)</div><div class="val" style="font-size:16px;word-break:break-word;color:${m.realizedProfit >= 0 ? "var(--green)" : "var(--red)"}">${fmt(Math.round(m.realizedProfit))}</div></div>
+ <div class="stat-card" style="--accent:var(--amber)"><div class="lbl">অপেক্ষমাণ মুনাফা (বাকি বিক্রির)</div><div class="val" style="font-size:16px;word-break:break-word;color:var(--amber)">${fmt(Math.round(m.pendingProfit))}</div></div>
  </div>
  <div class="panel" style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
  <div style="font-size:13px;color:var(--steel-500);">
- ${m.invCount} টি ক্যাশ মেমো · মুনাফার হার (মার্জিন) <b class="mono" style="color:${m.netProfit >= 0 ? "var(--green)" : "var(--red)"}">${m.margin.toFixed(1)}%</b>
+ ${m.invCount} টি ক্যাশ মেমো · মুনাফার হার (মার্জিন, শুধু হাতে পাওয়া থেকে) <b class="mono" style="color:${m.realizedProfit >= 0 ? "var(--green)" : "var(--red)"}">${m.margin.toFixed(1)}%</b>
  ${m.deliveryExpense > 0 ? ` · ডেলিভারি/অন্যান্য চার্জ ${fmt(m.deliveryExpense)} (নিরপেক্ষ, মুনাফায় ধরা হয়নি)` : ""}
  </div>
- </div>`;
+ </div>
+ ${m.pendingProfit > 0 ? `<div style="font-size:11.5px;color:var(--steel-500);margin:-10px 0 16px;">⚠️ বাকি বিক্রির ${fmt(Math.round(m.pendingProfit))} টাকা লাভ এখনো "নিট মুনাফা"-তে যুক্ত হয়নি — গ্রাহক টাকা শোধ করা মাত্র এটি স্বয়ংক্রিয়ভাবে যোগ হয়ে যাবে।</div>` : ""}`;
 }
+
 function profitBreadcrumbHtml() {
   let html = `<span class="crumb-btn" onclick="profitDrillTo(-1)">সব ${profitTab === "yearly" ? "বছর" : profitTab === "monthly" ? "মাস" : "দিন"}</span>`;
   profitDrillPath.forEach((d, i) => {
@@ -9858,15 +9953,14 @@ function renderProfit() {
                 (s, it) => s + it.qty * (it.buyPrice || 0),
                 0,
               );
-              const gross = itemsRevenue - itemCogs;
-              const net = gross - (inv.discount || 0);
+              const info = invoiceProfitInfo(inv);
               return `<tr>
  <td class="num mono">#${inv.id}</td>
  <td>${esc(inv.customer)}</td>
  <td>${new Date(inv.date).toLocaleDateString("bn-BD")}</td>
  <td class="num mono">${fmt(itemsRevenue)}</td>
  <td class="num mono">${fmt(itemCogs)}</td>
- <td class="num mono" style="color:${net >= 0 ? "var(--green)" : "var(--red)"}">${fmt(net)}</td>
+ <td class="num mono" style="color:${info.realizedProfit >= 0 ? "var(--green)" : "var(--red)"}">${fmt(Math.round(info.realizedProfit))}${info.pendingProfit > 0 ? ` <span style="font-size:10px;color:var(--amber);">(+${fmt(Math.round(info.pendingProfit))} বাকি)</span>` : ""}</td>
  <td class="tbl-actions"><button onclick="profitInvoiceDetail(${inv.id})">বিস্তারিত</button></td>
  </tr>`;
             })
@@ -9913,7 +10007,7 @@ function renderProfit() {
  <div class="day-stats">
  <div><div class="dv" style="color:var(--steel-700);">${fmt(m.sales)}</div><div class="dl">বিক্রয়</div></div>
  <div><div class="dv" style="color:var(--amber);">${fmt(m.cogs)}</div><div class="dl">ক্রয়মূল্য</div></div>
- <div><div class="dv" style="color:${m.netProfit >= 0 ? "var(--green)" : "var(--red)"};">${fmt(m.netProfit)}</div><div class="dl">নিট মুনাফা</div></div>
+  <div><div class="dv" style="color:${m.realizedProfit >= 0 ? "var(--green)" : "var(--red)"};">${fmt(Math.round(m.realizedProfit))}</div><div class="dl">নিট মুনাফা (পাওয়া)</div></div>
  </div>
  </div>`;
     })
@@ -10586,7 +10680,8 @@ function renderStaff() {
  <div>
  <div style="font-weight:700;">${esc(s.full_name)}</div>
  </div> 
- <div style="display:flex;gap:8px;">
+  <div style="display:flex;gap:8px;">
+ <button class="btn btn-outline" onclick="openStaffPermissionsModal('${s.id}')">🔐 পারমিশন</button>
  <button class="btn btn-outline" onclick="editStaffPrompt('${s.id}')">পরিচালনা করুন</button>
  </div>
  </div>`,
@@ -10634,11 +10729,18 @@ function renderStaff() {
 let __pwConfirmCallback = null;
 function requestPasswordConfirm(actionLabel, onConfirm) {
   __pwConfirmCallback = onConfirm;
+  const isOwner = currentUser && currentUser.role === "owner";
+  const emailFieldHtml = isOwner
+    ? ""
+    : `<div class="field"><label>মালিকের ইমেইল</label><input type="email" id="pwConfirmOwnerEmail" placeholder="owner@example.com"></div>`;
   openModal(
-    "🔒 পাসওয়ার্ড দিয়ে নিশ্চিত করুন",
+    isOwner
+      ? "🔒 পাসওয়ার্ড দিয়ে নিশ্চিত করুন"
+      : "🔒 মালিকের অনুমোদন প্রয়োজন",
     `
- <div style="font-size:12.5px;color:var(--steel-500);margin-bottom:14px;line-height:1.6;">"${esc(actionLabel)}" — এই কাজটা করার আগে নিজের লগইন পাসওয়ার্ড দিয়ে নিশ্চিত করুন। মালিক বা স্টাফ যেই হোন না কেন এটা লাগবে।</div>
- <div class="field"><label>পাসওয়ার্ড</label><input type="password" id="pwConfirmInput" placeholder="আপনার লগইন পাসওয়ার্ড" onkeydown="if(event.key==='Enter') verifyPasswordAndProceed();"></div>
+ <div style="font-size:12.5px;color:var(--steel-500);margin-bottom:14px;line-height:1.6;">"${esc(actionLabel)}" — ${isOwner ? "এই কাজটা করার আগে নিজের লগইন পাসওয়ার্ড দিয়ে নিশ্চিত করুন।" : "এই কাজটা মুছে ফেলার অনুমতি স্টাফের নেই। দোকানের মালিক এখানে নিজের ইমেইল ও পাসওয়ার্ড দিলে তবেই কাজটা সম্পন্ন হবে।"}</div>
+ ${emailFieldHtml}
+ <div class="field"><label>${isOwner ? "পাসওয়ার্ড" : "মালিকের পাসওয়ার্ড"}</label><input type="password" id="pwConfirmInput" placeholder="${isOwner ? "আপনার লগইন পাসওয়ার্ড" : "মালিকের লগইন পাসওয়ার্ড"}" onkeydown="if(event.key==='Enter') verifyPasswordAndProceed();"></div>
  <div id="pwConfirmError" style="color:var(--red); font-size:12px; display:none; margin-top:-8px; margin-bottom:10px;"></div>
  `,
     `
@@ -10647,7 +10749,9 @@ function requestPasswordConfirm(actionLabel, onConfirm) {
  `,
   );
   setTimeout(() => {
-    const el = document.getElementById("pwConfirmInput");
+    const el = document.getElementById(
+      isOwner ? "pwConfirmInput" : "pwConfirmOwnerEmail",
+    );
     if (el) el.focus();
   }, 50);
 }
@@ -10656,35 +10760,65 @@ async function verifyPasswordAndProceed() {
   const errEl = document.getElementById("pwConfirmError");
   const btn = document.getElementById("pwConfirmBtn");
   const pwd = pwdEl ? pwdEl.value : "";
-  if (!pwd) {
+  const isOwner = currentUser && currentUser.role === "owner";
+  let email = isOwner ? currentUser.email : "";
+  if (!isOwner) {
+    const emailEl = document.getElementById("pwConfirmOwnerEmail");
+    email = emailEl ? emailEl.value.trim() : "";
+  }
+  if (!email || !pwd) {
     if (errEl) {
-      errEl.textContent = "পাসওয়ার্ড লিখুন";
+      errEl.textContent = isOwner
+        ? "পাসওয়ার্ড লিখুন"
+        : "মালিকের ইমেইল ও পাসওয়ার্ড লিখুন";
       errEl.style.display = "block";
     }
     return;
   }
-  if (!currentUser || !currentUser.email) {
-    showToast("ইউজার তথ্য পাওয়া যায়নি — আবার লগইন করুন");
-    return;
-  }
   if (btn) btn.disabled = true;
   try {
-    const { error } = await supabaseClient.auth.signInWithPassword({
-      email: currentUser.email,
-      password: pwd,
-    });
+    const { data: verifyData, error } =
+      await supabaseClient.auth.signInWithPassword({
+        email,
+        password: pwd,
+      });
     if (error) {
       if (errEl) {
-        errEl.textContent = "❌ পাসওয়ার্ড সঠিক নয়, আবার চেষ্টা করুন";
+        errEl.textContent = "❌ ইমেইল/পাসওয়ার্ড সঠিক নয়, আবার চেষ্টা করুন";
         errEl.style.display = "block";
       }
       if (btn) btn.disabled = false;
       return;
     }
+    if (!isOwner) {
+      const uid = verifyData.session ? verifyData.session.user.id : null;
+      const { data: prof } = await supabaseClient
+        .from("profiles")
+        .select("role, shop_id")
+        .eq("id", uid)
+        .maybeSingle();
+      if (!prof || prof.role !== "owner" || prof.shop_id !== SHOP_ID) {
+        if (errEl) {
+          errEl.textContent = "❌ এই একাউন্টটি এই দোকানের মালিক নয়";
+          errEl.style.display = "block";
+        }
+        if (btn) btn.disabled = false;
+        return;
+      }
+    }
     const cb = __pwConfirmCallback;
     __pwConfirmCallback = null;
     closeModal();
     if (typeof cb === "function") cb();
+    if (!isOwner) {
+      showToast(
+        "✅ মালিকের অনুমতিতে কাজটি সম্পন্ন হয়েছে — নিরাপত্তার জন্য আবার লগইন করতে হবে",
+      );
+      setTimeout(async () => {
+        await supabaseClient.auth.signOut();
+        window.location.href = "login.html";
+      }, 1500);
+    }
   } catch (e) {
     if (errEl) {
       errEl.textContent = "যাচাই করা যায়নি — আবার চেষ্টা করুন";
