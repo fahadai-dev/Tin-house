@@ -157,39 +157,150 @@ function itemLabelText(brand, mm, size) {
 const MM_LIST = [12, 13, 14, 15, 16, 17, 18, 19, 20];
 const SIZE_LIST = [6, 7, 8, 9, 10, 11, 12];
 const FEET_PER_BAN = 72; // ৭২ ফুটে এক
-const UNIT_OPTIONS = [
-  "ফুট",
+let UNIT_OPTIONS = [
   "বান",
-  "পিস",
   "প্যাকেট",
-  "কেজি",
-  "গ্রাম",
-  "লিটার",
-  "মিলি লিটার",
   "সেট",
   "বক্স",
   "বান্ডেল",
   "রোল",
   "স্কয়ার ফুট",
-  "ইঞ্চি",
-  "মিটার",
 ];
+function allKnownUnitsFlat() {
+  let list = [];
+  UNIT_CONVERSION_GROUPS.forEach((g) => {
+    Object.keys(g.units).forEach((u) => list.push(u));
+  });
+  UNIT_OPTIONS.forEach((u) => list.push(u));
+  return list;
+}
+function isKnownUnit(u) {
+  if (!u) return false;
+  return allKnownUnitsFlat().some((k) => normalizeStr(k) === normalizeStr(u));
+}
+let unitPickerConfig = {};
+
+function unitPickerInit(fieldId, currentValue, pickFn) {
+  unitPickerConfig[fieldId] = {
+    currentValue: currentValue || "",
+    pickFn,
+    search: "",
+  };
+}
+
+function unitPickerListInnerHtml(fieldId) {
+  const cfg = unitPickerConfig[fieldId];
+  if (!cfg) return "";
+  const q = normalizeStr(cfg.search);
+  const allUnits = allKnownUnitsFlat();
+  const shown =
+    q === "" ? allUnits : allUnits.filter((u) => normalizeStr(u).includes(q));
+
+  let html = `
+ <div style="padding:8px; position:sticky; top:0; background:white; border-bottom:1px solid var(--steel-100); z-index:1;">
+ <input type="text" value="${esc(cfg.search)}" placeholder="🔍 একক খুঁজুন..." oninput="unitPickerSearchInput('${fieldId}', this.value)" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--steel-100);font-size:13px;box-sizing:border-box;">
+ </div>`;
+
+  if (shown.length === 0) {
+    html += `<div style="padding:16px;text-align:center;font-size:12.5px;color:var(--steel-500);">🔍 কিছু পাওয়া যায়নি</div>`;
+  } else {
+    shown.forEach((u) => {
+      html += `<div class="unit-opt ${cfg.currentValue === u ? "active" : ""}" onclick="${cfg.pickFn}('${fieldId}','${jsq(u)}')">${esc(u)}</div>`;
+    });
+  }
+
+  html += `<div class="unit-opt custom" onclick="${cfg.pickFn}('${fieldId}','__custom__')">✏️ নিজে লিখে বসান (শুধু এখানেই)</div>`;
+  html += `<div class="unit-opt custom" style="color:var(--rust);font-weight:600;" onclick="unitPickerAddNewFromField('${fieldId}')">➕ নতুন একক যোগ করুন (সবজায়গায় থাকবে)</div>`;
+  return html;
+}
+
+function unitPickerSearchInput(fieldId, val) {
+  const cfg = unitPickerConfig[fieldId];
+  if (!cfg) return;
+  cfg.search = val;
+  const list = document.getElementById(fieldId + "List");
+  if (list) {
+    list.innerHTML = unitPickerListInnerHtml(fieldId);
+    const inp = list.querySelector("input");
+    if (inp) {
+      inp.focus();
+      const p = inp.value.length;
+      inp.setSelectionRange(p, p);
+    }
+  }
+}
+
+function unitPickerAddNewFromField(fieldId) {
+  openModal(
+    "➕ নতুন একক যোগ করুন",
+    `
+ <div style="font-size:11.5px;color:var(--steel-500);margin-bottom:12px;line-height:1.6;">নতুন এককটি যদি কোনো পরিচিত গ্রুপের (যেমন ওজন, দৈর্ঘ্য) সাথে সম্পর্কিত হয়, নিচে সেই গ্রুপ ও সম্পর্ক লিখুন — তাহলে সেই গ্রুপের অন্য এককের সাথে এটা স্বয়ংক্রিয়ভাবে কনভার্ট হবে। সম্পর্ক না থাকলে গ্রুপ খালি রাখুন।</div>
+ <div class="field"><label>এককের নাম</label><input type="text" id="upNewUnitName" placeholder="যেমনঃ মণ"></div>
+ <div class="field"><label>কোন গ্রুপের সাথে সম্পর্কিত (ঐচ্ছিক)</label>
+ <select id="upNewUnitGroup">
+ <option value="">— কোনো সম্পর্ক নেই —</option>
+ ${UNIT_CONVERSION_GROUPS.map((g, gi) => `<option value="${gi}">${esc(g.name)}</option>`).join("")}
+ </select>
+ </div>
+ <div class="field" id="upNewUnitFactorWrap" style="display:none;">
+ <label>১ [এই একক] = কত (গ্রুপের মূল এককে)?</label>
+ <input type="number" id="upNewUnitFactor" min="0" step="any" placeholder="যেমনঃ ৪০">
+ </div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+ <button class="btn btn-primary" onclick="unitPickerSaveNewUnit('${fieldId}')">যোগ করুন</button>
+ `,
+  );
+  const groupSel = document.getElementById("upNewUnitGroup");
+  if (groupSel) {
+    groupSel.addEventListener("change", () => {
+      const wrap = document.getElementById("upNewUnitFactorWrap");
+      if (wrap) wrap.style.display = groupSel.value === "" ? "none" : "block";
+    });
+  }
+}
+
+function unitPickerSaveNewUnit(fieldId) {
+  const name = document.getElementById("upNewUnitName").value.trim();
+  if (!name) {
+    showToast("এককের নাম লিখুন");
+    return;
+  }
+  const groupIdx = document.getElementById("upNewUnitGroup").value;
+  if (groupIdx !== "") {
+    const factor = parseFloat(document.getElementById("upNewUnitFactor").value);
+    if (!factor || factor <= 0) {
+      showToast("সঠিক সম্পর্ক (ফ্যাক্টর) লিখুন");
+      return;
+    }
+    const g = UNIT_CONVERSION_GROUPS[parseInt(groupIdx)];
+    if (g) g.units[name] = factor;
+  } else {
+    if (!UNIT_OPTIONS.includes(name)) UNIT_OPTIONS.push(name);
+  }
+  persistShopData();
+  const cfg = unitPickerConfig[fieldId];
+  if (cfg) cfg.currentValue = name;
+  closeModal();
+  if (cfg) {
+    window[cfg.pickFn] ? window[cfg.pickFn](fieldId, name) : null;
+  }
+  showToast("নতুন একক যোগ হয়েছে");
+}
 function unitSelectHtml(fieldId, currentValue) {
   const cur = currentValue || "";
-  const isCustom = cur !== "" && !UNIT_OPTIONS.includes(cur);
+  const isCustom = cur !== "" && !isKnownUnit(cur);
   const displayLabel = cur === "" ? "— বাছুন —" : cur;
-  const opts = UNIT_OPTIONS.map(
-    (u) =>
-      `<div class="unit-opt ${cur === u ? "active" : ""}" onclick="unitSelectPick('${fieldId}','${jsq(u)}')">${esc(u)}</div>`,
-  ).join("");
+  unitPickerInit(fieldId, cur, "unitSelectPick");
+  const listHtml = unitPickerListInnerHtml(fieldId);
   return `
  <div class="unit-picker">
    <button type="button" class="unit-picker-btn" onclick="unitPickerToggle('${fieldId}')">
      <span id="${fieldId}PickerLabel">${esc(displayLabel)}</span><span class="unit-picker-arrow">▾</span>
    </button>
-   <div class="unit-picker-list" id="${fieldId}List" style="display:none;">
-     ${opts}
-     <div class="unit-opt custom ${isCustom ? "active" : ""}" onclick="unitSelectPick('${fieldId}','__custom__')">✏️ নিজে লিখুন (অন্য কিছু)</div>
+   <div class="unit-picker-list" id="${fieldId}List" style="display:none; max-height:320px; overflow-y:auto;">
+     ${listHtml}
    </div>
  </div>
  <input type="text" id="${fieldId}" value="${esc(cur)}" placeholder="যেমনঃ প্যাক, বোতল" style="margin-top:8px; ${isCustom || cur === "" ? "" : "display:none;"}">`;
@@ -222,15 +333,31 @@ function unitSelectPick(fieldId, val) {
 /* ============================================================
  সহজ পণ্যের ইউনিট রূপান্তর (কেজি↔গ্রাম, লিটার↔মিলি লিটার ইত্যাদি)
  ============================================================ */
-const UNIT_CONVERSION_GROUPS = [
-  { কেজি: 1000, গ্রাম: 1 },
-  { লিটার: 1000, "মিলি লিটার": 1 },
+let UNIT_CONVERSION_GROUPS = [
+  { name: "ওজন", units: { গ্রাম: 1, কেজি: 1000, টন: 1000000 } },
+  {
+    name: "দৈর্ঘ্য (মেট্রিক)",
+    units: { মিলিমিটার: 1, সেন্টিমিটার: 10, মিটার: 1000, কিলোমিটার: 1000000 },
+  },
+  {
+    name: "দৈর্ঘ্য (ফুট-ইঞ্চি)",
+    units: { ইঞ্চি: 1, ফুট: 12, "রানিং ফুট": 12, হাত: 18, গজ: 36 },
+  },
+  { name: "তরল/আয়তন", units: { "মিলি লিটার": 1, লিটার: 1000 } },
+  { name: "গণনা", units: { পিস: 1, হালি: 4, "হাফ ডজন": 6, ডজন: 12 } },
 ];
 function unitConversionFactor(fromUnit, toUnit) {
   if (!fromUnit || !toUnit || fromUnit === toUnit) return null;
   for (const g of UNIT_CONVERSION_GROUPS) {
-    if (g[fromUnit] != null && g[toUnit] != null) {
-      return g[fromUnit] / g[toUnit];
+    const units = g.units || g;
+    const fromKey = Object.keys(units).find(
+      (k) => normalizeStr(k) === normalizeStr(fromUnit),
+    );
+    const toKey = Object.keys(units).find(
+      (k) => normalizeStr(k) === normalizeStr(toUnit),
+    );
+    if (fromKey && toKey) {
+      return units[fromKey] / units[toKey];
     }
   }
   return null;
@@ -269,20 +396,17 @@ function spuConvertFields(oldUnit, newUnit) {
 }
 function simpleUnitFieldHtml(fieldId, currentValue) {
   const cur = currentValue || "";
-  const isCustom = cur !== "" && !UNIT_OPTIONS.includes(cur);
+  const isCustom = cur !== "" && !isKnownUnit(cur);
   const displayLabel = cur === "" ? "— বাছুন —" : cur;
-  const opts = UNIT_OPTIONS.map(
-    (u) =>
-      `<div class="unit-opt ${cur === u ? "active" : ""}" onclick="simpleUnitPick('${fieldId}','${jsq(u)}')">${esc(u)}</div>`,
-  ).join("");
+  unitPickerInit(fieldId, cur, "simpleUnitPick");
+  const listHtml = unitPickerListInnerHtml(fieldId);
   return `
  <div class="unit-picker">
    <button type="button" class="unit-picker-btn" onclick="unitPickerToggle('${fieldId}')">
      <span id="${fieldId}PickerLabel">${esc(displayLabel)}</span><span class="unit-picker-arrow">▾</span>
    </button>
-   <div class="unit-picker-list" id="${fieldId}List" style="display:none;">
-     ${opts}
-     <div class="unit-opt custom ${isCustom ? "active" : ""}" onclick="simpleUnitPick('${fieldId}','__custom__')">✏️ নিজে লিখুন (অন্য কিছু)</div>
+   <div class="unit-picker-list" id="${fieldId}List" style="display:none; max-height:320px; overflow-y:auto;">
+     ${listHtml}
    </div>
  </div>
  <input type="text" id="${fieldId}" value="${esc(cur)}" placeholder="যেমনঃ প্যাক, বোতল" style="margin-top:8px; ${isCustom || cur === "" ? "" : "display:none;"}" onchange="spuPrevUnit=this.value;">`;
@@ -1052,6 +1176,7 @@ function collectState(isNewShop) {
     brandCategory,
     brandUnitLabel,
     brandSizeLabel,
+    UNIT_CONVERSION_GROUPS,
     inventory: isNewShop ? buildDemoInventory() : inventory,
     ledger,
     ledgerNextId,
@@ -1167,6 +1292,10 @@ function applyState(s) {
   brandCategory = s.brandCategory || {};
   brandUnitLabel = s.brandUnitLabel || {};
   brandSizeLabel = s.brandSizeLabel || {};
+  UNIT_CONVERSION_GROUPS =
+    s.UNIT_CONVERSION_GROUPS && s.UNIT_CONVERSION_GROUPS.length
+      ? s.UNIT_CONVERSION_GROUPS
+      : UNIT_CONVERSION_GROUPS;
   initCategoryPseudoBrands();
 }
 function mergeArraysById(localArr, serverArr) {
@@ -2076,6 +2205,9 @@ function renderSettings() {
  </select>
  </div>
  <div class="field"><label>মোবাইল ব্যাংকিং নাম্বার (ঐচ্ছিক)</label><input type="text" id="setShopMobBankNumber" value="${esc(SHOP_MOBILE_BANKING_NUMBER)}" placeholder="01xxx-xxxxxx"></div>
+  <div style="border-top:1px dashed var(--steel-300); padding-top:14px; margin-top:8px; margin-bottom:16px;">
+ <button type="button" class="btn btn-outline" style="width:100%; justify-content:center;" onclick="openUnitGroupsManager()">🔗 একক সম্পর্ক (কনভার্সন) পরিচালনা</button>
+ </div>
  <button class="btn btn-primary" onclick="saveShopSettings()">সংরক্ষণ করুন</button>
  </div>`;
 }
@@ -2130,6 +2262,171 @@ async function saveShopSettings() {
   updateShopBrandUI();
   persistShopData();
   showToast("দোকানের তথ্য সংরক্ষণ হয়েছে");
+}
+/* ============================================================
+ একক সম্পর্ক (ইউনিট কনভার্সন গ্রুপ) — মালিক নিজে এডিট করতে পারবেন
+ ============================================================ */
+function renderUnitGroupsList() {
+  return UNIT_CONVERSION_GROUPS.map((g, gi) => {
+    const unitKeys = Object.keys(g.units);
+    const baseUnit = unitKeys[0];
+    const unitRows = unitKeys
+      .map(
+        (u) => `
+ <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px dashed var(--steel-100);font-size:12.5px;">
+ <span>${esc(u)}</span>
+ <span class="mono" style="color:var(--steel-500);">= ${g.units[u]} ${esc(baseUnit)}</span>
+ </div>`,
+      )
+      .join("");
+    return `
+ <div style="border:1px solid var(--steel-100);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+ <b>${esc(g.name)}</b>
+ <div style="display:flex;gap:6px;">
+ <button class="btn btn-outline" style="padding:3px 8px;font-size:11px;" onclick="editUnitGroupPrompt(${gi})">✏️ এডিট</button>
+ <button class="btn btn-outline" style="padding:3px 8px;font-size:11px;color:var(--red);" onclick="deleteUnitGroupPrompt(${gi})">🗑️</button>
+ </div>
+ </div>
+ ${unitRows}
+ </div>`;
+  }).join("");
+}
+function openUnitGroupsManager() {
+  openModal(
+    "🔗 একক সম্পর্ক (কনভার্সন গ্রুপ)",
+    `
+ <div style="font-size:11.5px;color:var(--steel-500);margin-bottom:14px;line-height:1.6;">যে এককগুলোর মধ্যে ফিক্সড সম্পর্ক আছে (যেমন কেজি-গ্রাম, ফুট-ইঞ্চি) সেগুলো এক গ্রুপে থাকলে বিক্রির সময় ইউনিট পরিবর্তন করলে পরিমাণ ও দাম নিজে থেকেই কনভার্ট হয়ে যাবে — কিছু জিজ্ঞেস করবে না।</div>
+ ${renderUnitGroupsList()}
+ `,
+    `
+ <button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>
+ <button class="btn btn-primary" onclick="addUnitGroupPrompt()">+ নতুন গ্রুপ</button>
+ `,
+  );
+}
+function addUnitGroupPrompt() {
+  openModal(
+    "নতুন একক গ্রুপ যোগ করুন",
+    `
+ <div class="field"><label>গ্রুপের নাম (যেমনঃ ওজন, দৈর্ঘ্য)</label><input type="text" id="newUnitGroupName" placeholder="যেমনঃ ক্ষেত্রফল"></div>
+ <div class="field"><label>মূল একক (বেস, যার মান = ১)</label><input type="text" id="newUnitGroupBaseUnit" placeholder="যেমনঃ স্কয়ার ফুট"></div>
+ <div style="font-size:11px;color:var(--steel-500);">গ্রুপ তৈরি হওয়ার পর এর ভেতরে আরও একক যোগ করতে পারবেন।</div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="openUnitGroupsManager()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveNewUnitGroup()">তৈরি করুন</button>
+ `,
+  );
+}
+function saveNewUnitGroup() {
+  const name = document.getElementById("newUnitGroupName").value.trim();
+  const baseUnit = document.getElementById("newUnitGroupBaseUnit").value.trim();
+  if (!name || !baseUnit) {
+    showToast("গ্রুপের নাম ও মূল একক দুটোই লিখুন");
+    return;
+  }
+  UNIT_CONVERSION_GROUPS.push({ name, units: { [baseUnit]: 1 } });
+  persistShopData();
+  openUnitGroupsManager();
+  showToast("নতুন গ্রুপ তৈরি হয়েছে");
+}
+function deleteUnitGroupPrompt(gi) {
+  const g = UNIT_CONVERSION_GROUPS[gi];
+  if (!g) return;
+  openModal(
+    "গ্রুপ মুছবেন?",
+    `<p style="font-size:13.5px;line-height:1.7;">"${esc(g.name)}" গ্রুপটি মুছে ফেলা হবে। এই গ্রুপের এককগুলোর মধ্যে আর স্বয়ংক্রিয় কনভার্সন হবে না।</p>`,
+    `
+ <button class="btn btn-outline" onclick="openUnitGroupsManager()">বাতিল</button>
+ <button class="btn btn-primary" style="background:var(--red);" onclick="requestPasswordConfirm('একক গ্রুপ মুছুন', () => deleteUnitGroupConfirmed(${gi}))">হ্যাঁ, মুছুন</button>
+ `,
+  );
+}
+function deleteUnitGroupConfirmed(gi) {
+  UNIT_CONVERSION_GROUPS.splice(gi, 1);
+  persistShopData();
+  openUnitGroupsManager();
+  showToast("গ্রুপ মুছে ফেলা হয়েছে");
+}
+function editUnitGroupPrompt(gi) {
+  const g = UNIT_CONVERSION_GROUPS[gi];
+  if (!g) return;
+  const unitKeys = Object.keys(g.units);
+  const baseUnit = unitKeys[0];
+  const rows = unitKeys
+    .map(
+      (u, i) => `
+ <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+ <input type="text" value="${esc(u)}" disabled style="flex:2;background:var(--steel-100);">
+ <input type="number" id="ugFactor${i}" value="${g.units[u]}" min="0" step="any" style="flex:1;" ${i === 0 ? "disabled" : ""}>
+ ${i !== 0 ? `<button type="button" onclick="removeUnitFromGroup(${gi}, ${i})" style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;">✕</button>` : `<span style="width:24px;"></span>`}
+ </div>`,
+    )
+    .join("");
+  openModal(
+    `গ্রুপ এডিট — ${esc(g.name)}`,
+    `
+ <div class="field"><label>গ্রুপের নাম</label><input type="text" id="ugName" value="${esc(g.name)}"></div>
+ <div style="font-size:11.5px;color:var(--steel-500);margin-bottom:10px;">প্রতিটি এককের মান লিখুন — "১ [একক] = কত ${esc(baseUnit)}"। মূল একক (${esc(baseUnit)}) সবসময় ১ থাকবে।</div>
+ ${rows}
+ <div style="display:flex;gap:8px;margin-top:12px;border-top:1px dashed var(--steel-300);padding-top:12px;">
+ <input type="text" id="ugNewUnitName" placeholder="নতুন একক (যেমনঃ মণ)" style="flex:2;">
+ <input type="number" id="ugNewUnitFactor" placeholder="= কত ${esc(baseUnit)}" min="0" step="any" style="flex:1;">
+ <button type="button" class="btn btn-outline" onclick="addUnitToGroupField(${gi})">+ যোগ</button>
+ </div>
+ `,
+    `
+ <button class="btn btn-outline" onclick="openUnitGroupsManager()">বাতিল</button>
+ <button class="btn btn-primary" onclick="saveUnitGroupEdit(${gi})">সংরক্ষণ করুন</button>
+ `,
+  );
+}
+function addUnitToGroupField(gi) {
+  const g = UNIT_CONVERSION_GROUPS[gi];
+  if (!g) return;
+  const name = document.getElementById("ugNewUnitName").value.trim();
+  const factor = parseFloat(document.getElementById("ugNewUnitFactor").value);
+  if (!name || !factor || factor <= 0) {
+    showToast("একক নাম ও সঠিক মান লিখুন");
+    return;
+  }
+  if (
+    Object.keys(g.units).some((u) => normalizeStr(u) === normalizeStr(name))
+  ) {
+    showToast("এই একক আগে থেকেই আছে");
+    return;
+  }
+  g.units[name] = factor;
+  editUnitGroupPrompt(gi);
+}
+function removeUnitFromGroup(gi, idx) {
+  const g = UNIT_CONVERSION_GROUPS[gi];
+  if (!g) return;
+  const unitKeys = Object.keys(g.units);
+  const u = unitKeys[idx];
+  if (u) delete g.units[u];
+  editUnitGroupPrompt(gi);
+}
+function saveUnitGroupEdit(gi) {
+  const g = UNIT_CONVERSION_GROUPS[gi];
+  if (!g) return;
+  const name = document.getElementById("ugName").value.trim();
+  if (!name) {
+    showToast("গ্রুপের নাম আবশ্যক");
+    return;
+  }
+  g.name = name;
+  const unitKeys = Object.keys(g.units);
+  unitKeys.forEach((u, i) => {
+    if (i === 0) return;
+    const el = document.getElementById("ugFactor" + i);
+    const val = el ? parseFloat(el.value) : null;
+    if (val && val > 0) g.units[u] = val;
+  });
+  closeModal();
+  persistShopData();
+  showToast("গ্রুপ আপডেট হয়েছে");
 }
 
 /* ============================================================
@@ -2907,20 +3204,23 @@ function cartUnitOptionsFor(brand, size, mm) {
   let opts = [{ key: "base", label: baseUnit, factor: 1 }];
   // পরিচিত জোড়ার (কেজি/গ্রাম, লিটার/মিলি লিটার) সাথে মিলে গেলে বাকি ইউনিট স্বয়ংক্রিয়ভাবে যোগ হবে
   const group = UNIT_CONVERSION_GROUPS.find((g) =>
-    Object.keys(g).some((k) => normalizeStr(k) === normalizeStr(baseUnit)),
+    Object.keys(g.units || g).some(
+      (k) => normalizeStr(k) === normalizeStr(baseUnit),
+    ),
   );
   let groupUnits = [];
   if (group) {
-    const matchedKey = Object.keys(group).find(
+    const units = group.units || group;
+    const matchedKey = Object.keys(units).find(
       (k) => normalizeStr(k) === normalizeStr(baseUnit),
     );
-    Object.keys(group).forEach((u, i) => {
+    Object.keys(units).forEach((u, i) => {
       if (normalizeStr(u) === normalizeStr(baseUnit)) return;
       groupUnits.push(normalizeStr(u));
       opts.push({
         key: "conv" + i,
         label: u,
-        factor: group[u] / group[matchedKey],
+        factor: units[u] / units[matchedKey],
       });
     });
   }
